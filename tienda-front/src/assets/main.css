@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+/* ─── Tipografía ─────────────────────────────────────────── */
+.font-display {
+  font-family: 'Cormorant Garant', Georgia, serif;
+}
+
+
+html {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Reserva espacio para el scrollbar siempre — evita el layout shift
+     de los ~17px en Windows cuando aparece/desaparece la barra vertical */
+  scrollbar-gutter: stable;
+}
+
+/* ─── Dark base ──────────────────────────────────────────── */
+body {
+  background-color: #0a0a0a;
+  color: #f0ede8;
+  line-height: 1.6;
+  /* No aplicar overflow-x aquí — puede crear un scroll container
+     fantasma que desplace el layout en monitores anchos */
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* El overflow se contiene aquí, no en html/body */
+  overflow-x: clip;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c9a96e;
+}
+
+/* ─── Skeleton loader ────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #111111 25%, #1a1a1a 50%, #111111 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 2px;
+}
+
+/* ─── Gold badge / pill ──────────────────────────────────── */
+.badge-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c9a96e;
+  border: 1px solid #c9a96e33;
+  padding: 0.2rem 0.6rem;
+  border-radius: 1px;
+}
+
+/* ─── Button variants ────────────────────────────────────── */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #c9a96e;
+  color: #0a0a0a;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 0.75rem 2rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+.btn-gold:hover {
+  background-color: #b8964a;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: transparent;
+  color: #c9a96e;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 0.75rem 2rem;
+  border: 1px solid #c9a96e;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-outline:hover {
+  background-color: #c9a96e;
+  color: #0a0a0a;
+}
+
+/* ─── Card base ──────────────────────────────────────────── */
+.card-dark {
+  background-color: #111111;
+  border: 1px solid #1e1e1e;
+  transition: border-color 0.3s;
+}
+.card-dark:hover {
+  border-color: #c9a96e33;
+}
+
+/* ─── Section label ──────────────────────────────────────── */
+.section-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #c9a96e;
+}
+
+/* ─── Home shell ─────────────────────────────────────────── */
+/* Ensures <main> stretches full width inside the flex-column #app */
+.home-shell {
+  flex: 1;
+  width: 100%;
+  background-color: #0a0a0a;
+}
+
+/* ─── Metric cards ───────────────────────────────────────── */
+.metric-card {
+  border: 1px solid #1a1a1a;
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-value {
+  font-family: 'Cormorant Garant', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 300;
+  color: #c9a96e;
+  line-height: 1;
+}
+
+.metric-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #444440;
+}
+
+/* ─── Category tile ──────────────────────────────────────── */
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid #1a1a1a;
+  padding: 1rem 0.75rem;
+  min-height: 5rem;
+  transition: border-color 0.25s, background-color 0.25s;
+  cursor: pointer;
+  text-align: center;
+}
+.category-tile:hover {
+  border-color: #c9a96e33;
+  background-color: #111111;
+}
+
+.category-label {
+  font-family: 'Cormorant Garant', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: #c9a96e;
+  line-height: 1;
+}
+
+.category-name {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #555550;
+}
+
+/* ─── Input dark ─────────────────────────────────────────── */
+.input-dark {
+  width: 100%;
+  background-color: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  color: #f0ede8;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color 0.25s;
+}
+.input-dark::placeholder {
+  color: #444440;
+}
+.input-dark:focus {
+  border-color: #c9a96e;
+}
