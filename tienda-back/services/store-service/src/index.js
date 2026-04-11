@@ -48,6 +48,43 @@ function pbHeaders(token) {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 }
 
+function safeFilterValue(value) {
+  return String(value || '').replace(/"/g, '')
+}
+
+async function listCollection(token, collection, params = {}) {
+  const searchParams = new URLSearchParams()
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.set(key, String(value))
+    }
+  }
+
+  const res = await fetch(`${PB_URL}/api/collections/${collection}/records?${searchParams}`, {
+    headers: pbHeaders(token),
+  })
+
+  if (!res.ok) {
+    const details = await readJsonSafe(res)
+    throw new Error(`${collection}_list_failed:${res.status}:${JSON.stringify(details)}`)
+  }
+
+  return res.json()
+}
+
+async function countCollection(token, collection, filter = '') {
+  const data = await listCollection(token, collection, {
+    page: 1,
+    perPage: 1,
+    sort: '-created',
+    fields: 'id',
+    ...(filter ? { filter } : {}),
+  })
+
+  return Number(data?.totalItems || 0)
+}
+
 // ── Middleware de rol ─────────────────────────────────────────────────────────
 function requireRole(...roles) {
   return (req, res, next) => {
@@ -65,7 +102,7 @@ app.get('/health', (_req, res) => {
 })
 
 // ── Listar tiendas ────────────────────────────────────────────────────────────
-// GET /  ?page=1&perPage=20&status=active&search=texto&verified=true&sort=-created
+// GET /  ?page=1&perPage=20&status=active&search=texto&verified=true&sort=-id
 app.get('/', async (req, res) => {
   try {
     const token = await getAdminToken()
@@ -79,11 +116,15 @@ app.get('/', async (req, res) => {
     if (req.query.verified === 'true')  filters.push('verified=true')
     if (req.query.verified === 'false') filters.push('verified=false')
 
+    const allowedSorts = new Set(['id', '-id', 'name', '-name', 'rating', '-rating'])
+    const requestedSort = String(req.query.sort || '-id')
+    const safeSort = allowedSorts.has(requestedSort) ? requestedSort : '-id'
+
     const params = new URLSearchParams({
       page,
       perPage,
       expand: 'owner',
-      sort: req.query.sort || '-created',
+      sort: safeSort,
     })
     if (filters.length) params.set('filter', filters.join(' && '))
 
@@ -124,6 +165,50 @@ app.get('/featured', async (_req, res) => {
   }
 })
 
+// ── Proxy de archivos de tiendas (logo/banner) ───────────────────────────────
+app.get('/files/stores/:id/:filename', async (req, res) => {
+  try {
+    const { id, filename } = req.params
+    const url = `${PB_URL}/api/files/stores/${encodeURIComponent(id)}/${encodeURIComponent(filename)}`
+
+    const fileRes = await fetch(url)
+    if (!fileRes.ok) {
+      return res.status(fileRes.status).send('file_not_found')
+    }
+
+    const contentType = fileRes.headers.get('content-type')
+    if (contentType) res.setHeader('Content-Type', contentType)
+
+    const buffer = Buffer.from(await fileRes.arrayBuffer())
+    return res.send(buffer)
+  } catch (err) {
+    console.error('store file proxy error', err)
+    return res.status(500).send('file_proxy_error')
+  }
+})
+
+// ── Proxy de avatar de usuarios ──────────────────────────────────────────────
+app.get('/files/users/:id/:filename', async (req, res) => {
+  try {
+    const { id, filename } = req.params
+    const url = `${PB_URL}/api/files/users/${encodeURIComponent(id)}/${encodeURIComponent(filename)}`
+
+    const fileRes = await fetch(url)
+    if (!fileRes.ok) {
+      return res.status(fileRes.status).send('file_not_found')
+    }
+
+    const contentType = fileRes.headers.get('content-type')
+    if (contentType) res.setHeader('Content-Type', contentType)
+
+    const buffer = Buffer.from(await fileRes.arrayBuffer())
+    return res.send(buffer)
+  } catch (err) {
+    console.error('user file proxy error', err)
+    return res.status(500).send('file_proxy_error')
+  }
+})
+
 // ── Obtener tienda por ID ─────────────────────────────────────────────────────
 app.get('/:id', async (req, res) => {
   try {
@@ -141,7 +226,14 @@ app.get('/:id', async (req, res) => {
 })
 
 // ── Crear tienda (solo admin) ─────────────────────────────────────────────────
-app.post('/', requireRole('admin'), async (req, res) => {
+app.post(
+  '/',
+  requireRole('admin'),
+  upload.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'banner', maxCount: 1 },
+  ]),
+  async (req, res) => {
   try {
     const token = await getAdminToken()
     const { name, slug, description, owner, status, location, whatsapp, instagram } = req.body
@@ -150,24 +242,57 @@ app.post('/', requireRole('admin'), async (req, res) => {
       return res.status(400).json({ error: 'name, slug y owner son obligatorios' })
     }
 
-    const pbRes = await fetch(`${PB_URL}/api/collections/stores/records`, {
-      method: 'POST',
-      headers: pbHeaders(token),
-      body: JSON.stringify({
-        name,
-        slug,
-        description: description || '',
-        owner,
-        status: status || 'pending',
-        verified: false,
-        location: location || '',
-        whatsapp: whatsapp || '',
-        instagram: instagram || '',
-        rating: 0,
-        reviews_count: 0,
-        rating_sum: 0,
-      }),
-    })
+    const logoFile = req.files?.logo?.[0]
+    const bannerFile = req.files?.banner?.[0]
+
+    let pbRes
+    if (logoFile || bannerFile) {
+      const formData = new FormData()
+      formData.append('name', name)
+      formData.append('slug', slug)
+      formData.append('description', description || '')
+      formData.append('owner', owner)
+      formData.append('status', status || 'pending')
+      formData.append('verified', 'false')
+      formData.append('location', location || '')
+      formData.append('whatsapp', whatsapp || '')
+      formData.append('instagram', instagram || '')
+      formData.append('rating', '0')
+      formData.append('reviews_count', '0')
+      formData.append('rating_sum', '0')
+
+      if (logoFile) {
+        formData.append('logo', new Blob([logoFile.buffer], { type: logoFile.mimetype }), logoFile.originalname)
+      }
+      if (bannerFile) {
+        formData.append('banner', new Blob([bannerFile.buffer], { type: bannerFile.mimetype }), bannerFile.originalname)
+      }
+
+      pbRes = await fetch(`${PB_URL}/api/collections/stores/records`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+    } else {
+      pbRes = await fetch(`${PB_URL}/api/collections/stores/records`, {
+        method: 'POST',
+        headers: pbHeaders(token),
+        body: JSON.stringify({
+          name,
+          slug,
+          description: description || '',
+          owner,
+          status: status || 'pending',
+          verified: false,
+          location: location || '',
+          whatsapp: whatsapp || '',
+          instagram: instagram || '',
+          rating: 0,
+          reviews_count: 0,
+          rating_sum: 0,
+        }),
+      })
+    }
 
     if (!pbRes.ok) {
       const details = await readJsonSafe(pbRes)
@@ -286,11 +411,227 @@ app.delete('/:id', requireRole('admin'), async (req, res) => {
   }
 })
 
+// ── Ver usuario (solo admin) ────────────────────────────────────────────────
+app.get('/admin/users/:id', requireRole('admin'), async (req, res) => {
+  try {
+    const token = await getAdminToken()
+    const pbRes = await fetch(`${PB_URL}/api/collections/users/records/${req.params.id}?fields=id,name,email,role,verified,emailVisibility,avatar,created,updated`, {
+      headers: pbHeaders(token),
+    })
+
+    if (pbRes.status === 404) return res.status(404).json({ error: 'not_found' })
+    if (!pbRes.ok) {
+      const details = await readJsonSafe(pbRes)
+      return res.status(pbRes.status).json({ error: 'user_fetch_failed', details })
+    }
+
+    res.json(await pbRes.json())
+  } catch (err) {
+    console.error('admin user detail error', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Actualizar usuario (solo admin) ─────────────────────────────────────────
+app.patch('/admin/users/:id', requireRole('admin'), async (req, res) => {
+  try {
+    const token = await getAdminToken()
+    const allowedRoles = new Set(['admin', 'vendor', 'user'])
+    const payload = {}
+
+    if (typeof req.body.name === 'string') {
+      payload.name = req.body.name.trim()
+    }
+    if (typeof req.body.role === 'string') {
+      const role = req.body.role.trim()
+      if (!allowedRoles.has(role)) {
+        return res.status(400).json({ error: 'invalid_role' })
+      }
+      payload.role = role
+    }
+    if (typeof req.body.verified === 'boolean') {
+      payload.verified = req.body.verified
+    }
+    if (typeof req.body.emailVisibility === 'boolean') {
+      payload.emailVisibility = req.body.emailVisibility
+    }
+
+    if (Object.keys(payload).length === 0) {
+      return res.status(400).json({ error: 'empty_payload' })
+    }
+
+    const pbRes = await fetch(`${PB_URL}/api/collections/users/records/${req.params.id}`, {
+      method: 'PATCH',
+      headers: pbHeaders(token),
+      body: JSON.stringify(payload),
+    })
+
+    if (pbRes.status === 404) return res.status(404).json({ error: 'not_found' })
+    if (!pbRes.ok) {
+      const details = await readJsonSafe(pbRes)
+      return res.status(pbRes.status).json({ error: 'user_update_failed', details })
+    }
+
+    res.json(await pbRes.json())
+  } catch (err) {
+    console.error('admin user update error', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Overview de marketplace (solo admin) ────────────────────────────────────
+app.get('/admin/overview', requireRole('admin'), async (_req, res) => {
+  try {
+    const token = await getAdminToken()
+
+    const [
+      usersTotal,
+      usersAdmin,
+      usersVendor,
+      usersCustomer,
+      usersVerified,
+      storesTotal,
+      storesActive,
+      storesPending,
+      storesSuspended,
+      storesVerified,
+      productsTotal,
+      productsActive,
+      productsSold,
+      productsDraft,
+      productsFeatured,
+      ordersTotal,
+      ordersCompleted,
+      ordersPending,
+      ordersCancelled,
+      auctionsTotal,
+      auctionsActive,
+      auctionsEnded,
+      reviewsTotal,
+      categoriesTotal,
+      storesAllResponse,
+    ] = await Promise.all([
+      countCollection(token, 'users'),
+      countCollection(token, 'users', 'role="admin"'),
+      countCollection(token, 'users', 'role="vendor"'),
+      countCollection(token, 'users', 'role="user"'),
+      countCollection(token, 'users', 'verified=true'),
+      countCollection(token, 'stores'),
+      countCollection(token, 'stores', 'status="active"'),
+      countCollection(token, 'stores', 'status="pending"'),
+      countCollection(token, 'stores', 'status="suspended"'),
+      countCollection(token, 'stores', 'verified=true'),
+      countCollection(token, 'products'),
+      countCollection(token, 'products', 'status="active"'),
+      countCollection(token, 'products', 'status="sold"'),
+      countCollection(token, 'products', 'status="draft"'),
+      countCollection(token, 'products', 'featured=true'),
+      countCollection(token, 'orders'),
+      countCollection(token, 'orders', 'status="delivered" || status="approved"'),
+      countCollection(token, 'orders', 'status="reserved" || status="payment_uploaded"'),
+      countCollection(token, 'orders', 'status="cancelled" || status="rejected"'),
+      countCollection(token, 'auctions'),
+      countCollection(token, 'auctions', 'status="active"'),
+      countCollection(token, 'auctions', 'status="ended"'),
+      countCollection(token, 'reviews'),
+      countCollection(token, 'categories'),
+      listCollection(token, 'stores', {
+        page: 1,
+        perPage: 100,
+        sort: '-rating',
+        fields: 'id,name,status,verified,rating,reviews_count,rating_sum',
+      }),
+    ])
+
+    const storesAll = storesAllResponse?.items || []
+    const storesTop = storesAll.slice(0, 8)
+    const ratedStores = storesAll.filter((store) => Number(store.reviews_count || 0) > 0)
+    const totalRatingSum = ratedStores.reduce((acc, store) => acc + Number(store.rating_sum || 0), 0)
+    const totalRatingCount = ratedStores.reduce((acc, store) => acc + Number(store.reviews_count || 0), 0)
+    const avgStoreRating = totalRatingCount > 0 ? totalRatingSum / totalRatingCount : 0
+
+    res.json({
+      summary: {
+        users_total: usersTotal,
+        users_admin: usersAdmin,
+        users_vendor: usersVendor,
+        users_customer: usersCustomer,
+        users_verified: usersVerified,
+        stores_total: storesTotal,
+        stores_active: storesActive,
+        stores_pending: storesPending,
+        stores_suspended: storesSuspended,
+        stores_verified: storesVerified,
+        products_total: productsTotal,
+        products_active: productsActive,
+        products_sold: productsSold,
+        products_draft: productsDraft,
+        products_featured: productsFeatured,
+        orders_total: ordersTotal,
+        orders_completed: ordersCompleted,
+        orders_pending: ordersPending,
+        orders_cancelled: ordersCancelled,
+        auctions_total: auctionsTotal,
+        auctions_active: auctionsActive,
+        auctions_ended: auctionsEnded,
+        reviews_total: reviewsTotal,
+        categories_total: categoriesTotal,
+        avg_store_rating: avgStoreRating,
+        reviewed_stores: ratedStores.length,
+        top_stores: storesTop,
+      },
+    })
+  } catch (err) {
+    console.error('admin overview error', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // ── Buscar usuarios por email (para el selector de owner) ─────────────────────
+app.get('/admin/users', requireRole('admin'), async (req, res) => {
+  try {
+    const token = await getAdminToken()
+    const page = Math.max(1, parseInt(req.query.page) || 1)
+    const perPage = Math.min(100, parseInt(req.query.perPage) || 20)
+    const q = safeFilterValue(req.query.q)
+    const role = String(req.query.role || '').trim()
+
+    const allowedSorts = new Set(['id', '-id', 'name', '-name', 'email', '-email', 'created', '-created'])
+    const sort = allowedSorts.has(String(req.query.sort || '-id')) ? String(req.query.sort || '-id') : '-id'
+
+    const params = new URLSearchParams({
+      page,
+      perPage,
+      sort,
+      fields: 'id,name,email,role,verified,created,updated',
+    })
+
+    if (q) params.set('filter', `(email~"${q}" || name~"${q}")`)
+    if (role && ['admin', 'vendor', 'user'].includes(role)) {
+      params.set('filter', params.has('filter') ? `${params.get('filter')} && role="${role}"` : `role="${role}"`)
+    }
+
+    const pbRes = await fetch(`${PB_URL}/api/collections/users/records?${params}`, {
+      headers: pbHeaders(token),
+    })
+
+    if (!pbRes.ok) {
+      const details = await readJsonSafe(pbRes)
+      return res.status(pbRes.status).json({ error: 'users_list_failed', details })
+    }
+
+    const data = await pbRes.json()
+    return res.json(data)
+  } catch (err) {
+    console.error('admin users list error', err)
+    return res.status(500).json({ error: err.message })
+  }
+})
+
 app.get('/admin/users-search', requireRole('admin'), async (req, res) => {
   try {
     const token = await getAdminToken()
-    const q = (req.query.q || '').replace(/"/g, '')
+    const q = safeFilterValue(req.query.q)
     if (!q) return res.json({ items: [] })
 
     const params = new URLSearchParams({

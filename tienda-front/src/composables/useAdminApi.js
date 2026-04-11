@@ -1,6 +1,6 @@
 import { useAuthSession } from '@/composables/useAuthSession'
 
-const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || 'http://localhost:9000').replace(/\/$/, '')
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
 
 export function useAdminApi() {
   const { session } = useAuthSession()
@@ -23,33 +23,47 @@ export function useAdminApi() {
     return data
   }
 
+  async function safeFetch(url, options) {
+    try {
+      return await fetch(url, options)
+    } catch (_err) {
+      throw new Error('No se pudo conectar al backend. Verifica que el gateway este activo en puerto 9000.')
+    }
+  }
+
   // ── Tiendas ─────────────────────────────────────────────────────────────────
 
-  async function listStores({ page = 1, perPage = 20, status = '', search = '', verified = '', sort = '-created' } = {}) {
+  async function listStores({ page = 1, perPage = 20, status = '', search = '', verified = '', sort = '-id' } = {}) {
     const params = new URLSearchParams({ page, perPage, sort })
     if (status)             params.set('status', status)
     if (search)             params.set('search', search)
     if (verified !== '')    params.set('verified', verified)
-    const res = await fetch(`${API}/stores?${params}`, { headers: authHeaders() })
+    const res = await safeFetch(`${API}/stores?${params}`, { headers: authHeaders() })
     return handleResponse(res)
   }
 
   async function getStore(id) {
-    const res = await fetch(`${API}/stores/${id}`, { headers: authHeaders() })
+    const res = await safeFetch(`${API}/stores/${id}`, { headers: authHeaders() })
     return handleResponse(res)
   }
 
   async function createStore(data) {
-    const res = await fetch(`${API}/stores`, {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData
+    const res = await safeFetch(`${API}/stores`, {
       method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(data),
+      headers: isFormData
+        ? {
+            'X-User-Id':   session.value?.userId || '',
+            'X-User-Role': session.value?.role   || '',
+          }
+        : authHeaders(),
+      body: isFormData ? data : JSON.stringify(data),
     })
     return handleResponse(res)
   }
 
   async function updateStore(id, data) {
-    const res = await fetch(`${API}/stores/${id}`, {
+    const res = await safeFetch(`${API}/stores/${id}`, {
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify(data),
@@ -58,7 +72,7 @@ export function useAdminApi() {
   }
 
   async function deleteStore(id) {
-    const res = await fetch(`${API}/stores/${id}`, {
+    const res = await safeFetch(`${API}/stores/${id}`, {
       method: 'DELETE',
       headers: authHeaders(),
     })
@@ -67,13 +81,54 @@ export function useAdminApi() {
 
   async function searchUsers(q) {
     const params = new URLSearchParams({ q })
-    const res = await fetch(`${API}/stores/admin/users-search?${params}`, { headers: authHeaders() })
+    const res = await safeFetch(`${API}/stores/admin/users-search?${params}`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
+  async function listUsers({ page = 1, perPage = 20, q = '', sort = '-id' } = {}) {
+    const params = new URLSearchParams({ page, perPage, sort })
+    if (q) params.set('q', q)
+    const res = await safeFetch(`${API}/stores/admin/users?${params}`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
+  async function getUser(id) {
+    const res = await safeFetch(`${API}/stores/admin/users/${id}`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
+  async function updateUser(id, data) {
+    const res = await safeFetch(`${API}/stores/admin/users/${id}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    })
+    return handleResponse(res)
+  }
+
+  async function listTransactions() {
+    const res = await safeFetch(`${API}/finance/transactions`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
+  async function listTransactionsByStore() {
+    const res = await safeFetch(`${API}/finance/transactions/by-store`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
+  async function getFinanceSummary() {
+    const res = await safeFetch(`${API}/finance/dashboard/summary`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
+  async function getMarketplaceOverview() {
+    const res = await safeFetch(`${API}/stores/admin/overview`, { headers: authHeaders() })
     return handleResponse(res)
   }
 
   async function uploadImages(id, formData) {
     // No incluir Content-Type; el navegador lo establece automáticamente con el boundary
-    const res = await fetch(`${API}/stores/${id}/images`, {
+    const res = await safeFetch(`${API}/stores/${id}/images`, {
       method: 'PATCH',
       headers: {
         'X-User-Id':   session.value?.userId || '',
@@ -91,6 +146,13 @@ export function useAdminApi() {
     updateStore,
     deleteStore,
     searchUsers,
+    listUsers,
+    getUser,
+    updateUser,
+    listTransactions,
+    listTransactionsByStore,
+    getFinanceSummary,
+    getMarketplaceOverview,
     uploadImages,
   }
 }

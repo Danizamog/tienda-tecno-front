@@ -56,6 +56,21 @@ const routes = [
         name: 'admin-store-detail',
         component: () => import('@/views/admin/stores/AdminStoreDetailView.vue'),
       },
+      {
+        path: 'users',
+        name: 'admin-users',
+        component: () => import('@/views/admin/users/AdminUsersView.vue'),
+      },
+      {
+        path: 'users/:id',
+        name: 'admin-user-detail',
+        component: () => import('@/views/admin/users/AdminUserDetailView.vue'),
+      },
+      {
+        path: 'transactions',
+        name: 'admin-transactions',
+        component: () => import('@/views/admin/transactions/AdminTransactionsView.vue'),
+      },
     ],
   },
 

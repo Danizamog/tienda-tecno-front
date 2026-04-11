@@ -17,7 +17,7 @@ const filters = reactive({
   search:   '',
   status:   '',
   verified: '',
-  sort:     '-created',
+  sort:     '-id',
   page:     1,
   perPage:  20,
 })
@@ -35,6 +35,21 @@ const form = reactive({
   ownerEmail: '', ownerId: '',
   status: 'active', location: '', whatsapp: '', instagram: '',
 })
+
+const createLogoInput = ref(null)
+const createBannerInput = ref(null)
+const createLogoFile = ref(null)
+const createBannerFile = ref(null)
+
+function onCreateLogoSelected(e) {
+  const file = e.target.files?.[0]
+  createLogoFile.value = file || null
+}
+
+function onCreateBannerSelected(e) {
+  const file = e.target.files?.[0]
+  createBannerFile.value = file || null
+}
 
 // ── Modal de confirmación de borrado ──────────────────────────────────────────
 const confirmDelete = ref(null) // { id, name }
@@ -96,6 +111,8 @@ watch(userSearch, (v) => {
     try {
       const data = await api.searchUsers(v)
       userResults.value = data?.items || []
+    } catch (_e) {
+      userResults.value = []
     } finally {
       userSearchLoading.value = false
     }
@@ -105,7 +122,7 @@ watch(userSearch, (v) => {
 function selectUser(u) {
   form.ownerId    = u.id
   form.ownerEmail = u.email
-  userSearch.value = `${u.name || u.email} (${u.email})`
+  userSearch.value = u.name ? `${u.name} (${u.email})` : u.email
   userResults.value = []
 }
 
@@ -124,13 +141,27 @@ async function submitCreate() {
   }
   creating.value = true
   try {
-    await api.createStore({
-      name: form.name, slug: form.slug, description: form.description,
-      owner: form.ownerId, status: form.status,
-      location: form.location, whatsapp: form.whatsapp, instagram: form.instagram,
-    })
+    const fd = new FormData()
+    fd.append('name', form.name)
+    fd.append('slug', form.slug)
+    fd.append('description', form.description || '')
+    fd.append('owner', form.ownerId)
+    fd.append('status', form.status)
+    fd.append('location', form.location || '')
+    fd.append('whatsapp', form.whatsapp || '')
+    fd.append('instagram', form.instagram || '')
+
+    if (createLogoFile.value) fd.append('logo', createLogoFile.value)
+    if (createBannerFile.value) fd.append('banner', createBannerFile.value)
+
+    await api.createStore(fd)
+
     showCreate.value = false
     Object.assign(form, { name: '', slug: '', description: '', ownerEmail: '', ownerId: '', status: 'active', location: '', whatsapp: '', instagram: '' })
+    createLogoFile.value = null
+    createBannerFile.value = null
+    if (createLogoInput.value) createLogoInput.value.value = ''
+    if (createBannerInput.value) createBannerInput.value.value = ''
     userSearch.value = ''
     load()
   } catch (e) {
@@ -201,34 +232,34 @@ const pages = computed(() => {
 
     <!-- Filtros -->
     <div class="flex flex-wrap gap-3 mb-6">
-      <div class="relative flex-1 min-w-[200px]">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <div class="relative flex-1" style="min-width: 200px;">
+        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
           v-model="filters.search"
           type="text"
           placeholder="Buscar por nombre o slug…"
-          class="admin-input pl-9 w-full"
+          class="admin-input pr-9 w-full"
         />
       </div>
 
-      <select v-model="filters.status" class="admin-input min-w-[140px]">
+      <select v-model="filters.status" class="admin-input" style="min-width: 140px;">
         <option value="">Todos los estados</option>
         <option value="active">Activa</option>
         <option value="pending">Pendiente</option>
         <option value="suspended">Suspendida</option>
       </select>
 
-      <select v-model="filters.verified" class="admin-input min-w-[140px]">
+      <select v-model="filters.verified" class="admin-input" style="min-width: 140px;">
         <option value="">Verificación: todas</option>
         <option value="true">Verificadas</option>
         <option value="false">No verificadas</option>
       </select>
 
-      <select v-model="filters.sort" class="admin-input min-w-[160px]">
-        <option value="-created">Más recientes</option>
-        <option value="created">Más antiguas</option>
+      <select v-model="filters.sort" class="admin-input" style="min-width: 160px;">
+        <option value="-id">Más recientes</option>
+        <option value="id">Más antiguas</option>
         <option value="name">Nombre A-Z</option>
         <option value="-name">Nombre Z-A</option>
         <option value="-rating">Mayor rating</option>
@@ -433,7 +464,7 @@ const pages = computed(() => {
                 type="text"
                 class="admin-input w-full"
                 :class="form.ownerId ? 'border-[#c9a96e44]' : ''"
-                placeholder="Buscar por email o nombre…"
+                placeholder="Buscar propietario por nombre o correo"
               />
               <p v-if="form.ownerId" class="text-[10px] text-[#c9a96e77] mt-1">ID: {{ form.ownerId }}</p>
               <!-- Resultados -->
@@ -462,19 +493,32 @@ const pages = computed(() => {
             </div>
             <div>
               <label class="form-label">Ubicación</label>
-              <input v-model="form.location" type="text" class="admin-input w-full" placeholder="Ej: Santiago" />
+              <input v-model="form.location" type="text" class="admin-input w-full" placeholder="Ej: La Paz, Bolivia" />
             </div>
             <div>
               <label class="form-label">WhatsApp</label>
-              <input v-model="form.whatsapp" type="text" class="admin-input w-full" placeholder="+56 9 1234 5678" />
+              <input v-model="form.whatsapp" type="text" class="admin-input w-full" placeholder="+591 7XX XXX XX" />
             </div>
             <div>
               <label class="form-label">Instagram</label>
-              <input v-model="form.instagram" type="text" class="admin-input w-full" placeholder="@usuario" />
+              <input v-model="form.instagram" type="text" class="admin-input w-full" placeholder="@tienda.bolivia" />
             </div>
             <div class="col-span-2">
               <label class="form-label">Descripción</label>
               <textarea v-model="form.description" class="admin-input w-full resize-none" rows="3" placeholder="Descripción breve de la tienda…"></textarea>
+            </div>
+
+            <div class="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="form-label">Logo (opcional)</label>
+                <input ref="createLogoInput" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" class="admin-input w-full" @change="onCreateLogoSelected" />
+                <p v-if="createLogoFile" class="text-[10px] text-[#c9a96e77] mt-1 truncate">{{ createLogoFile.name }}</p>
+              </div>
+              <div>
+                <label class="form-label">Banner (opcional)</label>
+                <input ref="createBannerInput" type="file" accept="image/jpeg,image/png,image/webp" class="admin-input w-full" @change="onCreateBannerSelected" />
+                <p v-if="createBannerFile" class="text-[10px] text-[#c9a96e77] mt-1 truncate">{{ createBannerFile.name }}</p>
+              </div>
             </div>
           </div>
 

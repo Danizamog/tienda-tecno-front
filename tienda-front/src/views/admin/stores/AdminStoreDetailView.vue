@@ -77,7 +77,7 @@ async function uploadBanner() {
   }
 }
 
-const PB_URL = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090'
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
 
 const form = reactive({
   name: '', slug: '', description: '',
@@ -89,7 +89,7 @@ const form = reactive({
 function imageUrl(s, field) {
   const filename = s?.[field]
   if (!filename) return null
-  return `${PB_URL}/api/files/stores/${s.id}/${filename}`
+  return `${API}/stores/files/stores/${s.id}/${filename}`
 }
 
 function ownerInfo(s) {
@@ -368,15 +368,15 @@ const bannerUrl = computed(() => imageUrl(store.value, 'banner'))
 
               <div>
                 <label class="form-label">Ubicación</label>
-                <input v-model="form.location" type="text" class="admin-input w-full" placeholder="Ej: Santiago, Chile" />
+                <input v-model="form.location" type="text" class="admin-input w-full" placeholder="Ej: Cochabamba, Bolivia" />
               </div>
               <div>
                 <label class="form-label">WhatsApp</label>
-                <input v-model="form.whatsapp" type="text" class="admin-input w-full" placeholder="+56 9 1234 5678" />
+                <input v-model="form.whatsapp" type="text" class="admin-input w-full" placeholder="+591 7XX XXX XX" />
               </div>
               <div>
                 <label class="form-label">Instagram</label>
-                <input v-model="form.instagram" type="text" class="admin-input w-full" placeholder="@usuario" />
+                <input v-model="form.instagram" type="text" class="admin-input w-full" placeholder="@tienda.bolivia" />
               </div>
 
               <div class="sm:col-span-2">
