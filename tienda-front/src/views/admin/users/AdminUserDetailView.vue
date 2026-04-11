@@ -68,6 +68,15 @@ function avatarUrl(record) {
   return `${API}/stores/files/users/${record.id}/${record.avatar}`
 }
 
+function validateUserForm() {
+  const name = form.name.trim()
+  const allowedRoles = ['user', 'vendor', 'admin']
+
+  if (!name) return 'El nombre no puede estar vacío.'
+  if (!allowedRoles.includes(form.role)) return 'El rol seleccionado no es válido.'
+  return ''
+}
+
 async function load() {
   loading.value = true
   error.value = ''
@@ -90,8 +99,13 @@ async function save() {
   error.value = ''
   saved.value = false
   try {
+    const validationError = validateUserForm()
+    if (validationError) {
+      error.value = validationError
+      return
+    }
     const updated = await api.updateUser(route.params.id, {
-      name: form.name,
+      name: form.name.trim(),
       role: form.role,
       verified: form.verified,
       emailVisibility: form.emailVisibility,

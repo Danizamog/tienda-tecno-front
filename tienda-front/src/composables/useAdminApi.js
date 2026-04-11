@@ -79,15 +79,19 @@ export function useAdminApi() {
     return handleResponse(res)
   }
 
-  async function searchUsers(q) {
+  async function searchUsers(q, roles = []) {
     const params = new URLSearchParams({ q })
+    if (roles.length > 0) {
+      roles.forEach(role => params.append('role', role))
+    }
     const res = await safeFetch(`${API}/stores/admin/users-search?${params}`, { headers: authHeaders() })
     return handleResponse(res)
   }
 
-  async function listUsers({ page = 1, perPage = 20, q = '', sort = '-id' } = {}) {
+  async function listUsers({ page = 1, perPage = 20, q = '', role = '', sort = '-id' } = {}) {
     const params = new URLSearchParams({ page, perPage, sort })
     if (q) params.set('q', q)
+    if (role) params.set('role', role)
     const res = await safeFetch(`${API}/stores/admin/users?${params}`, { headers: authHeaders() })
     return handleResponse(res)
   }

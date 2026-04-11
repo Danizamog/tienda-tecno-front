@@ -93,9 +93,16 @@ function imageUrl(s, field) {
 }
 
 function ownerInfo(s) {
-  const o = s?.expand?.owner
-  if (!o) return { name: '—', email: '—', role: '—' }
-  return { name: o.name || '—', email: o.email || '—', role: o.role || '—' }
+  const rawOwner = s?.expand?.owner ?? s?.owner
+  const owners = Array.isArray(rawOwner) ? rawOwner : rawOwner ? [rawOwner] : []
+
+  return owners
+    .map((o) => ({
+      name: o?.name || '—',
+      email: o?.email || '—',
+      role: o?.role || '—',
+    }))
+    .filter((o) => o.name !== '—' || o.email !== '—')
 }
 
 function fmtDate(d) {
@@ -104,6 +111,22 @@ function fmtDate(d) {
 
 function statusLabel(s) { return { active: 'Activa', suspended: 'Suspendida', pending: 'Pendiente' }[s] || s }
 function statusClass(s) { return { active: 'badge-active', suspended: 'badge-suspended', pending: 'badge-pending' }[s] || '' }
+
+function validateStoreForm() {
+  const name = form.name.trim()
+  const slug = form.slug.trim()
+  const description = form.description.trim()
+  const whatsapp = form.whatsapp.trim()
+  const instagram = form.instagram.trim()
+
+  if (!name) return 'El nombre de la tienda es obligatorio.'
+  if (!slug) return 'El slug es obligatorio.'
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return 'El slug solo puede contener minúsculas, números y guiones.'
+  if (description.length > 1000) return 'La descripción no puede superar 1000 caracteres.'
+  if (whatsapp && !/^\+?[0-9\s()-]{7,20}$/.test(whatsapp)) return 'El WhatsApp no tiene un formato válido.'
+  if (instagram && !/^@?[A-Za-z0-9._]{2,30}$/.test(instagram)) return 'El Instagram no tiene un formato válido.'
+  return ''
+}
 
 async function load() {
   loading.value = true
@@ -134,6 +157,11 @@ async function save() {
   error.value  = ''
   saved.value  = false
   try {
+    const validationError = validateStoreForm()
+    if (validationError) {
+      error.value = validationError
+      return
+    }
     const updated = await api.updateStore(route.params.id, { ...form })
     store.value = { ...store.value, ...updated }
     saved.value = true
@@ -160,7 +188,8 @@ async function doDelete() {
 
 onMounted(load)
 
-const owner = computed(() => ownerInfo(store.value))
+const owners = computed(() => ownerInfo(store.value))
+const ownerTitle = computed(() => (owners.value.length > 1 ? 'Propietarios' : 'Propietario'))
 const logoUrl  = computed(() => imageUrl(store.value, 'logo'))
 const bannerUrl = computed(() => imageUrl(store.value, 'banner'))
 </script>
@@ -245,17 +274,20 @@ const bannerUrl = computed(() => imageUrl(store.value, 'banner'))
 
           <!-- Propietario -->
           <div class="card">
-            <p class="card-title">Propietario</p>
-            <div class="flex items-center gap-3 mt-3">
-              <div class="w-9 h-9 rounded-full bg-[#151515] border border-[#c9a96e33] flex items-center justify-center text-[#c9a96e] font-medium text-sm shrink-0">
-                {{ (owner.name || owner.email || '?')[0].toUpperCase() }}
-              </div>
-              <div class="min-w-0">
-                <p class="text-[13px] text-[#d8d5cf] font-medium truncate">{{ owner.name }}</p>
-                <p class="text-[11px] text-[#555] truncate">{{ owner.email }}</p>
-                <p class="text-[10px] tracking-wide uppercase text-[#c9a96e66] mt-0.5">{{ owner.role }}</p>
+            <p class="card-title">{{ ownerTitle }}</p>
+            <div v-if="owners.length" class="mt-3 flex flex-col gap-3">
+              <div v-for="(ownerItem, index) in owners" :key="`${ownerItem.email}-${index}`" class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-[#151515] border border-[#c9a96e33] flex items-center justify-center text-[#c9a96e] font-medium text-sm shrink-0">
+                  {{ (ownerItem.name || ownerItem.email || '?')[0].toUpperCase() }}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[13px] text-[#d8d5cf] font-medium truncate">{{ ownerItem.name }}</p>
+                  <p class="text-[11px] text-[#555] truncate">{{ ownerItem.email }}</p>
+                  <p class="text-[10px] tracking-wide uppercase text-[#c9a96e66] mt-0.5">{{ ownerItem.role }}</p>
+                </div>
               </div>
             </div>
+            <p v-else class="mt-3 text-sm text-[#555]">No hay propietarios asociados.</p>
           </div>
 
           <!-- Logo -->

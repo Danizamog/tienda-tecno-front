@@ -218,6 +218,54 @@ app.post('/google/sync', async (req, res) => {
   }
 })
 
+app.post('/refresh-role', async (req, res) => {
+  try {
+    const { email, userId } = req.body || {}
+    if (!email && !userId) {
+      return res.status(400).json({ error: 'email or userId is required' })
+    }
+
+    const adminToken = await pocketBaseAdminAuth()
+    let userRecord = null
+
+    if (userId) {
+      const r = await fetch(
+        `${POCKETBASE_URL}/api/collections/${encodeURIComponent(POCKETBASE_USERS_COLLECTION)}/records/${encodeURIComponent(userId)}`,
+        { headers: { Authorization: `Bearer ${adminToken}` } }
+      )
+      if (r.ok) userRecord = await r.json()
+    }
+
+    if (!userRecord && email) {
+      const encodedEmail = String(email).replace(/"/g, '\\"')
+      const r = await fetch(
+        `${POCKETBASE_URL}/api/collections/${encodeURIComponent(POCKETBASE_USERS_COLLECTION)}/records?perPage=1&filter=${encodeURIComponent(`email="${encodedEmail}"`)}`,
+        { headers: { Authorization: `Bearer ${adminToken}` } }
+      )
+      if (r.ok) {
+        const data = await r.json()
+        userRecord = data?.items?.[0] || null
+      }
+    }
+
+    if (!userRecord) {
+      return res.status(404).json({ error: 'user_not_found' })
+    }
+
+    return res.json({
+      ok: true,
+      user: {
+        id: userRecord.id,
+        email: userRecord.email,
+        role: normalizeRole(userRecord.role),
+      },
+    })
+  } catch (error) {
+    console.error('refresh-role error', error)
+    return res.status(502).json({ error: 'refresh_role_failed', message: error instanceof Error ? error.message : 'Unknown error' })
+  }
+})
+
 app.post('/logout', (_req, res) => {
   res.status(204).send()
 })

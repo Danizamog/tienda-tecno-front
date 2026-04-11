@@ -40,15 +40,44 @@ const createLogoInput = ref(null)
 const createBannerInput = ref(null)
 const createLogoFile = ref(null)
 const createBannerFile = ref(null)
+const createLogoPreview = ref(null)
+const createBannerPreview = ref(null)
+
+function createStoreValidationError() {
+  const name = form.name.trim()
+  const slug = form.slug.trim()
+  const description = form.description.trim()
+  const whatsapp = form.whatsapp.trim()
+  const instagram = form.instagram.trim()
+
+  if (!name) return 'El nombre de la tienda es obligatorio.'
+  if (!slug) return 'El slug es obligatorio. Ej: mi-tienda'
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return 'El slug solo puede contener minúsculas, números y guiones.'
+  if (description.length > 1000) return 'La descripción no puede superar 1000 caracteres.'
+  if (whatsapp && !/^\+?[0-9\s()-]{7,20}$/.test(whatsapp)) return 'El WhatsApp no tiene un formato válido.'
+  if (instagram && !/^@?[A-Za-z0-9._]{2,30}$/.test(instagram)) return 'El Instagram no tiene un formato válido.'
+  if (!form.ownerId) return 'Debes seleccionar un propietario de la lista de resultados.'
+  return ''
+}
 
 function onCreateLogoSelected(e) {
   const file = e.target.files?.[0]
   createLogoFile.value = file || null
+  if (file) {
+    createLogoPreview.value = URL.createObjectURL(file)
+  } else {
+    createLogoPreview.value = null
+  }
 }
 
 function onCreateBannerSelected(e) {
   const file = e.target.files?.[0]
   createBannerFile.value = file || null
+  if (file) {
+    createBannerPreview.value = URL.createObjectURL(file)
+  } else {
+    createBannerPreview.value = null
+  }
 }
 
 // ── Modal de confirmación de borrado ──────────────────────────────────────────
@@ -65,7 +94,15 @@ function toSlug(str) {
 function statusLabel(s)  { return { active: 'Activa', suspended: 'Suspendida', pending: 'Pendiente' }[s] || s }
 function statusClass(s)  { return { active: 'badge-active', suspended: 'badge-suspended', pending: 'badge-pending' }[s] || '' }
 function fmtDate(d)      { return d ? new Date(d).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' }
-function ownerName(item) { return item?.expand?.owner?.name || item?.expand?.owner?.email || item?.owner || '—' }
+function ownerName(item) {
+  // Si es múltiple (array de owners)
+  if (Array.isArray(item?.expand?.owner)) {
+    const names = item.expand.owner.map(o => o.name || o.email).filter(Boolean)
+    return names.length > 0 ? names.join(', ') : '—'
+  }
+  // Si es uno a uno
+  return item?.expand?.owner?.name || item?.expand?.owner?.email || item?.owner || '—'
+}
 function stars(r)        { return Math.round(r || 0) }
 
 // ── Cargar tiendas ────────────────────────────────────────────────────────────
@@ -101,15 +138,18 @@ onMounted(load)
 
 // ── Búsqueda de usuario al crear ──────────────────────────────────────────────
 let userSearchTimer = null
+const selectedOwnerId = ref(null)
+
 watch(userSearch, (v) => {
-  form.ownerEmail = v
-  form.ownerId    = ''
   clearTimeout(userSearchTimer)
-  if (v.length < 2) { userResults.value = []; return }
+  if (v.length < 2) {
+    userResults.value = []
+    return
+  }
   userSearchLoading.value = true
   userSearchTimer = setTimeout(async () => {
     try {
-      const data = await api.searchUsers(v)
+      const data = await api.searchUsers(v, ['admin', 'vendor'])
       userResults.value = data?.items || []
     } catch (_e) {
       userResults.value = []
@@ -122,6 +162,7 @@ watch(userSearch, (v) => {
 function selectUser(u) {
   form.ownerId    = u.id
   form.ownerEmail = u.email
+  selectedOwnerId.value = u.id
   userSearch.value = u.name ? `${u.name} (${u.email})` : u.email
   userResults.value = []
 }
@@ -135,21 +176,22 @@ watch(() => form.name, (v) => {
 // ── Crear tienda ──────────────────────────────────────────────────────────────
 async function submitCreate() {
   createError.value = ''
-  if (!form.name || !form.slug || !form.ownerId) {
-    createError.value = 'Nombre, slug y propietario son obligatorios.'
+  const validationError = createStoreValidationError()
+  if (validationError) {
+    createError.value = validationError
     return
   }
   creating.value = true
   try {
     const fd = new FormData()
-    fd.append('name', form.name)
-    fd.append('slug', form.slug)
-    fd.append('description', form.description || '')
+    fd.append('name', form.name.trim())
+    fd.append('slug', form.slug.trim())
+    fd.append('description', form.description.trim())
     fd.append('owner', form.ownerId)
     fd.append('status', form.status)
-    fd.append('location', form.location || '')
-    fd.append('whatsapp', form.whatsapp || '')
-    fd.append('instagram', form.instagram || '')
+    fd.append('location', form.location.trim())
+    fd.append('whatsapp', form.whatsapp.trim())
+    fd.append('instagram', form.instagram.trim())
 
     if (createLogoFile.value) fd.append('logo', createLogoFile.value)
     if (createBannerFile.value) fd.append('banner', createBannerFile.value)
@@ -160,6 +202,8 @@ async function submitCreate() {
     Object.assign(form, { name: '', slug: '', description: '', ownerEmail: '', ownerId: '', status: 'active', location: '', whatsapp: '', instagram: '' })
     createLogoFile.value = null
     createBannerFile.value = null
+    createLogoPreview.value = null
+    createBannerPreview.value = null
     if (createLogoInput.value) createLogoInput.value.value = ''
     if (createBannerInput.value) createBannerInput.value.value = ''
     userSearch.value = ''
@@ -454,30 +498,62 @@ const pages = computed(() => {
             <div class="col-span-2">
               <label class="form-label">Slug *</label>
               <input v-model="form.slug" type="text" class="admin-input w-full font-mono text-[#c9a96e]" placeholder="atelier-norte" required />
+              <p class="mt-1 text-[10px] text-[#555]">URL amigable sin espacios ni caracteres especiales.</p>
             </div>
 
             <!-- Propietario (búsqueda) -->
             <div class="col-span-2 relative">
-              <label class="form-label">Propietario (email) *</label>
+              <label class="form-label">Propietario  *</label>
+
+              <!-- Estado: Seleccionado -->
+              <div v-if="form.ownerId" class="mb-3 flex items-center gap-2">
+                <div class="inline-flex items-center gap-2.5 px-3 py-1.5 bg-[#1a1508] border border-[#c9a96e] rounded-full">
+                  <svg class="w-4 h-4 text-[#c9a96e]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
+                  <div class="flex flex-col">
+                    <p class="text-[12px] text-[#c9a96e] font-medium">{{ userSearch.split('(')[0].trim() }}</p>
+                    <p class="text-[10px] text-[#c9a96e77]">{{ userSearch.split('(')[1]?.replace(')', '') || userSearch }}</p>
+                  </div>
+                  <button type="button" class="ml-1 text-[#c9a96e77] hover:text-[#c9a96e] font-bold text-sm transition-colors" @click="form.ownerId = ''; userSearch = ''; userResults = []">
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <!-- Estado: Buscando -->
               <input
+                v-else
                 v-model="userSearch"
                 type="text"
                 class="admin-input w-full"
-                :class="form.ownerId ? 'border-[#c9a96e44]' : ''"
-                placeholder="Buscar propietario por nombre o correo"
+                placeholder="Buscar por nombre o correo"
               />
-              <p v-if="form.ownerId" class="text-[10px] text-[#c9a96e77] mt-1">ID: {{ form.ownerId }}</p>
+
+              <!-- Mensaje de ayuda -->
+              <p v-if="!form.ownerId && userSearch" class="text-[10px] text-[#fbbf24] mt-1">
+                {{ userSearchLoading ? 'Buscando...' : 'Selecciona de la lista' }}
+              </p>
+
               <!-- Resultados -->
-              <div v-if="userResults.length" class="absolute left-0 right-0 top-full mt-1 bg-[#111] border border-[#222] rounded-sm z-10 overflow-hidden">
+              <div v-if="userResults.length && !form.ownerId" class="absolute left-0 right-0 top-full mt-1 bg-[#111] border border-[#c9a96e77] rounded-sm z-10 overflow-hidden max-h-48 overflow-y-auto shadow-lg">
                 <button
                   v-for="u in userResults"
                   :key="u.id"
                   type="button"
-                  class="w-full text-left px-3 py-2 text-xs text-[#aaa] hover:bg-[#1a1a1a] hover:text-[#c9a96e] transition-colors"
+                  class="w-full text-left px-3 py-2.5 text-sm text-[#aaa] hover:bg-[#1a1508] hover:text-[#c9a96e] transition-colors border-b border-[#0f0f0f] last:border-b-0 flex items-center gap-3 group"
                   @click="selectUser(u)"
                 >
-                  <span class="font-medium">{{ u.name || '—' }}</span>
-                  <span class="text-[#555] ml-2">{{ u.email }}</span>
+                  <div class="w-7 h-7 rounded-full bg-[#1a1508] border border-[#c9a96e44] flex items-center justify-center text-[#c9a96e] text-xs font-medium group-hover:border-[#c9a96e]">
+                    {{ (u.name || u.email)[0].toUpperCase() }}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-medium truncate">{{ u.name || '—' }}</p>
+                    <p class="text-[11px] text-[#555] truncate">{{ u.email }}</p>
+                  </div>
+                  <svg class="w-4 h-4 text-[#c9a96e77] group-hover:text-[#c9a96e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -492,32 +568,38 @@ const pages = computed(() => {
               </div>
             </div>
             <div>
-              <label class="form-label">Ubicación</label>
+              <label class="form-label">Ubicación (opcional)</label>
               <input v-model="form.location" type="text" class="admin-input w-full" placeholder="Ej: La Paz, Bolivia" />
             </div>
             <div>
-              <label class="form-label">WhatsApp</label>
+              <label class="form-label">WhatsApp (opcional)</label>
               <input v-model="form.whatsapp" type="text" class="admin-input w-full" placeholder="+591 7XX XXX XX" />
             </div>
             <div>
-              <label class="form-label">Instagram</label>
+              <label class="form-label">Instagram (opcional)</label>
               <input v-model="form.instagram" type="text" class="admin-input w-full" placeholder="@tienda.bolivia" />
             </div>
             <div class="col-span-2">
-              <label class="form-label">Descripción</label>
+              <label class="form-label">Descripción (opcional)</label>
               <textarea v-model="form.description" class="admin-input w-full resize-none" rows="3" placeholder="Descripción breve de la tienda…"></textarea>
             </div>
 
             <div class="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="form-label">Logo (opcional)</label>
+                <label class="form-label">Logo (opcional) · Recomendado 300x300 px</label>
+                <div v-if="createLogoPreview" class="mb-2 w-full h-32 bg-black rounded-sm border border-[#222] flex items-center justify-center overflow-hidden">
+                  <img :src="createLogoPreview" :alt="createLogoFile?.name" class="max-w-full max-h-full object-contain" />
+                </div>
                 <input ref="createLogoInput" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" class="admin-input w-full" @change="onCreateLogoSelected" />
-                <p v-if="createLogoFile" class="text-[10px] text-[#c9a96e77] mt-1 truncate">{{ createLogoFile.name }}</p>
+                <p v-if="createLogoFile" class="text-[10px] text-[#c9a96e77] mt-2 truncate">✓ {{ createLogoFile.name }}</p>
               </div>
               <div>
-                <label class="form-label">Banner (opcional)</label>
+                <label class="form-label">Banner (opcional) · Recomendado 1200x400 px</label>
+                <div v-if="createBannerPreview" class="mb-2 w-full h-32 bg-black rounded-sm border border-[#222] flex items-center justify-center overflow-hidden">
+                  <img :src="createBannerPreview" :alt="createBannerFile?.name" class="max-w-full max-h-full object-cover" />
+                </div>
                 <input ref="createBannerInput" type="file" accept="image/jpeg,image/png,image/webp" class="admin-input w-full" @change="onCreateBannerSelected" />
-                <p v-if="createBannerFile" class="text-[10px] text-[#c9a96e77] mt-1 truncate">{{ createBannerFile.name }}</p>
+                <p v-if="createBannerFile" class="text-[10px] text-[#c9a96e77] mt-2 truncate">✓ {{ createBannerFile.name }}</p>
               </div>
             </div>
           </div>

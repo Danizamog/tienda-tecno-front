@@ -52,6 +52,13 @@ function safeFilterValue(value) {
   return String(value || '').replace(/"/g, '')
 }
 
+function userOwnsStore(store, userId) {
+  const owners = Array.isArray(store?.owner)
+    ? store.owner
+    : (store?.owner ? [store.owner] : [])
+  return owners.includes(userId)
+}
+
 async function listCollection(token, collection, params = {}) {
   const searchParams = new URLSearchParams()
 
@@ -625,6 +632,209 @@ app.get('/admin/users', requireRole('admin'), async (req, res) => {
   } catch (err) {
     console.error('admin users list error', err)
     return res.status(500).json({ error: err.message })
+  }
+})
+
+// ── MIS TIENDAS (vendor) ──────────────────────────────────────────────────────
+// GET /vendor/my-stores  — tiendas donde owner = X-User-Id
+app.get('/vendor/my-stores', async (req, res) => {
+  try {
+    const token  = await getAdminToken()
+    const userId = (req.headers['x-user-id'] || '').trim()
+    const role   = (req.headers['x-user-role'] || '').trim()
+
+    if (!userId || !['vendor', 'admin'].includes(role)) {
+      return res.status(403).json({ error: 'forbidden' })
+    }
+
+    const params = new URLSearchParams({ perPage: 200, sort: 'name', fields: 'id,name,logo,status,verified,rating,owner' })
+
+    const pbRes = await fetch(`${PB_URL}/api/collections/stores/records?${params}`, {
+      headers: pbHeaders(token),
+    })
+    if (!pbRes.ok) {
+      const details = await readJsonSafe(pbRes)
+      return res.status(pbRes.status).json({ error: 'pb_error', details })
+    }
+    const data = await pbRes.json()
+    const items = (data.items || []).filter((store) => userOwnsStore(store, userId))
+    res.json({ items })
+  } catch (err) {
+    console.error('vendor my-stores error', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Actualizar QR de la tienda (vendor owner) ─────────────────────────────────
+// PATCH /vendor/:id/qr  — multipart con campo "payment_qr"
+app.patch(
+  '/vendor/:id/qr',
+  upload.single('payment_qr'),
+  async (req, res) => {
+    try {
+      const token  = await getAdminToken()
+      const userId = (req.headers['x-user-id'] || '').trim()
+      const role   = (req.headers['x-user-role'] || '').trim()
+
+      if (!userId || !['vendor', 'admin'].includes(role)) {
+        return res.status(403).json({ error: 'forbidden' })
+      }
+
+      // Verificar ownership
+      const storeRes = await fetch(
+        `${PB_URL}/api/collections/stores/records/${req.params.id}?fields=id,owner`,
+        { headers: pbHeaders(token) }
+      )
+      if (storeRes.status === 404) return res.status(404).json({ error: 'not_found' })
+      const storeData = await readJsonSafe(storeRes)
+      if (role === 'vendor' && !userOwnsStore(storeData, userId)) {
+        return res.status(403).json({ error: 'forbidden' })
+      }
+
+      if (!req.file) return res.status(400).json({ error: 'Debes adjuntar el archivo payment_qr' })
+
+      const formData = new FormData()
+      formData.append(
+        'payment_qr',
+        new Blob([req.file.buffer], { type: req.file.mimetype }),
+        req.file.originalname
+      )
+      if (req.body.payment_instructions) {
+        formData.append('payment_instructions', req.body.payment_instructions)
+      }
+
+      const pbRes = await fetch(
+        `${PB_URL}/api/collections/stores/records/${req.params.id}`,
+        { method: 'PATCH', headers: { Authorization: `Bearer ${token}` }, body: formData }
+      )
+      if (!pbRes.ok) {
+        const details = await readJsonSafe(pbRes)
+        return res.status(pbRes.status).json({ error: 'qr_upload_failed', details })
+      }
+      res.json(await pbRes.json())
+    } catch (err) {
+      console.error('vendor qr upload error', err)
+      res.status(500).json({ error: err.message })
+    }
+  }
+)
+
+// ── Dashboard del vendedor para una tienda ────────────────────────────────────
+app.get('/vendor/dashboard/:storeId', async (req, res) => {
+  try {
+    const token  = await getAdminToken()
+    const userId = (req.headers['x-user-id'] || '').trim()
+    const role   = (req.headers['x-user-role'] || '').trim()
+
+    if (!userId || !['vendor', 'admin'].includes(role)) {
+      return res.status(403).json({ error: 'forbidden' })
+    }
+
+    const sid = safeFilterValue(req.params.storeId)
+    const enc = encodeURIComponent
+
+    // Verificar ownership
+    const storeRes = await fetch(
+      `${PB_URL}/api/collections/stores/records/${sid}`,
+      { headers: pbHeaders(token) }
+    )
+    if (!storeRes.ok) return res.status(404).json({ error: 'not_found' })
+    const store = await readJsonSafe(storeRes)
+    if (role === 'vendor' && !userOwnsStore(store, userId)) {
+      return res.status(403).json({ error: 'forbidden' })
+    }
+
+    const [
+      productsActive, productsDraft, productsSold,
+      ordersPaymentUploaded, ordersApproved, ordersShipped, ordersDelivered,
+      auctionsActive, auctionsEnded,
+      reviewsTotal,
+    ] = await Promise.all([
+      countCollection(token, 'products',      `store="${sid}" && status="active"`),
+      countCollection(token, 'products',      `store="${sid}" && status="draft"`),
+      countCollection(token, 'products',      `store="${sid}" && status="sold"`),
+      countCollection(token, 'orders',        `store="${sid}" && status="payment_uploaded"`),
+      countCollection(token, 'orders',        `store="${sid}" && status="approved"`),
+      countCollection(token, 'orders',        `store="${sid}" && status="shipped"`),
+      countCollection(token, 'orders',        `store="${sid}" && status="delivered"`),
+      countCollection(token, 'auctions',      `store="${sid}" && status="active"`),
+      countCollection(token, 'auctions',      `store="${sid}" && status="ended"`),
+      countCollection(token, 'reviews',       `store="${sid}"`),
+    ])
+
+    // Ingresos brutos de órdenes completadas
+    const completedOrdersRes = await fetch(
+      `${PB_URL}/api/collections/orders/records?filter=${enc(`store="${sid}" && (status="delivered" || status="shipped")`)}&fields=total&perPage=200`,
+      { headers: pbHeaders(token) }
+    )
+    const completedOrders = completedOrdersRes.ok ? await readJsonSafe(completedOrdersRes) : null
+    const grossRevenue = (completedOrders?.items || []).reduce((sum, o) => sum + Number(o.total || 0), 0)
+
+    res.json({
+      store,
+      summary: {
+        products_active: productsActive,
+        products_draft: productsDraft,
+        products_sold: productsSold,
+        orders_pending: ordersPaymentUploaded,
+        orders_approved: ordersApproved,
+        orders_shipped: ordersShipped,
+        orders_delivered: ordersDelivered,
+        auctions_active: auctionsActive,
+        auctions_ended: auctionsEnded,
+        reviews_total: reviewsTotal,
+        gross_revenue: grossRevenue,
+        store_rating: Number(store?.rating || 0),
+        reviews_count: Number(store?.reviews_count || 0),
+      },
+    })
+  } catch (err) {
+    console.error('vendor dashboard error', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ── Actualizar info de tienda (vendor owner puede actualizar algunos campos) ──
+app.patch('/vendor/:id', async (req, res) => {
+  try {
+    const token  = await getAdminToken()
+    const userId = (req.headers['x-user-id'] || '').trim()
+    const role   = (req.headers['x-user-role'] || '').trim()
+
+    if (!userId || !['vendor', 'admin'].includes(role)) {
+      return res.status(403).json({ error: 'forbidden' })
+    }
+
+    // Verificar ownership
+    const storeRes = await fetch(
+      `${PB_URL}/api/collections/stores/records/${req.params.id}?fields=id,owner`,
+      { headers: pbHeaders(token) }
+    )
+    if (storeRes.status === 404) return res.status(404).json({ error: 'not_found' })
+    const storeData = await readJsonSafe(storeRes)
+    if (role === 'vendor' && !userOwnsStore(storeData, userId)) {
+      return res.status(403).json({ error: 'forbidden' })
+    }
+
+    const ALLOWED_VENDOR = ['description', 'location', 'whatsapp', 'instagram', 'payment_instructions']
+    const body = Object.fromEntries(
+      Object.entries(req.body).filter(([k]) => ALLOWED_VENDOR.includes(k))
+    )
+    if (!Object.keys(body).length) {
+      return res.status(400).json({ error: 'No hay campos válidos' })
+    }
+
+    const pbRes = await fetch(`${PB_URL}/api/collections/stores/records/${req.params.id}`, {
+      method: 'PATCH',
+      headers: pbHeaders(token),
+      body: JSON.stringify(body),
+    })
+    const data = await readJsonSafe(pbRes)
+    if (!pbRes.ok) return res.status(pbRes.status).json({ error: 'update_failed', details: data })
+    res.json(data)
+  } catch (err) {
+    console.error('vendor store update error', err)
+    res.status(500).json({ error: err.message })
   }
 })
 

@@ -12,7 +12,7 @@ const totalPages = ref(1)
 
 const filters = reactive({
   q: '',
-  role: '',
+  role: 'admin',
   sort: '-id',
   page: 1,
   perPage: 20,

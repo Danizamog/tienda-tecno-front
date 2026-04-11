@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useVendorStore } from '@/composables/useVendorStore'
 
 function getSessionRole() {
   const match = document.cookie
@@ -33,6 +34,50 @@ const routes = [
     path: '/auth/callback',
     name: 'auth-callback',
     component: () => import('@/views/AuthCallbackView.vue'),
+  },
+
+  // ── Vendor ───────────────────────────────────────────────────
+  {
+    path: '/vendor/select-store',
+    name: 'vendor-select-store',
+    component: () => import('@/views/vendor/VendorStoreSelectView.vue'),
+    meta: { requiresVendor: true },
+  },
+  {
+    path: '/vendor',
+    component: () => import('@/views/vendor/VendorLayout.vue'),
+    meta: { requiresVendor: true },
+    children: [
+      {
+        path: '',
+        name: 'vendor-dashboard',
+        component: () => import('@/views/vendor/VendorDashboardView.vue'),
+      },
+      {
+        path: 'dashboard',
+        redirect: { name: 'vendor-dashboard' },
+      },
+      {
+        path: 'products',
+        name: 'vendor-products',
+        component: () => import('@/views/vendor/VendorProductsView.vue'),
+      },
+      {
+        path: 'auctions',
+        name: 'vendor-auctions',
+        component: () => import('@/views/vendor/VendorAuctionsView.vue'),
+      },
+      {
+        path: 'orders',
+        name: 'vendor-orders',
+        component: () => import('@/views/vendor/VendorOrdersView.vue'),
+      },
+      {
+        path: 'payments',
+        name: 'vendor-payments',
+        component: () => import('@/views/vendor/VendorPaymentsView.vue'),
+      },
+    ],
   },
 
   // ── Admin ────────────────────────────────────────────────────
@@ -93,6 +138,18 @@ const router = createRouter({
 router.beforeEach((to) => {
   if (to.meta.requiresAdmin && getSessionRole() !== 'admin') {
     return '/'
+  }
+  if (to.meta.requiresVendor && !['vendor', 'admin'].includes(getSessionRole())) {
+    return '/'
+  }
+  // Si es ruta del panel vendor (no el selector), exigir tienda seleccionada
+  if (
+    to.meta.requiresVendor &&
+    to.name !== 'vendor-select-store' &&
+    to.path.startsWith('/vendor')
+  ) {
+    const { hasStore } = useVendorStore()
+    if (!hasStore.value) return '/vendor/select-store'
   }
   if (to.meta.guestOnly && isLoggedIn()) {
     return '/'

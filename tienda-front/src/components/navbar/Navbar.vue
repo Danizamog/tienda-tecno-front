@@ -12,11 +12,18 @@ let lastRoleSyncAt = 0
 let isRoleSyncInFlight = false
 
 const route = useRoute()
+const dropdownRef = ref(null)
 
 watch(() => route.path, () => {
 	showMenu.value = false
 	showMobileMenu.value = false
 })
+
+function handleClickOutside(e) {
+	if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
+		showMenu.value = false
+	}
+}
 
 const userLabel = computed(() => displayName.value || 'Mi cuenta')
 const userRole = computed(() => {
@@ -56,11 +63,13 @@ onMounted(() => {
 	syncRoleIfNeeded(true)
 	window.addEventListener('focus', handleWindowFocus)
 	document.addEventListener('visibilitychange', handleVisibilityChange)
+	document.addEventListener('click', handleClickOutside)
 })
 
 onBeforeUnmount(() => {
 	window.removeEventListener('focus', handleWindowFocus)
 	document.removeEventListener('visibilitychange', handleVisibilityChange)
+	document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -137,7 +146,7 @@ onBeforeUnmount(() => {
 
 				<!-- Usuario autenticado -->
 				<template v-if="isAuthenticated">
-					<div class="relative">
+					<div class="relative" ref="dropdownRef">
 						<button
 							type="button"
 							class="group flex items-center gap-2.5 px-3 py-2 border border-[#222] bg-[#0f0f0f] rounded-sm transition-all duration-300 hover:border-[#c9a96e55] hover:bg-[#141414] hover:shadow-[0_0_16px_rgba(201,169,110,0.06)]"

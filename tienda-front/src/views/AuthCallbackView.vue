@@ -90,14 +90,35 @@ onMounted(async () => {
     return
   }
 
+  // Obtener el rol real desde el backend (en vez de asumir 'user')
+  let resolvedRole = 'user'
+  let resolvedUserId = ''
+  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL || import.meta.env.VITE_API_BASE_URL
+  if (apiBase && email) {
+    try {
+      const r = await fetch(`${apiBase}/auth/refresh-role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: String(email) }),
+      })
+      if (r.ok) {
+        const data = await r.json()
+        if (data?.ok && data?.user) {
+          resolvedRole = data.user.role || 'user'
+          resolvedUserId = data.user.id || ''
+        }
+      }
+    } catch { /* silencioso */ }
+  }
+
   persistSession({
     token: String(token),
     provider: 'google',
     email: email ? String(email) : '',
     name: name ? String(name) : '',
     picture: '',
-    userId: '',
-    role: 'user',
+    userId: resolvedUserId,
+    role: resolvedRole,
   })
 
   router.replace(target)
