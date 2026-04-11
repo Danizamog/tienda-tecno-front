@@ -1,7 +1,23 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+function getSessionRole() {
+  const match = document.cookie
+    .split(';')
+    .find(c => c.trim().startsWith('tv_auth_session='))
+  if (!match) return null
+  try {
+    const raw = match.split('=').slice(1).join('=')
+    const data = JSON.parse(decodeURIComponent(raw))
+    return data?.role || null
+  } catch { return null }
+}
+
+function isLoggedIn() {
+  return getSessionRole() !== null
+}
+
 const routes = [
-  // ── Existentes ──────────────────────────────────────────────
+  // ── Públicas ────────────────────────────────────────────────
   {
     path: '/',
     name: 'home',
@@ -19,7 +35,31 @@ const routes = [
     component: () => import('@/views/AuthCallbackView.vue'),
   },
 
-  // ── 404 → home ──────────────────────────────────────────────
+  // ── Admin ────────────────────────────────────────────────────
+  {
+    path: '/admin',
+    component: () => import('@/views/admin/AdminLayout.vue'),
+    meta: { requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'admin-dashboard',
+        component: () => import('@/views/admin/AdminDashboardView.vue'),
+      },
+      {
+        path: 'stores',
+        name: 'admin-stores',
+        component: () => import('@/views/admin/stores/AdminStoresView.vue'),
+      },
+      {
+        path: 'stores/:id',
+        name: 'admin-store-detail',
+        component: () => import('@/views/admin/stores/AdminStoreDetailView.vue'),
+      },
+    ],
+  },
+
+  // ── 404 → home ───────────────────────────────────────────────
   {
     path: '/:pathMatch(.*)*',
     redirect: '/',
@@ -33,6 +73,15 @@ const router = createRouter({
     if (saved) return saved
     return { top: 0, behavior: 'smooth' }
   },
+})
+
+router.beforeEach((to) => {
+  if (to.meta.requiresAdmin && getSessionRole() !== 'admin') {
+    return '/'
+  }
+  if (to.meta.guestOnly && isLoggedIn()) {
+    return '/'
+  }
 })
 
 export default router
