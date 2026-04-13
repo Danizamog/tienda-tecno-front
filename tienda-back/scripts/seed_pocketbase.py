@@ -370,6 +370,40 @@ def upsert_auction_bid(
     return created["id"]
 
 
+def upsert_review(
+    client: PocketBaseClient,
+    *,
+    reviewer_id: str,
+    product_id: str,
+    rating: float,
+    title: str = "",
+    comment: str = "",
+    verified_purchase: bool = True,
+) -> str:
+    """Create or update a product review."""
+    existing = client.get_by_filter(
+        "reviews",
+        f'reviewer="{reviewer_id}" && product="{product_id}"',
+    )
+    payload = {
+        "reviewer": reviewer_id,
+        "product": product_id,
+        "rating": rating,
+        "verified_purchase": verified_purchase,
+    }
+    if title:
+        payload["title"] = title
+    if comment:
+        payload["comment"] = comment
+
+    if existing:
+        client.update_record("reviews", existing["id"], payload)
+        return existing["id"]
+
+    created = client.create_record("reviews", payload)
+    return created["id"]
+
+
 def main() -> int:
     env = read_env_file(ENV_PATH)
     pb_url = normalize_pb_url(env.get("POCKETBASE_URL", "http://127.0.0.1:8090"))
@@ -825,6 +859,107 @@ def main() -> int:
         )
         bid_count += 1
 
+    reviews = [
+        {
+            "reviewer_name": "Cliente Uno",
+            "product_slug": "chamarra-termica-amarilla",
+            "rating": 5.0,
+            "title": "Excelente calidad y entrega rapida",
+            "comment": "Producto de muy buena calidad, el envio fue rapido y el empaque perfecto. Recomendado!",
+        },
+        {
+            "reviewer_name": "Cliente Dos",
+            "product_slug": "chamarra-termica-negra",
+            "rating": 4.0,
+            "title": "Buena chamarra",
+            "comment": "El producto es bueno, pero el color no es exactamente como en la foto.",
+        },
+        {
+            "reviewer_name": "Cliente Tres",
+            "product_slug": "chamarra-termica-roja",
+            "rating": 5.0,
+            "title": "Perfecto para el frio",
+            "comment": "Muy calida y comoda. La talla es exacta. Muy recomendado para clima de altura.",
+        },
+        {
+            "reviewer_name": "Cliente Uno",
+            "product_slug": "pantalon-cargo-verde",
+            "rating": 4.0,
+            "title": "Buen pantalon",
+            "comment": "Pantalon resistente con buenos bolsillos. Recomendado para trabajo y uso casual.",
+        },
+        {
+            "reviewer_name": "Cliente Dos",
+            "product_slug": "gorro-tejido-gris-claro",
+            "rating": 5.0,
+            "title": "Muy comodo y calido",
+            "comment": "Gorro de excelente calidad. Muy blando y elastico. Perfecto precio-calidad.",
+        },
+        {
+            "reviewer_name": "Cliente Tres",
+            "product_slug": "polera-basica-roja",
+            "rating": 4.0,
+            "title": "Polera de calidad",
+            "comment": "La polera es suave y el color es intenso. Lavo bien despues de varios lavados.",
+        },
+        {
+            "reviewer_name": "Cliente Uno",
+            "product_slug": "polera-roja-deportiva",
+            "rating": 5.0,
+            "title": "Perfecta para entrenar",
+            "comment": "Tela transpirable y comoda. He entrenado varias veces y sigue como nueva.",
+        },
+        {
+            "reviewer_name": "Cliente Dos",
+            "product_slug": "polera-negra-cat",
+            "rating": 4.0,
+            "title": "Buen diseno",
+            "comment": "Estampado bien hecho. La polera es de buena tela. Muy contento con la compra.",
+        },
+        {
+            "reviewer_name": "Cliente Tres",
+            "product_slug": "pantalon-carpintero-cafe",
+            "rating": 5.0,
+            "title": "Pantalon muy durable",
+            "comment": "Costuras resistentes y tela de buena calidad. Ideal para trabajo pesado.",
+        },
+        {
+            "reviewer_name": "Cliente Uno",
+            "product_slug": "gorro-tejido-gris-oscuro",
+            "rating": 4.0,
+            "title": "Muy calido",
+            "comment": "Gorro con punto grueso muy efectivo para guardar calor. Recomendado.",
+        },
+        {
+            "reviewer_name": "Cliente Dos",
+            "product_slug": "gorro-termico-negro",
+            "rating": 5.0,
+            "title": "Excellent producto",
+            "comment": "Simple pero muy efectivo. Mantiene el calor sin incomodar. Muy buen precio.",
+        },
+        {
+            "reviewer_name": "Cliente Tres",
+            "product_slug": "pack-invierno-basico",
+            "rating": 5.0,
+            "title": "Pack recomendado",
+            "comment": "Excelente combo para el invierno. Los dos articulos son de buena calidad. Muy buena compra.",
+        },
+    ]
+
+    review_count = 0
+    for r in reviews:
+        if r["product_slug"] in product_ids and r["reviewer_name"] in buyer_ids:
+            upsert_review(
+                client,
+                reviewer_id=buyer_ids[r["reviewer_name"]],
+                product_id=product_ids[r["product_slug"]],
+                rating=r["rating"],
+                title=r["title"],
+                comment=r["comment"],
+                verified_purchase=True,
+            )
+            review_count += 1
+
     print("Seed finished")
     print(f"Base URL: {pb_url}")
     print(f"Categories upserted: {len(categories)}")
@@ -832,6 +967,7 @@ def main() -> int:
     print(f"Products upserted: {product_count}")
     print(f"Auctions upserted: {len(auctions)}")
     print(f"Auction bids upserted: {bid_count}")
+    print(f"Reviews upserted: {review_count}")
     return 0
 
 
