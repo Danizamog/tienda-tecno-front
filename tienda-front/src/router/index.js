@@ -36,6 +36,32 @@ const routes = [
     component: () => import('@/views/AuthCallbackView.vue'),
   },
 
+  {
+    path: '/stores',
+    name: 'stores',
+    component: () => import('@/views/StoresView.vue'),
+  },
+  {
+    path: '/products',
+    name: 'products',
+    component: () => import('@/views/ProductsView.vue'),
+  },
+  {
+    path: '/auctions',
+    name: 'auctions',
+    component: () => import('@/views/AuctionsView.vue'),
+  },
+  {
+    path: '/stores/:slug',
+    name: 'store-products',
+    component: () => import('@/views/StoreProductsView.vue'),
+  },
+  {
+    path: '/products/:id',
+    name: 'product-detail',
+    component: () => import('@/views/ProductDetailView.vue'),
+  },
+
   // ── Vendor ───────────────────────────────────────────────────
   {
     path: '/vendor/select-store',

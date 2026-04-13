@@ -24,6 +24,13 @@ async function readJsonSafe(res) {
   try { return JSON.parse(text) } catch { return { raw: text } }
 }
 
+function compactDetails(details) {
+  if (!details) return ''
+  const raw = typeof details === 'string' ? details : JSON.stringify(details)
+  const normalized = raw.replace(/\s+/g, ' ').trim()
+  return normalized.length > 220 ? `${normalized.slice(0, 220)}...` : normalized
+}
+
 async function getAdminToken() {
   if (_adminToken && Date.now() < _adminTokenExpiry) return _adminToken
 
@@ -35,7 +42,7 @@ async function getAdminToken() {
 
   if (!res.ok) {
     const details = await readJsonSafe(res)
-    throw new Error(`PocketBase admin auth failed: ${res.status} ${JSON.stringify(details)}`)
+    throw new Error(`PocketBase admin auth failed (${res.status}): ${compactDetails(details)}`)
   }
 
   const { token } = await res.json()
@@ -213,6 +220,30 @@ app.get('/files/users/:id/:filename', async (req, res) => {
   } catch (err) {
     console.error('user file proxy error', err)
     return res.status(500).send('file_proxy_error')
+  }
+})
+
+// ── Obtener tienda por slug ───────────────────────────────────────────────────
+app.get('/by-slug/:slug', async (req, res) => {
+  try {
+    const token = await getAdminToken()
+    const slug  = safeFilterValue(req.params.slug)
+    const params = new URLSearchParams({
+      filter:  `slug="${slug}"`,
+      perPage: 1,
+      expand:  'owner',
+    })
+    const pbRes = await fetch(
+      `${PB_URL}/api/collections/stores/records?${params}`,
+      { headers: pbHeaders(token) }
+    )
+    if (!pbRes.ok) return res.status(pbRes.status).json({ error: 'pb_error' })
+    const data  = await pbRes.json()
+    const store = data.items?.[0]
+    if (!store) return res.status(404).json({ error: 'not_found' })
+    res.json(store)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 

@@ -105,9 +105,11 @@ app.get('/', async (req, res) => {
     const perPage = Math.min(100, parseInt(req.query.perPage) || 20)
 
     const filters = []
-    if (req.query.storeId) filters.push(`store="${req.query.storeId.replace(/"/g, '')}"`)
-    if (req.query.status)  filters.push(`status="${req.query.status.replace(/"/g, '')}"`)
-    if (req.query.search)  filters.push(`name~"${req.query.search.replace(/"/g, '')}"`)
+    if (req.query.storeId)    filters.push(`store="${req.query.storeId.replace(/"/g, '')}"`)
+    if (req.query.categoryId) filters.push(`category="${req.query.categoryId.replace(/"/g, '')}"`)
+    if (req.query.status)     filters.push(`status="${req.query.status.replace(/"/g, '')}"`)
+    if (req.query.condition)  filters.push(`condition="${req.query.condition.replace(/"/g, '')}"`)
+    if (req.query.search)     filters.push(`name~"${req.query.search.replace(/"/g, '')}"`)
 
     const params = new URLSearchParams({
       page, perPage,

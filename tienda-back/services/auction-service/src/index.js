@@ -90,10 +90,14 @@ app.get('/', async (req, res) => {
     const filters = []
     if (req.query.storeId) filters.push(`store="${req.query.storeId.replace(/"/g, '')}"`)
     if (req.query.status)  filters.push(`status="${req.query.status.replace(/"/g, '')}"`)
+    if (req.query.search)  filters.push(`title~"${req.query.search.replace(/"/g, '')}"`)
+
+    const allowedSorts = new Set(['-created', 'created', 'end_date', '-end_date', 'start_price', '-start_price', 'current_price', '-current_price'])
+    const safeSort = allowedSorts.has(req.query.sort) ? req.query.sort : '-created'
 
     const params = new URLSearchParams({
       page, perPage,
-      sort: req.query.sort || '-created',
+      sort: safeSort,
       expand: 'store,winner,product',
     })
     if (filters.length) params.set('filter', filters.join(' && '))
