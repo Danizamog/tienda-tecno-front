@@ -52,6 +52,11 @@ const routes = [
     component: () => import('@/views/AuctionsView.vue'),
   },
   {
+    path: '/auctions/:id',
+    name: 'auction-detail',
+    component: () => import('@/views/AuctionDetailView.vue'),
+  },
+  {
     path: '/stores/:slug',
     name: 'store-products',
     component: () => import('@/views/StoreProductsView.vue'),

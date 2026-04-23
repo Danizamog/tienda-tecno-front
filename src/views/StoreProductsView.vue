@@ -7,6 +7,7 @@ import { useCartStore } from '@/composables/useCartStore'
 import { useWishlistStore } from '@/composables/useWishlistStore'
 import { useAuthSession } from '@/composables/useAuthSession'
 import { useStoreReviews } from '@/composables/useReviewsApi'
+import { useStoreFollowers } from '@/composables/useStoreFollowers'
 
 const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
 const PB  = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
@@ -327,6 +328,19 @@ const { isInWishlist, toggleWishlist, getWishlistItem, removeFromWishlist, loadW
 // Cargar wishlist si el usuario está autenticado y aún no se ha inicializado
 if (isAuthenticated.value && !wishlistReady.value) loadWishlist()
 
+// ── Seguir tienda ─────────────────────────────────────────────────────────────
+const { isFollowing, toggleFollow, loadStatus: loadFollowStatus, loading: followLoading } = useStoreFollowers()
+
+// Cuando la tienda cargue, verificar si el usuario la sigue
+watch(store, (s) => {
+  if (s?.id && isAuthenticated.value) loadFollowStatus(s.id)
+})
+
+async function handleToggleFollow() {
+  if (!store.value?.id) return
+  await toggleFollow(store.value.id)
+}
+
 function quickAdd(event, product) {
   event.preventDefault()
   event.stopPropagation()
@@ -471,6 +485,31 @@ async function quickToggleWishlist(event, product) {
                 </div>
               </template>
             </div>
+
+            <!-- Botón seguir tienda -->
+            <button
+              v-if="!storeLoading && store && isAuthenticated"
+              @click="handleToggleFollow"
+              :disabled="followLoading[store?.id]"
+              :class="[
+                'flex items-center gap-2 px-4 h-9 text-[11px] tracking-[0.14em] uppercase font-medium border transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed',
+                isFollowing(store?.id)
+                  ? 'bg-[#c9a96e18] border-[#c9a96e66] text-[#c9a96e] hover:bg-[#c9a96e08] hover:border-[#c9a96e33]'
+                  : 'bg-[#c9a96e] border-[#c9a96e] text-[#0a0a0a] hover:bg-[#d4b87a] hover:border-[#d4b87a]',
+              ]"
+            >
+              <svg
+                class="w-3.5 h-3.5 shrink-0 transition-transform duration-200"
+                :class="isFollowing(store?.id) ? 'scale-110' : ''"
+                :fill="isFollowing(store?.id) ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>{{ isFollowing(store?.id) ? 'Siguiendo' : 'Seguir tienda' }}</span>
+            </button>
 
             <!-- Breadcrumb -->
             <RouterLink

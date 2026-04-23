@@ -3,6 +3,9 @@ import { ref, reactive, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import { useAuctions } from '@/composables/useAuctions'
+
+const { subscribeToAuction } = useAuctions()
 
 const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
 const PB  = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
@@ -116,11 +119,36 @@ watch(() => filters.search, () => {
 })
 watch([() => filters.sort, () => filters.page], () => fetchAuctions())
 
+let unsubAuctions = null
+
+function onAuctionEvent(e) {
+  if (!e?.record) return
+  const idx = auctions.value.findIndex(a => a.id === e.record.id)
+  if (e.action === 'delete') {
+    if (idx !== -1) auctions.value.splice(idx, 1)
+    return
+  }
+  // Solo nos interesan subastas activas en este listado
+  if (e.record.status !== 'active') {
+    if (idx !== -1) auctions.value.splice(idx, 1)
+    return
+  }
+  if (idx !== -1) {
+    // Preservar expand (store)
+    const prev = auctions.value[idx]
+    auctions.value[idx] = { ...prev, ...e.record, expand: prev.expand }
+  }
+}
+
 onMounted(() => {
   fetchAuctions()
   ticker = setInterval(() => { now.value = Date.now() }, 1000)
+  unsubAuctions = subscribeToAuction('*', onAuctionEvent)
 })
-onBeforeUnmount(() => clearInterval(ticker))
+onBeforeUnmount(() => {
+  clearInterval(ticker)
+  if (unsubAuctions) unsubAuctions()
+})
 </script>
 
 <template>
@@ -239,10 +267,11 @@ onBeforeUnmount(() => clearInterval(ticker))
 
         <!-- Grid de subastas -->
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div
+          <RouterLink
             v-for="auction in auctions"
             :key="auction.id"
-            class="card-dark group flex flex-col overflow-hidden"
+            :to="`/auctions/${auction.id}`"
+            class="card-dark group flex flex-col overflow-hidden cursor-pointer"
           >
             <!-- Imagen -->
             <div class="relative h-48 bg-[#0f0f0f] overflow-hidden shrink-0">
@@ -350,7 +379,7 @@ onBeforeUnmount(() => clearInterval(ticker))
               </div>
 
             </div>
-          </div>
+          </RouterLink>
         </div>
 
         <!-- ══ PAGINACIÓN ═══════════════════════════════════════ -->
