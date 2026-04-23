@@ -19,17 +19,25 @@ const error      = ref('')
 const now        = ref(Date.now())
 
 const filters = reactive({
-  search:  '',
-  sort:    'end_date',
-  page:    1,
-  perPage: 12,
+  search:          '',
+  minCurrentPrice: '',
+  maxCurrentPrice: '',
+  hasBuyNow:       false,
+  sort:            'end_date',
+  page:            1,
+  perPage:         12,
 })
+
+let abortController = null
 
 // Tick cada segundo para los contadores
 let ticker = null
 
 // ── Fetch ──────────────────────────────────────────────────────────────────────
 async function fetchAuctions() {
+  if (abortController) abortController.abort()
+  abortController = new AbortController()
+
   loading.value = true
   error.value   = ''
   try {
@@ -40,15 +48,19 @@ async function fetchAuctions() {
       sort:    filters.sort,
     })
     if (filters.search) params.set('search', filters.search)
+    if (filters.minCurrentPrice !== '') params.set('minCurrentPrice', String(filters.minCurrentPrice))
+    if (filters.maxCurrentPrice !== '') params.set('maxCurrentPrice', String(filters.maxCurrentPrice))
+    if (filters.hasBuyNow) params.set('hasBuyNow', 'true')
 
-    const res  = await fetch(`${API}/auctions?${params}`)
+    const res  = await fetch(`${API}/auctions?${params}`, { signal: abortController.signal })
     if (!res.ok) throw new Error(`Error ${res.status}`)
     const data = await res.json()
 
     auctions.value   = data.items      || []
     totalItems.value = data.totalItems || 0
     totalPages.value = data.totalPages || 1
-  } catch {
+  } catch (err) {
+    if (err?.name === 'AbortError') return
     error.value    = 'No se pudieron cargar las subastas. Verifica que el backend esté activo.'
     auctions.value = []
   } finally {
@@ -96,8 +108,28 @@ function urgencyClass(endDateStr) {
   return 'text-[#c9a96e]'
 }
 
-function clearFilters() { filters.search = ''; filters.page = 1 }
-const hasActiveFilters = computed(() => !!filters.search)
+const countdownById = computed(() => {
+  const map = {}
+  for (const auction of auctions.value) {
+    map[auction.id] = timeLeft(auction.end_date)
+  }
+  return map
+})
+
+function clearFilters() {
+  filters.search = ''
+  filters.minCurrentPrice = ''
+  filters.maxCurrentPrice = ''
+  filters.hasBuyNow = false
+  filters.page = 1
+}
+
+const hasActiveFilters = computed(() => (
+  !!filters.search ||
+  filters.minCurrentPrice !== '' ||
+  filters.maxCurrentPrice !== '' ||
+  filters.hasBuyNow
+))
 
 // ── Paginación ─────────────────────────────────────────────────────────────────
 const pageWindow = computed(() => {
@@ -117,7 +149,13 @@ watch(() => filters.search, () => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => { filters.page = 1; fetchAuctions() }, 350)
 })
-watch([() => filters.sort, () => filters.page], () => fetchAuctions())
+watch([
+  () => filters.minCurrentPrice,
+  () => filters.maxCurrentPrice,
+  () => filters.hasBuyNow,
+  () => filters.sort,
+  () => filters.page,
+], () => fetchAuctions())
 
 let unsubAuctions = null
 
@@ -211,6 +249,28 @@ onBeforeUnmount(() => {
             </svg>
           </div>
 
+          <!-- Rango de precio actual -->
+          <input
+            v-model="filters.minCurrentPrice"
+            @input="filters.page = 1"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Precio mín"
+            class="input-dark text-sm h-9 w-28"
+          />
+          <input
+            v-model="filters.maxCurrentPrice"
+            @input="filters.page = 1"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Precio máx"
+            class="input-dark text-sm h-9 w-28"
+          />
+
+          <label class="filter-check"><input v-model="filters.hasBuyNow" @change="filters.page = 1" type="checkbox"> <span>Cómpralo ya</span></label>
+
           <!-- Limpiar -->
           <button
             v-if="hasActiveFilters"
@@ -279,6 +339,9 @@ onBeforeUnmount(() => {
                 v-if="auctionImageUrl(auction)"
                 :src="auctionImageUrl(auction)"
                 :alt="auction.title"
+                  loading="lazy"
+                  decoding="async"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
               />
               <div
@@ -295,16 +358,16 @@ onBeforeUnmount(() => {
 
               <!-- Countdown badge superpuesto -->
               <div class="absolute bottom-3 left-3 right-3">
-                <div v-if="!timeLeft(auction.end_date).expired" class="flex items-center gap-1.5">
+                <div v-if="!countdownById[auction.id]?.expired" class="flex items-center gap-1.5">
                   <svg class="w-3 h-3 shrink-0" :class="urgencyClass(auction.end_date)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <span class="font-mono text-[11px] font-semibold tabular-nums" :class="urgencyClass(auction.end_date)">
-                    <template v-if="timeLeft(auction.end_date).days > 0">
-                      {{ timeLeft(auction.end_date).days }}d {{ pad(timeLeft(auction.end_date).hours) }}h {{ pad(timeLeft(auction.end_date).minutes) }}m
+                    <template v-if="countdownById[auction.id]?.days > 0">
+                      {{ countdownById[auction.id]?.days }}d {{ pad(countdownById[auction.id]?.hours || 0) }}h {{ pad(countdownById[auction.id]?.minutes || 0) }}m
                     </template>
                     <template v-else>
-                      {{ pad(timeLeft(auction.end_date).hours) }}:{{ pad(timeLeft(auction.end_date).minutes) }}:{{ pad(timeLeft(auction.end_date).seconds) }}
+                      {{ pad(countdownById[auction.id]?.hours || 0) }}:{{ pad(countdownById[auction.id]?.minutes || 0) }}:{{ pad(countdownById[auction.id]?.seconds || 0) }}
                     </template>
                   </span>
                 </div>
@@ -419,6 +482,22 @@ onBeforeUnmount(() => {
   flex: 1;
   width: 100%;
   overflow-x: hidden;
+}
+.filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.25rem;
+  padding: 0 0.6rem;
+  border: 1px solid #2a2a2a;
+  color: #8a8580;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.filter-check input {
+  accent-color: #c9a96e;
 }
 .filter-select {
   appearance: none; -webkit-appearance: none;

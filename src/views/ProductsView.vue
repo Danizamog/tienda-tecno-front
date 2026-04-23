@@ -22,23 +22,45 @@ const filters = reactive({
   search:     '',
   categoryId: '',
   condition:  '',
+  minPrice:   '',
+  maxPrice:   '',
+  inStock:    false,
+  featured:   false,
+  discounted: false,
   sort:       '-created',
   page:       1,
   perPage:    16,
 })
 
+let abortController = null
+
 // ── Fetch categorías ───────────────────────────────────────────────────────────
 async function fetchCategories() {
+  const cacheKey = 'tt_categories_cache_v1'
+  const cacheTtlMs = 5 * 60 * 1000
   try {
+    const cachedRaw = sessionStorage.getItem(cacheKey)
+    if (cachedRaw) {
+      const cached = JSON.parse(cachedRaw)
+      if (Array.isArray(cached?.items) && Date.now() - Number(cached?.ts || 0) < cacheTtlMs) {
+        categories.value = cached.items
+        return
+      }
+    }
+
     const res  = await fetch(`${API}/products/categories`)
     if (!res.ok) return
     const data = await res.json()
     categories.value = data.items || []
+    sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: categories.value }))
   } catch { /* silencioso */ }
 }
 
 // ── Fetch productos ────────────────────────────────────────────────────────────
 async function fetchProducts() {
+  if (abortController) abortController.abort()
+  abortController = new AbortController()
+
   loading.value = true
   error.value   = ''
   try {
@@ -51,15 +73,30 @@ async function fetchProducts() {
     if (filters.search)     params.set('search',     filters.search)
     if (filters.categoryId) params.set('categoryId', filters.categoryId)
     if (filters.condition)  params.set('condition',  filters.condition)
+    if (filters.minPrice !== '') params.set('minPrice', String(filters.minPrice))
+    if (filters.maxPrice !== '') params.set('maxPrice', String(filters.maxPrice))
+    if (filters.inStock)    params.set('inStock', 'true')
+    if (filters.featured)   params.set('featured', 'true')
+    if (filters.discounted) params.set('discounted', 'true')
 
-    const res  = await fetch(`${API}/products?${params}`)
+    syncQueryWithFilters()
+
+    const res  = await fetch(`${API}/products?${params}`, { signal: abortController.signal })
     if (!res.ok) throw new Error(`Error ${res.status}`)
     const data = await res.json()
 
-    products.value   = data.items      || []
+    products.value = (data.items || []).map((product) => {
+      const pricing = formatPrice(product.price, product.discount_percent, product.discount_amount)
+      return {
+        ...product,
+        _imageUrl: productImageUrl(product),
+        _pricing: pricing,
+      }
+    })
     totalItems.value = data.totalItems || 0
     totalPages.value = data.totalPages || 1
-  } catch {
+  } catch (err) {
+    if (err?.name === 'AbortError') return
     error.value    = 'No se pudieron cargar los productos. Verifica que el backend esté activo.'
     products.value = []
   } finally {
@@ -85,7 +122,31 @@ function formatPrice(price, pct, amt) {
 
 const conditionLabel = { new: 'Nuevo', used: 'Usado', refurbished: 'Reacond.' }
 
-const hasActiveFilters = computed(() => filters.search || filters.categoryId || filters.condition)
+const hasActiveFilters = computed(() => (
+  filters.search ||
+  filters.categoryId ||
+  filters.condition ||
+  filters.minPrice !== '' ||
+  filters.maxPrice !== '' ||
+  filters.inStock ||
+  filters.featured ||
+  filters.discounted
+))
+
+function syncQueryWithFilters() {
+  const query = {}
+  if (filters.search) query.search = filters.search
+  if (filters.categoryId) query.categoryId = filters.categoryId
+  if (filters.condition) query.condition = filters.condition
+  if (filters.minPrice !== '') query.minPrice = String(filters.minPrice)
+  if (filters.maxPrice !== '') query.maxPrice = String(filters.maxPrice)
+  if (filters.inStock) query.inStock = '1'
+  if (filters.featured) query.featured = '1'
+  if (filters.discounted) query.discounted = '1'
+  if (filters.sort !== '-created') query.sort = filters.sort
+  if (filters.page > 1) query.page = String(filters.page)
+  router.replace({ query })
+}
 
 // ── Paginación ─────────────────────────────────────────────────────────────────
 const pageWindow = computed(() => {
@@ -106,7 +167,17 @@ watch(() => filters.search, () => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => { filters.page = 1; fetchProducts() }, 350)
 })
-watch([() => filters.categoryId, () => filters.condition, () => filters.sort, () => filters.page], () => fetchProducts())
+watch([
+  () => filters.categoryId,
+  () => filters.condition,
+  () => filters.minPrice,
+  () => filters.maxPrice,
+  () => filters.inStock,
+  () => filters.featured,
+  () => filters.discounted,
+  () => filters.sort,
+  () => filters.page,
+], () => fetchProducts())
 
 // Categoría activa (nombre para mostrar el chip)
 const activeCategoryName = ref('')
@@ -115,16 +186,31 @@ function clearFilters() {
   filters.search        = ''
   filters.categoryId    = ''
   filters.condition     = ''
+  filters.minPrice      = ''
+  filters.maxPrice      = ''
+  filters.inStock       = false
+  filters.featured      = false
+  filters.discounted    = false
   filters.page          = 1
   activeCategoryName.value = ''
   router.replace({ query: {} })
 }
 
 onMounted(() => {
+  if (route.query.search) filters.search = String(route.query.search)
   if (route.query.categoryId) {
-    filters.categoryId = route.query.categoryId
-    activeCategoryName.value = route.query.categoryName || ''
+    filters.categoryId = String(route.query.categoryId)
+    activeCategoryName.value = route.query.categoryName ? String(route.query.categoryName) : ''
   }
+  if (route.query.condition) filters.condition = String(route.query.condition)
+  if (route.query.minPrice) filters.minPrice = String(route.query.minPrice)
+  if (route.query.maxPrice) filters.maxPrice = String(route.query.maxPrice)
+  if (route.query.inStock === '1') filters.inStock = true
+  if (route.query.featured === '1') filters.featured = true
+  if (route.query.discounted === '1') filters.discounted = true
+  if (route.query.sort) filters.sort = String(route.query.sort)
+  if (route.query.page) filters.page = Math.max(1, Number(route.query.page) || 1)
+
   fetchCategories()
   fetchProducts()
 })
@@ -205,6 +291,31 @@ onMounted(() => {
             </svg>
           </div>
 
+          <!-- Rango de precio -->
+          <input
+            v-model="filters.minPrice"
+            @input="filters.page = 1"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Precio mín"
+            class="input-dark text-sm h-9 w-28"
+          />
+          <input
+            v-model="filters.maxPrice"
+            @input="filters.page = 1"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Precio máx"
+            class="input-dark text-sm h-9 w-28"
+          />
+
+          <!-- Toggles -->
+          <label class="filter-check"><input v-model="filters.inStock" @change="filters.page = 1" type="checkbox"> <span>Con stock</span></label>
+          <label class="filter-check"><input v-model="filters.featured" @change="filters.page = 1" type="checkbox"> <span>Destacados</span></label>
+          <label class="filter-check"><input v-model="filters.discounted" @change="filters.page = 1" type="checkbox"> <span>Ofertas</span></label>
+
           <!-- Ordenar -->
           <div class="relative">
             <select v-model="filters.sort" @change="filters.page = 1" class="filter-select">
@@ -280,9 +391,12 @@ onMounted(() => {
             <!-- Imagen -->
             <div class="relative aspect-square bg-[#0f0f0f] overflow-hidden">
               <img
-                v-if="productImageUrl(product)"
-                :src="productImageUrl(product)"
+                v-if="product._imageUrl"
+                :src="product._imageUrl"
                 :alt="product.name"
+                loading="lazy"
+                decoding="async"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div
@@ -299,7 +413,7 @@ onMounted(() => {
               <div class="absolute top-2 left-2 flex flex-col gap-1">
                 <span v-if="product.featured" class="badge-gold text-[9px]">Destacado</span>
                 <span
-                  v-if="formatPrice(product.price, product.discount_percent, product.discount_amount).hasDiscount"
+                  v-if="product._pricing.hasDiscount"
                   class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-widest uppercase bg-red-900/60 text-red-300 border border-red-800/40"
                 >Oferta</span>
               </div>
@@ -332,10 +446,10 @@ onMounted(() => {
               <!-- Precio -->
               <div class="mt-auto pt-2 flex items-baseline gap-2">
                 <span class="text-sm font-semibold text-[#c9a96e] tabular-nums">
-                  ${{ formatPrice(product.price, product.discount_percent, product.discount_amount).final.toLocaleString('es-CL') }}
+                  ${{ product._pricing.final.toLocaleString('es-CL') }}
                 </span>
                 <span
-                  v-if="formatPrice(product.price, product.discount_percent, product.discount_amount).hasDiscount"
+                  v-if="product._pricing.hasDiscount"
                   class="text-[10px] text-[#444440] line-through tabular-nums"
                 >
                   ${{ Number(product.price || 0).toLocaleString('es-CL') }}
@@ -390,6 +504,22 @@ onMounted(() => {
   padding: 0 2.25rem 0 0.75rem; height: 2.25rem;
   outline: none; cursor: pointer; transition: border-color 0.2s;
   white-space: nowrap; min-width: 11rem;
+}
+.filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.25rem;
+  padding: 0 0.6rem;
+  border: 1px solid #2a2a2a;
+  color: #8a8580;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.filter-check input {
+  accent-color: #c9a96e;
 }
 .filter-select:focus { border-color: #c9a96e; }
 .filter-select option { background-color: #111111; color: #f0ede8; }

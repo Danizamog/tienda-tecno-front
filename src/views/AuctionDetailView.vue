@@ -27,15 +27,22 @@ const bidAmount    = ref('')
 const bidLoading   = ref(false)
 const bidError     = ref('')
 const bidSuccess   = ref('')
+const bidWarning   = ref('')
 const highlightBid = ref(null)
-const buyNowOpen   = ref(false)
+const buyNowOpen      = ref(false)
+const confirmBuyOpen  = ref(false)    // confirmación cuando puja >= buy_now_price
+const pendingBuyAmount = ref(0)       // monto que tipeó el usuario antes de confirmar
 const buyingNow    = ref(false)
 const selectedImage = ref(0)
+const outbidNotice  = ref(false)
+const endedNotice   = ref(false)
 
 let ticker = null
 let unsubAuction = null
 let unsubBids    = null
 let flashTimeout = null
+let outbidTimeout = null
+let successTimeout = null
 
 // ── Carga inicial ─────────────────────────────────────────────────────────────
 async function load() {
@@ -53,6 +60,28 @@ async function load() {
   }
 }
 
+// ── Mapeo de errores del backend ──────────────────────────────────────────────
+function translateError(err) {
+  const code = err?.details?.error || err?.code
+  const map = {
+    auction_not_active:       'La subasta no está activa',
+    auction_not_started:      'La subasta aún no ha comenzado',
+    auction_ended:            'La subasta ya finalizó',
+    cannot_bid_own_auction:   'No puedes pujar en tu propia subasta',
+    invalid_amount:           'Monto inválido',
+    auto_bid_max_below_amount:'El tope automático debe ser mayor a la puja',
+    buy_now_not_available:    'Esta subasta no tiene compra inmediata',
+    unauthorized:             'Debes iniciar sesión para pujar',
+    forbidden:                'No tienes permiso para esta acción',
+    not_found:                'Subasta no encontrada',
+    bid_failed:               'No se pudo registrar la puja',
+  }
+  if (code === 'amount_too_low' && err?.details?.min_required != null) {
+    return `El monto mínimo es Bs ${money(err.details.min_required)}`
+  }
+  return map[code] || err?.message || 'Ocurrió un error'
+}
+
 // ── Realtime ──────────────────────────────────────────────────────────────────
 function onAuctionEvent(e) {
   if (!e?.record || e.record.id !== route.params.id) return
@@ -62,8 +91,15 @@ function onAuctionEvent(e) {
     return
   }
   const prev = auction.value || {}
+  const wasActive = prev.status === 'active'
   // Conservar expand (store, winner) porque el evento PB no lo trae
   auction.value = { ...prev, ...e.record, expand: prev.expand }
+
+  // Si terminó por buy-now o cierre externo, notificar
+  if (wasActive && e.record.status === 'ended') {
+    endedNotice.value = true
+    bidError.value = ''
+  }
 }
 
 async function onBidEvent(e) {
@@ -72,6 +108,10 @@ async function onBidEvent(e) {
 
   // Evitar duplicados si el propio usuario ya lo añadió localmente
   if (bids.value.some((b) => b.id === e.record.id)) return
+
+  const myUserId = session.value?.userId
+  const wasMyTop = bids.value[0]?.bidder === myUserId
+  const isFromAnother = e.record.bidder !== myUserId
 
   // Re-fetch para obtener el expand del bidder
   try {
@@ -84,6 +124,19 @@ async function onBidEvent(e) {
   highlightBid.value = e.record.id
   clearTimeout(flashTimeout)
   flashTimeout = setTimeout(() => { highlightBid.value = null }, 2500)
+
+  // Notificación "te superaron": sólo si yo lideraba y alguien más pujó más alto
+  if (wasMyTop && isFromAnother && e.record.amount > 0) {
+    outbidNotice.value = true
+    clearTimeout(outbidTimeout)
+    outbidTimeout = setTimeout(() => { outbidNotice.value = false }, 5000)
+  }
+
+  // Si el usuario tiene un monto tecleado que quedó obsoleto, avisar
+  const typed = Number(bidAmount.value)
+  if (Number.isFinite(typed) && typed > 0 && typed < minBid.value && isFromAnother) {
+    bidWarning.value = `Otra puja llegó. El mínimo ahora es Bs ${money(minBid.value)}`
+  }
 }
 
 onMounted(async () => {
@@ -96,6 +149,8 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   clearInterval(ticker)
   clearTimeout(flashTimeout)
+  clearTimeout(outbidTimeout)
+  clearTimeout(successTimeout)
   if (unsubAuction) unsubAuction()
   if (unsubBids)    unsubBids()
 })
@@ -155,6 +210,29 @@ const canBid = computed(() => (
   !timeLeft.value.expired
 ))
 
+const buyNowPrice = computed(() => Number(auction.value?.buy_now_price || 0))
+const hasBuyNow   = computed(() => buyNowPrice.value > 0)
+
+function parseBidInput(raw) {
+  const cleaned = String(raw ?? '')
+    .replace(/\s+/g, '')
+    .replace(/bs/gi, '')
+    .replace(/[^\d]/g, '')
+
+  if (!cleaned) return null
+  const n = Number(cleaned)
+  return Number.isFinite(n) ? n : NaN
+}
+
+const parsedBid = computed(() => {
+  return parseBidInput(bidAmount.value)
+})
+const isValidAmount = computed(() => parsedBid.value != null && !Number.isNaN(parsedBid.value) && parsedBid.value > 0)
+const reachesBuyNow = computed(() => (
+  hasBuyNow.value && isValidAmount.value && parsedBid.value >= buyNowPrice.value
+))
+const meetsMinBid = computed(() => isValidAmount.value && parsedBid.value >= minBid.value)
+
 const statusLabel = computed(() => ({
   draft: 'Borrador',
   active: 'Activa',
@@ -163,57 +241,108 @@ const statusLabel = computed(() => ({
 }[auction.value?.status] || auction.value?.status))
 
 // ── Acciones ──────────────────────────────────────────────────────────────────
+function resetFeedback() {
+  bidError.value   = ''
+  bidWarning.value = ''
+}
+
+function showSuccess(msg) {
+  bidSuccess.value = msg
+  clearTimeout(successTimeout)
+  successTimeout = setTimeout(() => { bidSuccess.value = '' }, 3000)
+}
+
+function validateBeforeSubmit(amount) {
+  if (!canBid.value) return 'La subasta ya no acepta pujas'
+  if (parsedBid.value === null) return 'Ingresa un monto'
+  if (Number.isNaN(parsedBid.value)) return 'Monto inválido: usa sólo números'
+  if (amount <= 0) return 'El monto debe ser mayor a cero'
+  if (amount < minBid.value) return `El monto mínimo es Bs ${money(minBid.value)}`
+  return null
+}
+
 async function submitBid() {
-  if (!canBid.value) return
-  bidError.value = ''
-  bidSuccess.value = ''
-  const amount = Number(bidAmount.value)
-  if (!Number.isFinite(amount) || amount < minBid.value) {
-    bidError.value = `El monto mínimo es Bs ${money(minBid.value)}`
+  resetFeedback()
+  const amount = parsedBid.value
+  const validationError = validateBeforeSubmit(amount)
+  if (validationError) { bidError.value = validationError; return }
+
+  // Si alcanza el precio de compra inmediata, pedir confirmación antes
+  if (reachesBuyNow.value) {
+    pendingBuyAmount.value = amount
+    confirmBuyOpen.value = true
     return
   }
+
+  await sendBid(amount)
+}
+
+async function sendBid(amount) {
   bidLoading.value = true
   try {
-    await placeBid(route.params.id, { amount })
-    bidSuccess.value = '¡Puja registrada!'
-    bidAmount.value  = ''
-    setTimeout(() => { bidSuccess.value = '' }, 2500)
-  } catch (e) {
-    if (e.status === 400 && e.details?.error === 'amount_too_low') {
-      bidError.value = `El monto mínimo es Bs ${money(e.details.min_required)}`
-    } else if (e.details?.error === 'auction_ended') {
-      bidError.value = 'La subasta ya finalizó'
-    } else if (e.details?.error === 'cannot_bid_own_auction') {
-      bidError.value = 'No puedes pujar en tu propia subasta'
+    const result = await placeBid(route.params.id, { amount })
+    bidAmount.value = ''
+    if (result?.won_auction) {
+      showSuccess(`¡Ganaste la subasta por Bs ${money(result.final_amount)}!`)
+    } else if (result?.capped) {
+      showSuccess(`Puja ajustada al precio de compra: Bs ${money(result.final_amount)}`)
     } else {
-      bidError.value = e.message
+      showSuccess('¡Puja registrada!')
     }
+  } catch (e) {
+    bidError.value = translateError(e)
   } finally {
     bidLoading.value = false
   }
 }
 
+async function confirmReachBuyNow() {
+  confirmBuyOpen.value = false
+  if (!pendingBuyAmount.value) return
+  await sendBid(pendingBuyAmount.value)
+  pendingBuyAmount.value = 0
+}
+
 async function confirmBuyNow() {
-  if (!canBid.value || !auction.value?.buy_now_price) return
+  if (!canBid.value || !hasBuyNow.value) return
   buyingNow.value = true
-  bidError.value  = ''
+  resetFeedback()
   try {
     await buyNow(route.params.id)
     buyNowOpen.value = false
-    bidSuccess.value = '¡Compra realizada!'
+    showSuccess('¡Compra realizada!')
   } catch (e) {
-    bidError.value = e.message
+    bidError.value = translateError(e)
   } finally {
     buyingNow.value = false
   }
 }
 
 function quickSet(delta) {
-  bidAmount.value = String(minBid.value + (delta * increment.value))
+  const next = minBid.value + (delta * increment.value)
+  bidAmount.value = String(hasBuyNow.value ? Math.min(next, buyNowPrice.value) : next)
+  bidWarning.value = ''
 }
 
 function setMinBid() {
   bidAmount.value = String(minBid.value)
+  bidWarning.value = ''
+}
+
+function setBuyNowAmount() {
+  bidAmount.value = String(buyNowPrice.value)
+  bidWarning.value = ''
+}
+
+function onAmountInput() {
+  const normalized = String(bidAmount.value ?? '').replace(/[^\d]/g, '')
+  if (normalized !== bidAmount.value) bidAmount.value = normalized
+
+  // Limpiar warnings en cuanto el usuario ajusta el monto
+  if (bidWarning.value && isValidAmount.value && parsedBid.value >= minBid.value) {
+    bidWarning.value = ''
+  }
+  if (bidError.value) bidError.value = ''
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -440,6 +569,15 @@ function goLogin() {
           </div>
 
           <div v-else-if="canBid">
+
+            <!-- Aviso: te superaron -->
+            <div v-if="outbidNotice" class="mb-3 px-3 py-2 border border-amber-900/50 bg-amber-950/40 text-amber-300 text-[11px] flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 8v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              ¡Te superaron! El nuevo mínimo es Bs {{ money(minBid) }}
+            </div>
+
             <!-- Quick bid buttons -->
             <div class="flex gap-2 mb-3">
               <button type="button" @click="setMinBid" class="quick-bid-btn">
@@ -448,8 +586,21 @@ function goLogin() {
               <button type="button" @click="quickSet(1)" class="quick-bid-btn">
                 +Bs {{ money(increment) }}
               </button>
-              <button type="button" @click="quickSet(5)" class="quick-bid-btn">
+              <button
+                v-if="!hasBuyNow || minBid + 5 * increment < buyNowPrice"
+                type="button"
+                @click="quickSet(5)"
+                class="quick-bid-btn"
+              >
                 +Bs {{ money(5 * increment) }}
+              </button>
+              <button
+                v-if="hasBuyNow"
+                type="button"
+                @click="setBuyNowAmount"
+                class="quick-bid-btn quick-bid-btn--gold"
+              >
+                Ganar ya
               </button>
             </div>
 
@@ -459,40 +610,53 @@ function goLogin() {
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#555] text-sm font-medium">Bs</span>
                 <input
                   v-model="bidAmount"
-                  type="number"
-                  :min="minBid"
-                  :step="increment"
+                  type="text"
                   :placeholder="`${money(minBid)} o más`"
                   class="bid-input pl-8"
+                  :class="{ 'bid-input--error': bidAmount && !meetsMinBid, 'bid-input--winning': reachesBuyNow }"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  @input="onAmountInput"
                   @keyup.enter="submitBid"
                 />
               </div>
               <button
                 @click="submitBid"
-                :disabled="bidLoading"
+                :disabled="bidLoading || !meetsMinBid"
                 class="btn-primary-gold"
               >
-                {{ bidLoading ? '...' : 'Pujar' }}
+                <template v-if="bidLoading">...</template>
+                <template v-else-if="reachesBuyNow">Ganar</template>
+                <template v-else>Pujar</template>
               </button>
             </div>
-            <p class="text-[10px] text-[#555] mb-3">
+
+            <!-- Hint dinámico -->
+            <p v-if="reachesBuyNow" class="text-[10px] text-[#c9a96e] mb-3">
+              Esta puja alcanza el precio de compra. Se topará a Bs {{ money(buyNowPrice) }} y ganarás la subasta.
+            </p>
+            <p v-else-if="isValidAmount && !meetsMinBid" class="text-[10px] text-red-400 mb-3">
+              Mínimo: Bs {{ money(minBid) }} · El monto debe ser ≥ Bs {{ money(minBid) }}
+            </p>
+            <p v-else class="text-[10px] text-[#555] mb-3">
               Mínimo: Bs {{ money(minBid) }} · Incremento: Bs {{ money(increment) }}
             </p>
 
             <!-- Buy now -->
             <button
-              v-if="auction.buy_now_price"
+              v-if="hasBuyNow"
               @click="buyNowOpen = true"
               class="w-full p-3 border border-[#c9a96e44] bg-[#14110d] hover:bg-[#1a1510] transition-colors text-left group"
             >
               <p class="text-[9px] tracking-[0.2em] uppercase text-[#c9a96e] mb-0.5">Cómpralo ya</p>
               <p class="font-display text-xl font-light text-[#f0ede8] group-hover:text-[#c9a96e] transition-colors tabular-nums">
-                Bs {{ money(auction.buy_now_price) }}
+                Bs {{ money(buyNowPrice) }}
               </p>
             </button>
 
-            <!-- Errors / Success -->
-            <p v-if="bidError" class="mt-3 text-[11px] text-red-400">{{ bidError }}</p>
+            <!-- Feedback -->
+            <p v-if="bidError"   class="mt-3 text-[11px] text-red-400">{{ bidError }}</p>
+            <p v-if="bidWarning" class="mt-3 text-[11px] text-amber-300">{{ bidWarning }}</p>
             <p v-if="bidSuccess" class="mt-3 text-[11px] text-emerald-400">{{ bidSuccess }}</p>
           </div>
 
@@ -549,7 +713,7 @@ function goLogin() {
           <div class="p-4 bg-[#0f0f0f] border border-[#1a1a1a] mb-5">
             <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1">Total</p>
             <p class="font-display text-3xl font-light text-[#c9a96e] tabular-nums">
-              Bs {{ money(auction?.buy_now_price) }}
+              Bs {{ money(buyNowPrice) }}
             </p>
           </div>
 
@@ -560,6 +724,55 @@ function goLogin() {
             </button>
           </div>
         </div>
+      </div>
+    </Transition>
+
+    <!-- ══ MODAL: PUJA ALCANZA BUY NOW ══════════════════════════════ -->
+    <Transition name="modal">
+      <div v-if="confirmBuyOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+        <div class="modal-box w-full max-w-sm">
+          <h3 class="font-display text-xl font-light text-[#e8e4de] mb-2">Ganar la subasta</h3>
+          <p class="text-[12px] text-[#888] mb-4">
+            Tu puja de <span class="text-[#c9a96e] font-medium">Bs {{ money(pendingBuyAmount) }}</span>
+            alcanza o supera el precio de compra inmediata.
+          </p>
+          <div class="p-4 bg-[#0f0f0f] border border-[#c9a96e44] mb-5">
+            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1">Pagarás exactamente</p>
+            <p class="font-display text-3xl font-light text-[#c9a96e] tabular-nums mb-1">
+              Bs {{ money(buyNowPrice) }}
+            </p>
+            <p v-if="pendingBuyAmount > buyNowPrice" class="text-[10px] text-emerald-400">
+              Ahorras Bs {{ money(pendingBuyAmount - buyNowPrice) }} (tope aplicado)
+            </p>
+          </div>
+          <p class="text-[11px] text-[#888] mb-5">La subasta finalizará inmediatamente y serás el ganador.</p>
+          <div class="flex gap-2">
+            <button @click="confirmBuyOpen = false; pendingBuyAmount = 0" :disabled="bidLoading" class="btn-ghost flex-1">Cancelar</button>
+            <button @click="confirmReachBuyNow" :disabled="bidLoading" class="btn-primary-gold flex-1">
+              {{ bidLoading ? 'Confirmando...' : 'Confirmar y ganar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ══ TOAST: SUBASTA FINALIZADA ════════════════════════════════ -->
+    <Transition name="toast">
+      <div v-if="endedNotice" class="fixed bottom-6 right-6 z-40 max-w-sm p-4 border border-blue-900/50 bg-blue-950/90 backdrop-blur-sm flex items-start gap-3">
+        <svg class="w-4 h-4 text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="flex-1">
+          <p class="text-[12px] text-blue-200 mb-1">Subasta finalizada</p>
+          <p class="text-[11px] text-blue-300/70">
+            {{ auction?.winner === session.value?.userId ? '¡Felicidades, ganaste!' : 'Alguien alcanzó el precio de compra o cerró la subasta.' }}
+          </p>
+        </div>
+        <button @click="endedNotice = false" class="text-blue-300/50 hover:text-blue-300">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
     </Transition>
 
@@ -590,9 +803,12 @@ function goLogin() {
   width: 100%; height: 2.75rem;
   background: #0a0a0a; border: 1px solid #2a2a28;
   color: #f0ede8; font-size: 0.95rem; font-weight: 500;
-  padding: 0 0.9rem; outline: none; transition: border-color 0.15s;
+  padding: 0 0.9rem 0 2.15rem; outline: none; transition: border-color 0.15s;
 }
 .bid-input:focus { border-color: #c9a96e; }
+.bid-input--error { border-color: #7f1d1d; }
+.bid-input--error:focus { border-color: #dc2626; }
+.bid-input--winning { border-color: #c9a96e; box-shadow: 0 0 0 1px #c9a96e33; }
 .quick-bid-btn {
   flex: 1; padding: 0.45rem 0.5rem;
   border: 1px solid #1e1e1e; background: #0d0d0d;
@@ -600,6 +816,8 @@ function goLogin() {
   transition: all 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .quick-bid-btn:hover { border-color: #c9a96e44; color: #c9a96e; }
+.quick-bid-btn--gold { border-color: #c9a96e44; color: #c9a96e; background: #14110d; }
+.quick-bid-btn--gold:hover { border-color: #c9a96e; background: #1a1510; }
 .btn-primary-gold {
   padding: 0 1.4rem; height: 2.75rem;
   background: #c9a96e; color: #0a0a0a;
@@ -654,4 +872,6 @@ function goLogin() {
 }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
+.toast-enter-active, .toast-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(1rem); }
 </style>
