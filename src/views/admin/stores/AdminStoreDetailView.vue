@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminApi } from '@/composables/useAdminApi'
 
@@ -98,6 +98,7 @@ function ownerInfo(s) {
 
   return owners
     .map((o) => ({
+      id:   o?.id   || null,
       name: o?.name || '—',
       email: o?.email || '—',
       role: o?.role || '—',
@@ -184,6 +185,61 @@ async function doDelete() {
   } finally {
     deleting.value = false
   }
+}
+
+// ── Gestión de propietarios (inline) ─────────────────────────────────────────
+const ownerSearch        = ref('')
+const ownerResults       = ref([])
+const ownerSearchLoading = ref(false)
+const ownerSaving        = ref(false)
+const ownerError         = ref('')
+
+let ownerSearchTimer = null
+
+watch(ownerSearch, (v) => {
+  clearTimeout(ownerSearchTimer)
+  if (v.length < 2) { ownerResults.value = []; return }
+  ownerSearchLoading.value = true
+  ownerSearchTimer = setTimeout(async () => {
+    try {
+      const data = await api.searchUsers(v, ['admin', 'vendor'])
+      ownerResults.value = (data?.items || []).filter(u => !currentOwnerIds.value.includes(u.id))
+    } catch { ownerResults.value = [] }
+    finally { ownerSearchLoading.value = false }
+  }, 350)
+})
+
+const currentOwnerIds = computed(() => {
+  const raw = store.value?.expand?.owner ?? store.value?.owner
+  if (!raw) return []
+  const arr = Array.isArray(raw) ? raw : [raw]
+  return arr.map(o => (typeof o === 'object' ? o.id : o)).filter(Boolean)
+})
+
+async function saveOwnerIds(ids) {
+  ownerSaving.value = true
+  ownerError.value  = ''
+  try {
+    const updated = await api.updateStore(route.params.id, { owner: ids })
+    store.value = { ...store.value, ...updated }
+    // Recargar para obtener expand actualizado
+    const fresh = await api.getStore(route.params.id)
+    store.value = fresh
+  } catch (e) {
+    ownerError.value = e.message
+  } finally {
+    ownerSaving.value = false
+  }
+}
+
+async function addOwner(u) {
+  ownerResults.value = []
+  ownerSearch.value  = ''
+  await saveOwnerIds([...currentOwnerIds.value, u.id])
+}
+
+async function removeOwner(id) {
+  await saveOwnerIds(currentOwnerIds.value.filter(i => i !== id))
 }
 
 onMounted(load)
@@ -273,22 +329,74 @@ const bannerUrl = computed(() => imageUrl(store.value, 'banner'))
         <!-- ── Col izquierda: info del propietario + metadatos ── -->
         <div class="flex flex-col gap-4">
 
-          <!-- Propietario -->
+          <!-- Propietarios (editable) -->
           <div class="card">
             <p class="card-title">{{ ownerTitle }}</p>
-            <div v-if="owners.length" class="mt-3 flex flex-col gap-3">
-              <div v-for="(ownerItem, index) in owners" :key="`${ownerItem.email}-${index}`" class="flex items-center gap-3">
+
+            <!-- Lista actual -->
+            <div class="mt-3 flex flex-col gap-2">
+              <div
+                v-for="(ownerItem, index) in owners"
+                :key="`${ownerItem.email}-${index}`"
+                class="flex items-center gap-3 group"
+              >
                 <div class="w-9 h-9 rounded-full bg-[#151515] border border-[#c9a96e33] flex items-center justify-center text-[#c9a96e] font-medium text-sm shrink-0">
                   {{ (ownerItem.name || ownerItem.email || '?')[0].toUpperCase() }}
                 </div>
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                   <p class="text-[13px] text-[#d8d5cf] font-medium truncate">{{ ownerItem.name }}</p>
                   <p class="text-[11px] text-[#555] truncate">{{ ownerItem.email }}</p>
                   <p class="text-[10px] tracking-wide uppercase text-[#c9a96e66] mt-0.5">{{ ownerItem.role }}</p>
                 </div>
+                <button
+                  v-if="ownerItem.id"
+                  type="button"
+                  class="shrink-0 opacity-0 group-hover:opacity-100 text-[10px] text-red-500/50 hover:text-red-400 border border-red-900/30 hover:border-red-700/50 px-2 py-0.5 rounded-sm transition-all"
+                  :disabled="ownerSaving"
+                  @click="removeOwner(ownerItem.id)"
+                >
+                  Quitar
+                </button>
+              </div>
+              <p v-if="!owners.length" class="text-sm text-[#555]">No hay propietarios asociados.</p>
+            </div>
+
+            <!-- Buscador para añadir -->
+            <div class="mt-4 relative">
+              <p class="form-label mb-1.5">Añadir propietario</p>
+              <input
+                v-model="ownerSearch"
+                type="text"
+                class="admin-input w-full text-[0.75rem]"
+                placeholder="Buscar por nombre o correo…"
+                :disabled="ownerSaving"
+              />
+              <p v-if="ownerSearch && ownerSearchLoading" class="text-[10px] text-[#555] mt-1">Buscando…</p>
+
+              <div v-if="ownerResults.length" class="absolute left-0 right-0 top-full mt-1 bg-[#111] border border-[#c9a96e77] rounded-sm z-10 overflow-hidden max-h-44 overflow-y-auto shadow-lg">
+                <button
+                  v-for="u in ownerResults"
+                  :key="u.id"
+                  type="button"
+                  class="w-full text-left px-3 py-2.5 text-sm text-[#aaa] hover:bg-[#1a1508] hover:text-[#c9a96e] transition-colors border-b border-[#0f0f0f] last:border-b-0 flex items-center gap-3 group"
+                  @click="addOwner(u)"
+                >
+                  <div class="w-7 h-7 rounded-full bg-[#1a1508] border border-[#c9a96e44] flex items-center justify-center text-[#c9a96e] text-xs font-medium group-hover:border-[#c9a96e] shrink-0">
+                    {{ (u.name || u.email)[0].toUpperCase() }}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-medium truncate text-[12px]">{{ u.name || '—' }}</p>
+                    <p class="text-[11px] text-[#555] truncate">{{ u.email }}</p>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-[#c9a96e77] group-hover:text-[#c9a96e] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
               </div>
             </div>
-            <p v-else class="mt-3 text-sm text-[#555]">No hay propietarios asociados.</p>
+
+            <p v-if="ownerError" class="mt-2 text-red-400 text-[11px]">{{ ownerError }}</p>
+            <p v-if="ownerSaving" class="mt-2 text-[#555] text-[11px]">Guardando…</p>
           </div>
 
           <!-- Logo -->

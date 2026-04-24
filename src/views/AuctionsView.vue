@@ -269,7 +269,7 @@ onBeforeUnmount(() => {
             class="input-dark text-sm h-9 w-28"
           />
 
-          <label class="filter-check"><input v-model="filters.hasBuyNow" @change="filters.page = 1" type="checkbox"> <span>Cómpralo ya</span></label>
+          <label class="filter-chip"><input v-model="filters.hasBuyNow" @change="filters.page = 1" type="checkbox"><span>Cómpralo ya</span></label>
 
           <!-- Limpiar -->
           <button
@@ -483,21 +483,33 @@ onBeforeUnmount(() => {
   width: 100%;
   overflow-x: hidden;
 }
-.filter-check {
+.filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
   height: 2.25rem;
-  padding: 0 0.6rem;
-  border: 1px solid #2a2a2a;
-  color: #8a8580;
+  padding: 0 0.85rem;
+  border: 1px solid #252520;
+  background: transparent;
+  color: #5a5752;
   font-size: 0.625rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
 }
-.filter-check input {
-  accent-color: #c9a96e;
+.filter-chip:hover {
+  border-color: #3a3a35;
+  color: #8a8580;
+}
+.filter-chip input {
+  display: none;
+}
+.filter-chip:has(input:checked) {
+  border-color: #c9a96e;
+  color: #c9a96e;
+  background: rgba(201, 169, 110, 0.07);
 }
 .filter-select {
   appearance: none; -webkit-appearance: none;

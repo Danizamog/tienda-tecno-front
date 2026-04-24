@@ -29,12 +29,88 @@ const createError = ref('')
 const userResults = ref([])
 const userSearch  = ref('')
 const userSearchLoading = ref(false)
+const selectedOwners = ref([]) // [{ id, name, email }]
 
 const form = reactive({
   name: '', slug: '', description: '',
-  ownerEmail: '', ownerId: '',
   status: 'active', location: '', whatsapp: '', instagram: '',
 })
+
+// ── Estado modal "Gestionar propietarios" ─────────────────────────────────────
+const showOwners      = ref(false)
+const ownersStore     = ref(null)   // { id, name, expand.owner }
+const ownersLoading   = ref(false)
+const ownersError     = ref('')
+const ownersSearch    = ref('')
+const ownersResults   = ref([])
+const ownersSearchLoading = ref(false)
+const currentOwners   = ref([])     // [{ id, name, email }]
+
+let ownersSearchTimer = null
+
+watch(ownersSearch, (v) => {
+  clearTimeout(ownersSearchTimer)
+  if (v.length < 2) { ownersResults.value = []; return }
+  ownersSearchLoading.value = true
+  ownersSearchTimer = setTimeout(async () => {
+    try {
+      const data = await api.searchUsers(v, ['admin', 'vendor'])
+      ownersResults.value = (data?.items || []).filter(u => !currentOwners.value.find(o => o.id === u.id))
+    } catch { ownersResults.value = [] }
+    finally { ownersSearchLoading.value = false }
+  }, 350)
+})
+
+async function openOwnersModal(store) {
+  ownersStore.value   = store
+  ownersSearch.value  = ''
+  ownersResults.value = []
+  ownersError.value   = ''
+  showOwners.value    = true
+
+  const owners = store.expand?.owner
+  if (Array.isArray(owners)) {
+    currentOwners.value = owners.map(o => ({ id: o.id, name: o.name || '', email: o.email }))
+  } else if (owners) {
+    currentOwners.value = [{ id: owners.id, name: owners.name || '', email: owners.email }]
+  } else {
+    currentOwners.value = []
+  }
+}
+
+async function addOwnerToStore(u) {
+  if (currentOwners.value.find(o => o.id === u.id)) return
+  const updated = [...currentOwners.value, { id: u.id, name: u.name || '', email: u.email }]
+  await saveOwners(updated)
+  ownersSearch.value  = ''
+  ownersResults.value = []
+}
+
+async function removeOwnerFromStore(ownerId) {
+  const updated = currentOwners.value.filter(o => o.id !== ownerId)
+  await saveOwners(updated)
+}
+
+async function saveOwners(owners) {
+  ownersLoading.value = true
+  ownersError.value   = ''
+  try {
+    const ids = owners.map(o => o.id)
+    await api.updateStore(ownersStore.value.id, { owner: ids })
+    currentOwners.value = owners
+    // Actualizar el store en la lista local
+    const s = stores.value.find(s => s.id === ownersStore.value.id)
+    if (s) {
+      s.owner = ids
+      if (!s.expand) s.expand = {}
+      s.expand.owner = owners.map(o => ({ id: o.id, name: o.name, email: o.email }))
+    }
+  } catch (e) {
+    ownersError.value = e.message
+  } finally {
+    ownersLoading.value = false
+  }
+}
 
 const createLogoInput = ref(null)
 const createBannerInput = ref(null)
@@ -56,7 +132,7 @@ function createStoreValidationError() {
   if (description.length > 1000) return 'La descripción no puede superar 1000 caracteres.'
   if (whatsapp && !/^\+?[0-9\s()-]{7,20}$/.test(whatsapp)) return 'El WhatsApp no tiene un formato válido.'
   if (instagram && !/^@?[A-Za-z0-9._]{2,30}$/.test(instagram)) return 'El Instagram no tiene un formato válido.'
-  if (!form.ownerId) return 'Debes seleccionar un propietario de la lista de resultados.'
+  if (selectedOwners.value.length === 0) return 'Debes seleccionar al menos un propietario.'
   return ''
 }
 
@@ -138,7 +214,6 @@ onMounted(load)
 
 // ── Búsqueda de usuario al crear ──────────────────────────────────────────────
 let userSearchTimer = null
-const selectedOwnerId = ref(null)
 
 watch(userSearch, (v) => {
   clearTimeout(userSearchTimer)
@@ -150,7 +225,7 @@ watch(userSearch, (v) => {
   userSearchTimer = setTimeout(async () => {
     try {
       const data = await api.searchUsers(v, ['admin', 'vendor'])
-      userResults.value = data?.items || []
+      userResults.value = (data?.items || []).filter(u => !selectedOwners.value.find(o => o.id === u.id))
     } catch (_e) {
       userResults.value = []
     } finally {
@@ -160,11 +235,14 @@ watch(userSearch, (v) => {
 })
 
 function selectUser(u) {
-  form.ownerId    = u.id
-  form.ownerEmail = u.email
-  selectedOwnerId.value = u.id
-  userSearch.value = u.name ? `${u.name} (${u.email})` : u.email
+  if (selectedOwners.value.find(o => o.id === u.id)) return
+  selectedOwners.value.push({ id: u.id, name: u.name || '', email: u.email })
+  userSearch.value  = ''
   userResults.value = []
+}
+
+function removeSelectedOwner(id) {
+  selectedOwners.value = selectedOwners.value.filter(o => o.id !== id)
 }
 
 watch(() => form.name, (v) => {
@@ -187,7 +265,7 @@ async function submitCreate() {
     fd.append('name', form.name.trim())
     fd.append('slug', form.slug.trim())
     fd.append('description', form.description.trim())
-    fd.append('owner', form.ownerId)
+    selectedOwners.value.forEach(o => fd.append('owner', o.id))
     fd.append('status', form.status)
     fd.append('location', form.location.trim())
     fd.append('whatsapp', form.whatsapp.trim())
@@ -199,7 +277,8 @@ async function submitCreate() {
     await api.createStore(fd)
 
     showCreate.value = false
-    Object.assign(form, { name: '', slug: '', description: '', ownerEmail: '', ownerId: '', status: 'active', location: '', whatsapp: '', instagram: '' })
+    Object.assign(form, { name: '', slug: '', description: '', status: 'active', location: '', whatsapp: '', instagram: '' })
+    selectedOwners.value = []
     createLogoFile.value = null
     createBannerFile.value = null
     createLogoPreview.value = null
@@ -336,7 +415,7 @@ const pages = computed(() => {
     </div>
 
     <!-- Tabla -->
-    <div class="border border-[#181818] rounded-sm overflow-hidden">
+    <div class="border border-[#181818] rounded-sm overflow-x-auto">
       <!-- Loading skeleton -->
       <div v-if="loading" class="flex items-center justify-center py-20 bg-[#0a0a0a]">
         <div class="flex gap-1.5">
@@ -427,6 +506,12 @@ const pages = computed(() => {
                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </button>
+                  <!-- Gestionar propietarios -->
+                  <button class="action-btn" title="Gestionar propietarios" @click="openOwnersModal(store)">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </button>
                   <!-- Activar / Suspender -->
                   <button
                     class="action-btn"
@@ -501,42 +586,38 @@ const pages = computed(() => {
               <p class="mt-1 text-[10px] text-[#555]">URL amigable sin espacios ni caracteres especiales.</p>
             </div>
 
-            <!-- Propietario (búsqueda) -->
+            <!-- Propietarios (búsqueda múltiple) -->
             <div class="col-span-2 relative">
-              <label class="form-label">Propietario  *</label>
+              <label class="form-label">Propietarios *</label>
 
-              <!-- Estado: Seleccionado -->
-              <div v-if="form.ownerId" class="mb-3 flex items-center gap-2">
-                <div class="inline-flex items-center gap-2.5 px-3 py-1.5 bg-[#1a1508] border border-[#c9a96e] rounded-full">
-                  <svg class="w-4 h-4 text-[#c9a96e]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                  </svg>
-                  <div class="flex flex-col">
-                    <p class="text-[12px] text-[#c9a96e] font-medium">{{ userSearch.split('(')[0].trim() }}</p>
-                    <p class="text-[10px] text-[#c9a96e77]">{{ userSearch.split('(')[1]?.replace(')', '') || userSearch }}</p>
-                  </div>
-                  <button type="button" class="ml-1 text-[#c9a96e77] hover:text-[#c9a96e] font-bold text-sm transition-colors" @click="form.ownerId = ''; userSearch = ''; userResults = []">
-                    ✕
-                  </button>
+              <!-- Chips de propietarios seleccionados -->
+              <div v-if="selectedOwners.length > 0" class="flex flex-wrap gap-1.5 mb-2">
+                <div
+                  v-for="o in selectedOwners"
+                  :key="o.id"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#1a1508] border border-[#c9a96e55] rounded-full"
+                >
+                  <span class="text-[11px] text-[#c9a96e] font-medium">{{ o.name || o.email }}</span>
+                  <span class="text-[10px] text-[#c9a96e55]">{{ o.name ? o.email : '' }}</span>
+                  <button type="button" class="text-[#c9a96e55] hover:text-[#c9a96e] text-xs leading-none ml-0.5 transition-colors" @click="removeSelectedOwner(o.id)">✕</button>
                 </div>
               </div>
 
-              <!-- Estado: Buscando -->
+              <!-- Búsqueda -->
               <input
-                v-else
                 v-model="userSearch"
                 type="text"
                 class="admin-input w-full"
-                placeholder="Buscar por nombre o correo"
+                placeholder="Buscar por nombre o correo y añadir…"
               />
 
               <!-- Mensaje de ayuda -->
-              <p v-if="!form.ownerId && userSearch" class="text-[10px] text-[#fbbf24] mt-1">
-                {{ userSearchLoading ? 'Buscando...' : 'Selecciona de la lista' }}
+              <p v-if="userSearch" class="text-[10px] text-[#fbbf24] mt-1">
+                {{ userSearchLoading ? 'Buscando...' : 'Selecciona de la lista para añadir' }}
               </p>
 
               <!-- Resultados -->
-              <div v-if="userResults.length && !form.ownerId" class="absolute left-0 right-0 top-full mt-1 bg-[#111] border border-[#c9a96e77] rounded-sm z-10 overflow-hidden max-h-48 overflow-y-auto shadow-lg">
+              <div v-if="userResults.length" class="absolute left-0 right-0 top-full mt-1 bg-[#111] border border-[#c9a96e77] rounded-sm z-10 overflow-hidden max-h-48 overflow-y-auto shadow-lg">
                 <button
                   v-for="u in userResults"
                   :key="u.id"
@@ -613,6 +694,100 @@ const pages = computed(() => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </Transition>
+
+  <!-- ── Modal: Gestionar propietarios ─────────────────────────────────────── -->
+  <Transition name="modal">
+    <div v-if="showOwners" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showOwners = false"></div>
+      <div class="relative w-full max-w-md bg-[#0c0c0c] border border-[#222] rounded-sm shadow-2xl overflow-hidden">
+
+        <div class="px-6 py-4 border-b border-[#181818] flex items-center justify-between">
+          <div>
+            <h2 class="text-[15px] font-medium text-[#e8e5e0]">Propietarios</h2>
+            <p class="text-[11px] text-[#555] mt-0.5">{{ ownersStore?.name }}</p>
+          </div>
+          <button class="text-[#555] hover:text-[#999] transition-colors" @click="showOwners = false">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="px-6 py-5 flex flex-col gap-4">
+
+          <!-- Lista de propietarios actuales -->
+          <div>
+            <p class="form-label mb-2">Propietarios actuales</p>
+            <div v-if="currentOwners.length === 0" class="text-[#444] text-xs italic py-2">Sin propietarios asignados.</div>
+            <div v-else class="flex flex-col gap-1.5">
+              <div
+                v-for="o in currentOwners"
+                :key="o.id"
+                class="flex items-center justify-between px-3 py-2 bg-[#111] border border-[#1e1e1e] rounded-sm"
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-7 h-7 rounded-full bg-[#1a1508] border border-[#c9a96e44] flex items-center justify-center text-[#c9a96e] text-xs font-medium shrink-0">
+                    {{ (o.name || o.email)[0].toUpperCase() }}
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-[12px] text-[#d0cdc8] font-medium truncate">{{ o.name || '—' }}</p>
+                    <p class="text-[10px] text-[#555] truncate">{{ o.email }}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="ml-2 shrink-0 text-[10px] text-red-500/50 hover:text-red-400 border border-red-900/30 hover:border-red-700/50 px-2 py-0.5 rounded-sm transition-colors"
+                  :disabled="ownersLoading"
+                  @click="removeOwnerFromStore(o.id)"
+                >
+                  Quitar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Añadir propietario -->
+          <div class="relative">
+            <p class="form-label mb-2">Añadir propietario</p>
+            <input
+              v-model="ownersSearch"
+              type="text"
+              class="admin-input w-full"
+              placeholder="Buscar por nombre o correo…"
+            />
+            <p v-if="ownersSearch && ownersSearchLoading" class="text-[10px] text-[#555] mt-1">Buscando...</p>
+
+            <div v-if="ownersResults.length" class="absolute left-0 right-0 top-full mt-1 bg-[#111] border border-[#c9a96e77] rounded-sm z-10 overflow-hidden max-h-44 overflow-y-auto shadow-lg">
+              <button
+                v-for="u in ownersResults"
+                :key="u.id"
+                type="button"
+                class="w-full text-left px-3 py-2.5 text-sm text-[#aaa] hover:bg-[#1a1508] hover:text-[#c9a96e] transition-colors border-b border-[#0f0f0f] last:border-b-0 flex items-center gap-3 group"
+                @click="addOwnerToStore(u)"
+              >
+                <div class="w-7 h-7 rounded-full bg-[#1a1508] border border-[#c9a96e44] flex items-center justify-center text-[#c9a96e] text-xs font-medium group-hover:border-[#c9a96e]">
+                  {{ (u.name || u.email)[0].toUpperCase() }}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium truncate">{{ u.name || '—' }}</p>
+                  <p class="text-[11px] text-[#555] truncate">{{ u.email }}</p>
+                </div>
+                <svg class="w-4 h-4 text-[#c9a96e77] group-hover:text-[#c9a96e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <p v-if="ownersError" class="text-red-400 text-xs">{{ ownersError }}</p>
+
+          <div class="flex justify-end pt-1">
+            <button class="btn-ghost" @click="showOwners = false">Cerrar</button>
+          </div>
+        </div>
       </div>
     </div>
   </Transition>

@@ -24,6 +24,8 @@ const pageLabel = computed(() => {
       return 'Pagos QR'
     case 'vendor-giftcards':
       return 'Gift Cards'
+    case 'vendor-bid-orders':
+      return 'Pedidos Subasta'
     default:
       return 'Vista general'
   }
@@ -43,8 +45,9 @@ const navItems = [
     links: [
       { to: '/vendor/products', label: 'Productos',  icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
       { to: '/vendor/auctions', label: 'Subastas',   icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-      { to: '/vendor/orders',   label: 'Órdenes',    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
-      { to: '/vendor/payments',  label: 'Pagos QR',   icon: 'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z' },
+      { to: '/vendor/orders',     label: 'Órdenes',         icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
+      { to: '/vendor/bid-orders', label: 'Pedidos Subasta', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { to: '/vendor/payments',   label: 'Pagos QR',        icon: 'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z' },
       { to: '/vendor/giftcards', label: 'Gift Cards', icon: 'M12 8v13m0-13V6a4 4 0 00-4-4H5.45a1 1 0 00-.9 1.447L6 6m6 2l1.45-2.553A1 1 0 0114.55 2H16a4 4 0 014 4v2M4 10h16M4 10a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2v-6a2 2 0 00-2-2M4 10h16' },
     ],
   },
@@ -90,6 +93,15 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
       <div class="panel-topbar__actions">
         <RouterLink to="/vendor/select-store" class="panel-topbar__action hidden md:inline-flex">
           Cambiar tienda
+        </RouterLink>
+        <RouterLink
+          to="/vendor/select-store"
+          class="panel-topbar__menu md:hidden"
+          title="Cambiar tienda"
+        >
+          <svg class="w-4 h-4 text-[#8ab4a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+          </svg>
         </RouterLink>
         <button
           id="vendor-hamburger"
@@ -274,7 +286,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   background: #0f1714;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 1024px) {
   .panel-topbar__menu {
     display: none;
   }

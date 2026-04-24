@@ -72,6 +72,12 @@ const routes = [
     component: () => import('@/views/OrdersView.vue'),
   },
   {
+    path: '/bid-orders',
+    name: 'bid-orders',
+    component: () => import('@/views/BidOrdersView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/account',
     name: 'account',
     component: () => import('@/views/AccountView.vue'),
@@ -135,6 +141,11 @@ const routes = [
         path: 'giftcards',
         name: 'vendor-giftcards',
         component: () => import('@/views/vendor/VendorGiftcardsView.vue'),
+      },
+      {
+        path: 'bid-orders',
+        name: 'vendor-bid-orders',
+        component: () => import('@/views/vendor/VendorBidOrdersView.vue'),
       },
     ],
   },

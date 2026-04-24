@@ -312,9 +312,9 @@ onMounted(() => {
           />
 
           <!-- Toggles -->
-          <label class="filter-check"><input v-model="filters.inStock" @change="filters.page = 1" type="checkbox"> <span>Con stock</span></label>
-          <label class="filter-check"><input v-model="filters.featured" @change="filters.page = 1" type="checkbox"> <span>Destacados</span></label>
-          <label class="filter-check"><input v-model="filters.discounted" @change="filters.page = 1" type="checkbox"> <span>Ofertas</span></label>
+          <label class="filter-chip"><input v-model="filters.inStock" @change="filters.page = 1" type="checkbox"><span>Con stock</span></label>
+          <label class="filter-chip"><input v-model="filters.featured" @change="filters.page = 1" type="checkbox"><span>Destacados</span></label>
+          <label class="filter-chip"><input v-model="filters.discounted" @change="filters.page = 1" type="checkbox"><span>Ofertas</span></label>
 
           <!-- Ordenar -->
           <div class="relative">
@@ -505,21 +505,33 @@ onMounted(() => {
   outline: none; cursor: pointer; transition: border-color 0.2s;
   white-space: nowrap; min-width: 11rem;
 }
-.filter-check {
+.filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
   height: 2.25rem;
-  padding: 0 0.6rem;
-  border: 1px solid #2a2a2a;
-  color: #8a8580;
+  padding: 0 0.85rem;
+  border: 1px solid #252520;
+  background: transparent;
+  color: #5a5752;
   font-size: 0.625rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
 }
-.filter-check input {
-  accent-color: #c9a96e;
+.filter-chip:hover {
+  border-color: #3a3a35;
+  color: #8a8580;
+}
+.filter-chip input {
+  display: none;
+}
+.filter-chip:has(input:checked) {
+  border-color: #c9a96e;
+  color: #c9a96e;
+  background: rgba(201, 169, 110, 0.07);
 }
 .filter-select:focus { border-color: #c9a96e; }
 .filter-select option { background-color: #111111; color: #f0ede8; }

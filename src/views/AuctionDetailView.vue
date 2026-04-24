@@ -23,6 +23,18 @@ const loading  = ref(true)
 const error    = ref('')
 const now      = ref(Date.now())
 
+// ── Modal de pago ─────────────────────────────────────────────────────────────
+const showPayModal   = ref(false)
+const payOrder       = ref(null)
+const payStoreQr     = ref('')
+const payStoreInstr  = ref('')
+const payProofFile   = ref(null)
+const payProofPrev   = ref('')
+const payUploading   = ref(false)
+const payUploadErr   = ref('')
+const payUploadOk    = ref(false)
+const loadingPayData = ref(false)
+
 const bidAmount    = ref('')
 const bidLoading   = ref(false)
 const bidError     = ref('')
@@ -345,6 +357,102 @@ function onAmountInput() {
   if (bidError.value) bidError.value = ''
 }
 
+// ── Modal de pago ─────────────────────────────────────────────────────────────
+const API = import.meta.env.VITE_API_URL || 'http://localhost:9000'
+const PB  = import.meta.env.VITE_POCKETBASE_URL || ''
+
+function authHeaders() {
+  return {
+    'X-User-Id':   session.value?.userId || '',
+    'X-User-Role': session.value?.role || 'user',
+  }
+}
+
+async function openPayModal() {
+  showPayModal.value  = true
+  payOrder.value      = null
+  payStoreQr.value    = ''
+  payStoreInstr.value = ''
+  payProofFile.value  = null
+  payProofPrev.value  = ''
+  payUploadErr.value  = ''
+  payUploadOk.value   = false
+  loadingPayData.value = true
+
+  try {
+    // Buscar el pedido de subasta
+    const res = await fetch(`${API}/orders-bid/buyer/my`, {
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    })
+    if (res.ok) {
+      const data = await res.json()
+      const found = (data.items || []).find(o => {
+        const bidId = Array.isArray(o.bid) ? o.bid[0] : o.bid
+        return bidId === route.params.id
+      })
+      payOrder.value = found || null
+    }
+
+    // Cargar QR de la tienda
+    const storeId = Array.isArray(auction.value?.store)
+      ? auction.value.store[0]
+      : auction.value?.store
+    if (storeId) {
+      const sr = await fetch(`${PB}/api/collections/stores/records/${storeId}?fields=id,payment_qr,payment_instructions`)
+      if (sr.ok) {
+        const store = await sr.json()
+        payStoreQr.value    = store.payment_qr ? `${PB}/api/files/stores/${storeId}/${store.payment_qr}` : ''
+        payStoreInstr.value = store.payment_instructions || ''
+      }
+    }
+  } catch { /* silencioso */ }
+  finally { loadingPayData.value = false }
+}
+
+function onPayProofChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  payProofFile.value = file
+  payProofPrev.value = URL.createObjectURL(file)
+}
+
+async function uploadPayProof() {
+  if (!payProofFile.value || !payOrder.value) return
+  payUploading.value = true
+  payUploadErr.value = ''
+  payUploadOk.value  = false
+  try {
+    const form = new FormData()
+    form.append('payment_proof', payProofFile.value)
+    const res = await fetch(`${API}/orders-bid/buyer/${payOrder.value.id}/proof`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body:    form,
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Error al subir comprobante')
+    payUploadOk.value  = true
+    payOrder.value     = data
+  } catch (e) {
+    payUploadErr.value = e.message
+  } finally {
+    payUploading.value = false
+  }
+}
+
+function payDeadline() {
+  if (!payOrder.value?.payment_until) return null
+  return new Date(payOrder.value.payment_until)
+}
+
+function payCanUpload() {
+  if (!payOrder.value) return false
+  const st = payOrder.value.status
+  if (st && !['pending', ''].includes(st)) return false
+  const dl = payDeadline()
+  return !dl || dl > new Date()
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function money(v) {
   return new Intl.NumberFormat('es-BO', { maximumFractionDigits: 0 }).format(Number(v || 0))
@@ -543,20 +651,38 @@ function goLogin() {
           </div>
 
           <!-- Bid form / Ended / Login prompt -->
-          <div v-if="auction.status === 'ended' || timeLeft.expired" class="p-5 border border-[#1a1a1a] bg-[#0b0b0b]">
-            <p class="text-[11px] tracking-[0.18em] uppercase text-[#555] mb-2">Subasta cerrada</p>
-            <div v-if="auction.expand?.winner" class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full border border-[#8ab4a033] bg-[#111] flex items-center justify-center text-[#8ab4a0] text-sm font-medium shrink-0">
-                {{ (auction.expand.winner.name || auction.expand.winner.email || '?')[0].toUpperCase() }}
+          <div v-if="auction.status === 'ended' || timeLeft.expired" class="border border-[#1a1a1a] bg-[#0b0b0b] overflow-hidden">
+            <div class="p-5">
+              <p class="text-[11px] tracking-[0.18em] uppercase text-[#555] mb-2">Subasta cerrada</p>
+              <div v-if="auction.expand?.winner" class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full border border-[#8ab4a033] bg-[#111] flex items-center justify-center text-[#8ab4a0] text-sm font-medium shrink-0">
+                  {{ (auction.expand.winner.name || auction.expand.winner.email || '?')[0].toUpperCase() }}
+                </div>
+                <div>
+                  <p class="text-[13px] text-[#d8d5cf]">
+                    {{ auction.winner === session.value?.userId ? '¡Ganaste!' : `Ganó ${auction.expand.winner.name || 'Usuario'}` }}
+                  </p>
+                  <p class="text-[11px] text-[#c9a96e]">Bs {{ money(currentPrice) }}</p>
+                </div>
               </div>
-              <div>
-                <p class="text-[13px] text-[#d8d5cf]">
-                  {{ auction.winner === session.value?.userId ? '¡Ganaste!' : `Ganó ${auction.expand.winner.name || 'Usuario'}` }}
-                </p>
-                <p class="text-[11px] text-[#c9a96e]">Bs {{ money(currentPrice) }}</p>
-              </div>
+              <p v-else class="text-[12px] text-[#666]">Sin ganador</p>
             </div>
-            <p v-else class="text-[12px] text-[#666]">Sin ganador</p>
+            <!-- Banner de pago para el ganador -->
+            <div
+              v-if="isAuthenticated && auction.winner === session.value?.userId"
+              class="border-t border-[#c9a96e33] bg-[#14110d] p-4 flex items-center justify-between gap-3"
+            >
+              <div>
+                <p class="text-[12px] text-[#c9a96e] font-medium">¡Debes completar tu pago!</p>
+                <p class="text-[10px] text-[#888] mt-0.5">Tienes 2 días para subir tu comprobante</p>
+              </div>
+              <button
+                @click="openPayModal"
+                class="px-4 py-2 bg-[#c9a96e] text-[#0a0a0a] text-[10px] tracking-[0.14em] uppercase font-semibold rounded-sm hover:bg-[#d4b97e] transition-colors whitespace-nowrap shrink-0"
+              >
+                Pagar ahora
+              </button>
+            </div>
           </div>
 
           <div v-else-if="!isAuthenticated" class="p-5 border border-[#1a1a1a] bg-[#0b0b0b] text-center">
@@ -779,6 +905,110 @@ function goLogin() {
   </main>
 
   <AppFooter />
+
+  <!-- ── Modal de pago ────────────────────────────────────────────────────── -->
+  <Transition name="modal">
+    <div
+      v-if="showPayModal"
+      class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+      @click.self="showPayModal = false"
+    >
+      <div class="bg-[#0e0e0e] border border-[#1f1f1f] rounded-sm w-full max-w-md max-h-[92vh] overflow-y-auto">
+
+        <!-- Cabecera -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-[#1a1a1a]">
+          <h2 class="text-[13px] tracking-[0.18em] uppercase text-[#e8e5e0]">Completar pago</h2>
+          <button @click="showPayModal = false" class="text-[#555] hover:text-[#c9a96e] transition-colors text-2xl leading-none">&times;</button>
+        </div>
+
+        <!-- Cargando -->
+        <div v-if="loadingPayData" class="py-12 text-center text-[#555] text-sm">Cargando…</div>
+
+        <div v-else class="p-6 flex flex-col gap-5">
+
+          <!-- Monto -->
+          <div class="bg-[#141414] border border-[#1f1f1f] rounded-sm p-4 text-center">
+            <p class="text-[10px] tracking-[0.2em] uppercase text-[#555] mb-1">Total a pagar</p>
+            <p class="text-3xl font-light text-[#c9a96e] tabular-nums">
+              Bs {{ money(payOrder?.total ?? auction?.current_price ?? 0) }}
+            </p>
+            <p class="text-[11px] text-[#555] mt-1">{{ auction?.title }}</p>
+          </div>
+
+          <!-- Plazo -->
+          <div v-if="payOrder?.payment_until" class="flex items-center gap-2 text-[11px]"
+            :class="payDeadline() && payDeadline() < new Date() ? 'text-red-400' : 'text-amber-400/80'"
+          >
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Pagar antes del {{ payDeadline()?.toLocaleDateString('es-BO', { day:'2-digit', month:'long', hour:'2-digit', minute:'2-digit' }) }}
+          </div>
+
+          <!-- Sin pedido aún -->
+          <div v-if="!payOrder" class="bg-amber-900/10 border border-amber-900/30 rounded-sm p-3 text-[12px] text-amber-400 leading-relaxed">
+            Tu pedido aún se está procesando. Espera unos segundos y vuelve a intentarlo.
+          </div>
+
+          <!-- QR de la tienda -->
+          <template v-if="payOrder && payCanUpload()">
+            <div v-if="payStoreQr" class="flex flex-col items-center gap-3">
+              <p class="text-[10px] tracking-[0.18em] uppercase text-[#666]">Escanea para pagar</p>
+              <img :src="payStoreQr" class="w-52 h-52 object-contain bg-white p-2 rounded-sm" alt="QR pago" />
+              <p v-if="payStoreInstr" class="text-[12px] text-[#888] text-center leading-relaxed">{{ payStoreInstr }}</p>
+            </div>
+            <div v-else class="text-[12px] text-[#555] text-center py-2">
+              La tienda no tiene QR configurado. Contáctalos directamente.
+            </div>
+
+            <!-- Ya subió comprobante -->
+            <div v-if="payUploadOk || payOrder.payment_proof" class="flex items-center gap-2 text-emerald-400 text-[12px] bg-emerald-900/10 border border-emerald-900/30 rounded-sm p-3">
+              <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              Comprobante enviado. El vendedor lo revisará pronto.
+            </div>
+
+            <!-- Upload comprobante -->
+            <div v-else>
+              <p class="text-[10px] tracking-[0.18em] uppercase text-[#666] mb-3">Sube tu comprobante de pago</p>
+              <label class="block cursor-pointer border border-dashed border-[#2a2a2a] rounded-sm p-5 text-center hover:border-[#c9a96e44] transition-colors">
+                <input type="file" accept="image/*,.pdf" class="hidden" @change="onPayProofChange" />
+                <div v-if="payProofPrev">
+                  <img :src="payProofPrev" class="w-full max-h-36 object-contain mb-2 rounded-sm" />
+                  <span class="text-[11px] text-[#666]">Cambiar imagen</span>
+                </div>
+                <div v-else class="flex flex-col items-center gap-2">
+                  <svg class="w-8 h-8 text-[#2a2a2a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                  </svg>
+                  <span class="text-[12px] text-[#555]">Seleccionar imagen o PDF</span>
+                </div>
+              </label>
+
+              <div v-if="payUploadErr" class="mt-2 text-red-400 text-[11px]">{{ payUploadErr }}</div>
+
+              <button
+                v-if="payProofFile"
+                :disabled="payUploading"
+                @click="uploadPayProof"
+                class="mt-3 w-full py-3 bg-[#c9a96e] text-[#0a0a0a] text-[11px] tracking-[0.16em] uppercase font-bold rounded-sm hover:bg-[#d4b97e] disabled:opacity-50 transition-colors"
+              >
+                {{ payUploading ? 'Enviando…' : 'Enviar comprobante' }}
+              </button>
+            </div>
+          </template>
+
+          <!-- Plazo vencido -->
+          <div v-else-if="payOrder && !payCanUpload()" class="bg-red-900/10 border border-red-900/30 rounded-sm p-3 text-[12px] text-red-400 text-center">
+            El plazo de pago ha vencido. La subasta será re-publicada.
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </Transition>
+
 </template>
 
 <style scoped>

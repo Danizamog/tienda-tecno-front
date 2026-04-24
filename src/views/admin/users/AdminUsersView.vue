@@ -114,18 +114,18 @@ const pages = computed(() => {
       {{ error }}
     </div>
 
-    <div class="border border-[#181818] rounded-sm overflow-hidden">
+    <div class="border border-[#181818] rounded-sm overflow-x-auto">
       <div v-if="loading" class="px-4 py-10 text-center text-[#666] text-sm">Cargando usuarios...</div>
 
       <template v-else>
-        <table class="w-full text-sm">
+        <table class="w-full min-w-135 text-sm">
           <thead>
             <tr class="border-b border-[#181818] bg-[#0c0c0c]">
               <th class="th">Nombre</th>
-              <th class="th">Correo</th>
+              <th class="th hidden sm:table-cell">Correo</th>
               <th class="th">Rol</th>
-              <th class="th">Verificado</th>
-              <th class="th">Creado</th>
+              <th class="th hidden md:table-cell">Verificado</th>
+              <th class="th hidden lg:table-cell">Creado</th>
               <th class="th text-right">Detalle</th>
             </tr>
           </thead>
@@ -136,14 +136,14 @@ const pages = computed(() => {
             <tr v-for="u in users" :key="u.id" class="border-b border-[#111] hover:bg-[#0d0d0d] transition-colors">
               <td class="td">
                 <p class="text-[#d8d5cf] font-medium">{{ u.name || 'Sin nombre' }}</p>
-                <p class="text-[10px] text-[#444] mt-0.5">{{ u.id }}</p>
+                <p class="text-[10px] text-[#444] mt-0.5 hidden sm:block">{{ u.id }}</p>
               </td>
-              <td class="td text-[#b5b2ac]">{{ u.email }}</td>
+              <td class="td text-[#b5b2ac] hidden sm:table-cell">{{ u.email }}</td>
               <td class="td">
                 <span :class="['badge', roleClass(u.role)]">{{ roleLabel(u.role) }}</span>
               </td>
-              <td class="td text-[#aaa]">{{ u.verified ? 'Sí' : 'No' }}</td>
-              <td class="td text-[#777]">{{ fmtDate(u.created) }}</td>
+              <td class="td text-[#aaa] hidden md:table-cell">{{ u.verified ? 'Sí' : 'No' }}</td>
+              <td class="td text-[#777] hidden lg:table-cell">{{ fmtDate(u.created) }}</td>
               <td class="td text-right">
                 <RouterLink
                   :to="`/admin/users/${u.id}`"

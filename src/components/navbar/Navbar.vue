@@ -24,6 +24,10 @@ watch(() => route.path, () => {
 	showMobileMenu.value = false
 })
 
+watch(showMobileMenu, (val) => {
+	document.body.style.overflow = val ? 'hidden' : ''
+})
+
 function handleClickOutside(e) {
 	if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
 		showMenu.value = false
@@ -78,6 +82,7 @@ onBeforeUnmount(() => {
 	window.removeEventListener('focus', handleWindowFocus)
 	document.removeEventListener('visibilitychange', handleVisibilityChange)
 	document.removeEventListener('click', handleClickOutside)
+	document.body.style.overflow = ''
 })
 </script>
 
@@ -98,7 +103,7 @@ onBeforeUnmount(() => {
 			<!-- Logo (fijo izquierda) -->
 			<RouterLink
 				to="/"
-				class="shrink-0 font-display text-xl sm:text-2xl font-light tracking-[0.06em] sm:tracking-[0.15em] text-[#f0ede8] uppercase whitespace-nowrap transition-opacity duration-300 hover:opacity-70"
+				class="shrink-0 font-display text-base sm:text-xl lg:text-2xl font-light tracking-[0.04em] sm:tracking-[0.08em] lg:tracking-[0.15em] text-[#f0ede8] uppercase whitespace-nowrap transition-opacity duration-300 hover:opacity-70"
 			>
 				TuVenta<span class="text-[#c9a96e]">Confiada</span>
 			</RouterLink>
@@ -198,9 +203,10 @@ onBeforeUnmount(() => {
 									<div class="flex flex-col gap-0.5">
 										<RouterLink to="/account"   class="dropdown-link" @click="showMenu = false">Perfil</RouterLink>
 										<RouterLink to="/reviews"   class="dropdown-link" @click="showMenu = false">Reviews</RouterLink>
-										<RouterLink to="/orders"    class="dropdown-link" @click="showMenu = false">Pedidos</RouterLink>
-										<RouterLink to="/wishlist"  class="dropdown-link" @click="showMenu = false">Wishlist</RouterLink>
-										<RouterLink to="/giftcards" class="dropdown-link" @click="showMenu = false">Giftcards</RouterLink>
+										<RouterLink to="/orders"     class="dropdown-link" @click="showMenu = false">Pedidos</RouterLink>
+										<RouterLink to="/bid-orders" class="dropdown-link" @click="showMenu = false">Subastas ganadas</RouterLink>
+										<RouterLink to="/wishlist"   class="dropdown-link" @click="showMenu = false">Wishlist</RouterLink>
+										<RouterLink to="/giftcards"  class="dropdown-link" @click="showMenu = false">Giftcards</RouterLink>
 									</div>
 								</div>
 
@@ -209,10 +215,11 @@ onBeforeUnmount(() => {
 									<div class="flex flex-col gap-0.5">
 										<RouterLink to="/vendor"           class="dropdown-link" @click="showMenu = false">Mi tienda</RouterLink>
 										<RouterLink to="/vendor/products"  class="dropdown-link" @click="showMenu = false">Productos</RouterLink>
-										<RouterLink to="/vendor/auctions"  class="dropdown-link" @click="showMenu = false">Subastas</RouterLink>
-										<RouterLink to="/vendor/orders"    class="dropdown-link" @click="showMenu = false">Órdenes</RouterLink>
-										<RouterLink to="/vendor/payments"  class="dropdown-link" @click="showMenu = false">Pagos QR</RouterLink>
-										<RouterLink to="/vendor/giftcards" class="dropdown-link" @click="showMenu = false">Gift Cards</RouterLink>
+										<RouterLink to="/vendor/auctions"   class="dropdown-link" @click="showMenu = false">Subastas</RouterLink>
+										<RouterLink to="/vendor/orders"     class="dropdown-link" @click="showMenu = false">Órdenes</RouterLink>
+										<RouterLink to="/vendor/bid-orders" class="dropdown-link" @click="showMenu = false">Pedidos subasta</RouterLink>
+										<RouterLink to="/vendor/payments"   class="dropdown-link" @click="showMenu = false">Pagos QR</RouterLink>
+										<RouterLink to="/vendor/giftcards"  class="dropdown-link" @click="showMenu = false">Gift Cards</RouterLink>
 									</div>
 								</div>
 
@@ -268,7 +275,8 @@ onBeforeUnmount(() => {
 			v-if="isAuthenticated"
 			class="hidden lg:flex items-center justify-center gap-9 h-11 border-t border-[#151515]"
 		>
-			<RouterLink to="/orders"                                class="nav-link-sub" active-class="nav-link-active">Pedidos</RouterLink>
+			<RouterLink to="/orders"     class="nav-link-sub" active-class="nav-link-active">Pedidos</RouterLink>
+			<RouterLink to="/bid-orders" class="nav-link-sub" active-class="nav-link-active">Subastas</RouterLink>
 			<RouterLink to="/wishlist" class="nav-link-sub relative" active-class="nav-link-active">
 				Wishlist
 				<span
@@ -281,75 +289,89 @@ onBeforeUnmount(() => {
 		</div>
 
 		<!-- ══════════════════════════════════════════
-		     MENÚ MÓVIL — desplegable (< lg)
+		     MENÚ MÓVIL — panel fixed con scroll (< lg)
+		     fixed top-16: queda justo debajo del header sticky (h-16 = 64px)
 		════════════════════════════════════════════ -->
 		<Transition name="mobile-menu">
 			<div
 				v-if="showMobileMenu"
-				class="lg:hidden absolute top-full left-0 right-0 bg-[#0a0a0a] border-b border-[#1a1a1a] z-40 shadow-xl shadow-black/40"
+				class="lg:hidden fixed inset-x-0 top-16 bottom-0 z-40 flex flex-col"
 			>
-				<div class="px-4 pt-4 pb-2 flex flex-col gap-0.5">
-					<p class="mobile-section-label">Navegación</p>
-					<RouterLink to="/"         class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Inicio</RouterLink>
-					<RouterLink to="/stores"   class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Tiendas</RouterLink>
-					<RouterLink to="/products" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Productos</RouterLink>
-					<RouterLink to="/auctions" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Subastas</RouterLink>
+				<!-- Overlay oscuro detrás del panel -->
+				<div
+					class="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+					@click="showMobileMenu = false"
+				></div>
+
+				<!-- Panel scrollable -->
+				<div class="relative flex flex-col h-full max-h-full bg-[#0a0a0a] border-t border-[#1a1a1a] overflow-y-auto overscroll-contain shadow-xl shadow-black/50">
+
+					<div class="px-5 pt-5 pb-2 flex flex-col gap-0.5">
+						<p class="mobile-section-label">Navegación</p>
+						<RouterLink to="/"         class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Inicio</RouterLink>
+						<RouterLink to="/stores"   class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Tiendas</RouterLink>
+						<RouterLink to="/products" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Productos</RouterLink>
+						<RouterLink to="/auctions" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Subastas</RouterLink>
+					</div>
+
+					<template v-if="isAuthenticated">
+						<div class="px-5 py-3 border-t border-[#161616] flex flex-col gap-0.5">
+							<p class="mobile-section-label">Cuenta</p>
+							<RouterLink to="/orders"     class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Pedidos</RouterLink>
+							<RouterLink to="/bid-orders" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Subastas ganadas</RouterLink>
+							<RouterLink to="/wishlist"   class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Wishlist</RouterLink>
+							<RouterLink to="/giftcards"  class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Giftcards</RouterLink>
+							<RouterLink to="/account"    class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Perfil</RouterLink>
+						</div>
+
+						<div v-if="canViewVendor" class="px-5 py-3 border-t border-[#161616] flex flex-col gap-0.5">
+							<p class="mobile-section-label" style="color:#c9a96e88">Vendedor</p>
+							<RouterLink to="/vendor/dashboard" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Panel vendedor</RouterLink>
+							<RouterLink to="/vendor"           class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Mi tienda</RouterLink>
+							<RouterLink to="/vendor/products"  class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Productos</RouterLink>
+							<RouterLink to="/vendor/orders"    class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Órdenes</RouterLink>
+							<RouterLink to="/vendor/bid-orders" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Pedidos subasta</RouterLink>
+							<RouterLink to="/vendor/giftcards"  class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Gift Cards</RouterLink>
+						</div>
+
+						<div v-if="isAdmin" class="px-5 py-3 border-t border-[#161616] flex flex-col gap-0.5">
+							<p class="mobile-section-label">Admin</p>
+							<RouterLink to="/admin"              class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Panel</RouterLink>
+							<RouterLink to="/admin/users"        class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Usuarios</RouterLink>
+							<RouterLink to="/admin/stores"       class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Tiendas</RouterLink>
+							<RouterLink to="/admin/transactions" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Transacciones</RouterLink>
+						</div>
+
+						<div class="px-5 py-4 mt-auto border-t border-[#161616]">
+							<button
+								type="button"
+								class="flex items-center gap-2.5 text-[11px] tracking-[0.16em] uppercase text-[#888] hover:text-[#c9a96e] transition-colors duration-200 py-1"
+								@click="handleLogout"
+							>
+								<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+								</svg>
+								Cerrar sesión
+							</button>
+						</div>
+					</template>
+
+					<template v-else>
+						<div class="px-5 py-4 border-t border-[#161616]">
+							<RouterLink
+								to="/login"
+								class="flex items-center gap-2.5 text-[11px] tracking-[0.16em] uppercase text-[#c9a96e88] hover:text-[#c9a96e] transition-colors duration-200 py-1"
+								@click="showMobileMenu = false"
+							>
+								<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+								</svg>
+								Ingresar
+							</RouterLink>
+						</div>
+					</template>
+
 				</div>
-
-				<template v-if="isAuthenticated">
-					<div class="px-4 py-2 border-t border-[#161616] flex flex-col gap-0.5">
-						<p class="mobile-section-label">Cuenta</p>
-						<RouterLink to="/orders"   class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Pedidos</RouterLink>
-						<RouterLink to="/wishlist"  class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Wishlist</RouterLink>
-						<RouterLink to="/giftcards" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Giftcards</RouterLink>
-						<RouterLink to="/account"   class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Perfil</RouterLink>
-					</div>
-
-					<div v-if="canViewVendor" class="px-4 py-2 border-t border-[#161616] flex flex-col gap-0.5">
-						<p class="mobile-section-label" style="color:#c9a96e88">Vendedor</p>
-						<RouterLink to="/vendor/dashboard" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Panel vendedor</RouterLink>
-						<RouterLink to="/vendor"           class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Mi tienda</RouterLink>
-						<RouterLink to="/vendor/products"  class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Productos</RouterLink>
-						<RouterLink to="/vendor/orders"    class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Órdenes</RouterLink>
-						<RouterLink to="/vendor/giftcards" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Gift Cards</RouterLink>
-					</div>
-
-					<div v-if="isAdmin" class="px-4 py-2 border-t border-[#161616] flex flex-col gap-0.5">
-						<p class="mobile-section-label">Admin</p>
-						<RouterLink to="/admin"              class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Panel</RouterLink>
-						<RouterLink to="/admin/users"        class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Usuarios</RouterLink>
-						<RouterLink to="/admin/stores"       class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Tiendas</RouterLink>
-						<RouterLink to="/admin/transactions" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Transacciones</RouterLink>
-					</div>
-
-					<div class="px-4 py-3 border-t border-[#161616]">
-						<button
-							type="button"
-							class="flex items-center gap-2 text-[11px] tracking-[0.16em] uppercase text-[#888] hover:text-[#c9a96e] transition-colors duration-200"
-							@click="handleLogout"
-						>
-							<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
-							</svg>
-							Cerrar sesión
-						</button>
-					</div>
-				</template>
-
-				<template v-else>
-					<div class="px-4 py-3 border-t border-[#161616]">
-						<RouterLink
-							to="/login"
-							class="flex items-center gap-2 text-[11px] tracking-[0.16em] uppercase text-[#c9a96e88] hover:text-[#c9a96e] transition-colors duration-200"
-							@click="showMobileMenu = false"
-						>
-							<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-							</svg>
-							Ingresar
-						</RouterLink>
-					</div>
-				</template>
 			</div>
 		</Transition>
 
@@ -435,15 +457,17 @@ button:hover .hamburger-line { background: #c9a96e; }
   padding: 0.2rem 0.5rem 0.35rem;
 }
 .mobile-link {
-  display: block;
-  font-size: 0.8125rem;
-  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
   color: #908e88;
-  padding: 0.45rem 0.5rem;
-  border-radius: 2px;
+  padding: 0.55rem 0.6rem;
+  border-radius: 3px;
   transition: color 0.18s ease, background 0.18s ease, padding-left 0.18s ease;
 }
-.mobile-link:hover  { color: #e8e5e0; background: #111; padding-left: 0.85rem; }
+.mobile-link:hover  { color: #e8e5e0; background: #111; padding-left: 1rem; }
 .mobile-link-active { color: #c9a96e !important; background: #0f0f0e; }
 
 /* ══ Dropdown ══ */
@@ -477,8 +501,15 @@ button:hover .hamburger-line { background: #c9a96e; }
 .badge-leave-to     { transform: scale(0); opacity: 0; }
 
 /* ══ Animación menú móvil ══ */
-.mobile-menu-enter-active { transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.4,0,0.2,1); }
-.mobile-menu-leave-active { transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.4,0,0.2,1); }
+.mobile-menu-enter-active { transition: opacity 0.22s ease; }
+.mobile-menu-leave-active { transition: opacity 0.18s ease; }
 .mobile-menu-enter-from,
-.mobile-menu-leave-to     { opacity: 0; transform: translateY(-8px); }
+.mobile-menu-leave-to     { opacity: 0; }
+
+.mobile-menu-enter-active .relative,
+.mobile-menu-leave-active .relative {
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.mobile-menu-enter-from .relative,
+.mobile-menu-leave-to .relative { transform: translateY(-6px); }
 </style>
