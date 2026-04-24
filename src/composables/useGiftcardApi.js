@@ -1,6 +1,6 @@
 import { useAuthSession } from '@/composables/useAuthSession'
 
-const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 
 export function useGiftcardApi() {
   const { session } = useAuthSession()

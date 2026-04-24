@@ -4,7 +4,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 
-const API    = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
+const API    = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 const PB     = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
 const router = useRouter()
 

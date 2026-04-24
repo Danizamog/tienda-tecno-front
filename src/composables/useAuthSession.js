@@ -112,7 +112,7 @@ function refreshSession() {
 async function syncSessionRoleFromBackend() {
   if (!session.value?.token) return session.value
 
-  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL || import.meta.env.VITE_API_BASE_URL
+  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL
   if (!apiBase) return session.value
 
   // Intento 1: sincronizar via token de Google (solo funciona con token fresco)

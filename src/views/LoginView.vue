@@ -27,7 +27,7 @@ function buildGoogleOAuthUrl(finalRedirect) {
 
 async function handleGoogle() {
   authError.value = ''
-  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL || import.meta.env.VITE_API_BASE_URL
+  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL
   const finalRedirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
 
   const oauthUrl = buildGoogleOAuthUrl(finalRedirect)

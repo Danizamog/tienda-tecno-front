@@ -12,7 +12,7 @@ const { session, isAuthenticated } = useAuthSession()
 const { wishlistItems, loading, initialized, loadWishlist, removeFromWishlist, totalWishlistCount } = useWishlistStore()
 const { addToCart } = useCartStore()
 
-const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 const PB  = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -8,8 +8,8 @@ import { useAuthSession } from '@/composables/useAuthSession'
 const router = useRouter()
 const { session, isAuthenticated } = useAuthSession()
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:9000'
-const PB  = import.meta.env.VITE_POCKETBASE_URL || ''
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
+const PB  = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
 
 const tab = ref('orders') // 'orders' | 'bids'
 

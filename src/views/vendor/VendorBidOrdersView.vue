@@ -10,8 +10,8 @@ const api      = useVendorApi()
 const { session }             = useAuthSession()
 const { selectedStore, selectedStoreId, hasStore } = useVendorStore()
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:9000'
-const PB  = import.meta.env.VITE_POCKETBASE_URL || ''
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
+const PB  = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
 
 const orders      = ref([])
 const loading     = ref(true)

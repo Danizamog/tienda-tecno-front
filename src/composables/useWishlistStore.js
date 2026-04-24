@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { useAuthSession } from '@/composables/useAuthSession'
 
-const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 
 // ── Estado singleton (compartido entre todas las instancias del composable) ───
 const wishlistItems = ref([])   // Array de registros de wishlist con expand de producto

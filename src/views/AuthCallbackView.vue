@@ -25,7 +25,7 @@ function readRedirectFromState(state) {
 }
 
 async function syncGoogleUser(accessToken) {
-  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL || import.meta.env.VITE_API_BASE_URL
+  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL
   if (!apiBase) {
     throw new Error('No existe VITE_GATEWAY_API_BASE_URL en el .env del frontend.')
   }
@@ -93,7 +93,7 @@ onMounted(async () => {
   // Obtener el rol real desde el backend (en vez de asumir 'user')
   let resolvedRole = 'user'
   let resolvedUserId = ''
-  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL || import.meta.env.VITE_API_BASE_URL
+  const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL
   if (apiBase && email) {
     try {
       const r = await fetch(`${apiBase}/auth/refresh-role`, {

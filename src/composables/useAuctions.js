@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { pb, pbFileUrl } from '@/services/pocketbase'
 import { useAuthSession } from '@/composables/useAuthSession'
 
-const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 
 export function useAuctions() {
   const { session } = useAuthSession()

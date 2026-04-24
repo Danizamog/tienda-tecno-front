@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useAuthSession } from '@/composables/useAuthSession'
 
-const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '/api').replace(/\/$/, '')
+const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 
 // Singleton: mapa storeId → followId (null = no sigue)
 const followMap  = ref({})  // { [storeId]: followId | null }
