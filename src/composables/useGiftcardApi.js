@@ -17,9 +17,11 @@ export function useGiftcardApi() {
   }
 
   // ── Usuario: listar sus gift cards ──────────────────────────────────────────
-  async function listMyGiftcards(storeId = '') {
+  async function listMyGiftcards(storeId = '', { activeOnly = false, status = '' } = {}) {
     const params = new URLSearchParams()
-    if (storeId) params.set('storeId', storeId)
+    if (storeId)    params.set('storeId', storeId)
+    if (activeOnly) params.set('activeOnly', '1')
+    if (status)     params.set('status', status)
     const suffix = params.toString() ? `?${params}` : ''
 
     const res = await fetch(`${API}/giftcards${suffix}`, { headers: authHeaders() })

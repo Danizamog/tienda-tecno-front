@@ -162,13 +162,15 @@ async function loadStoreInfo(storeId) {
 // ── Gift card helpers ─────────────────────────────────────────────────────────
 async function loadMyGiftcards() {
   if (!isAuthenticated.value) return
+  myGiftcards.value = []
+  const currentStoreId = checkoutStoreId.value
+  if (!currentStoreId) return
   gcLoading.value = true
   try {
-    const data = await listMyGiftcards(checkoutStoreId.value || '')
-    const currentStoreId = checkoutStoreId.value
+    const data = await listMyGiftcards(currentStoreId, { activeOnly: true })
     myGiftcards.value = (data.items || []).filter((g) => {
       if (g.status !== 'active') return false
-      if (!currentStoreId) return true
+      if (Number(g.balance || 0) <= 0) return false
       const gcStoreId = Array.isArray(g.store) ? g.store[0] : g.store
       return !!gcStoreId && gcStoreId === currentStoreId
     })
@@ -180,8 +182,12 @@ async function loadMyGiftcards() {
 function applyGiftcard(gc) {
   const currentStoreId = checkoutStoreId.value
   const gcStoreId = Array.isArray(gc.store) ? gc.store[0] : gc.store
-  if (currentStoreId && gcStoreId !== currentStoreId) {
+  if (!gcStoreId || (currentStoreId && gcStoreId !== currentStoreId)) {
     gcError.value = 'Esta gift card solo se puede usar en la tienda que la emitio.'
+    return
+  }
+  if (gc.status !== 'active' || Number(gc.balance || 0) <= 0) {
+    gcError.value = 'Esta gift card no esta disponible.'
     return
   }
 
@@ -661,6 +667,9 @@ function goToOrders() {
           <!-- Gift Card -->
           <div>
             <p class="text-[9px] tracking-[0.18em] uppercase text-[#3a3835] mb-2">Gift Card (opcional)</p>
+            <p class="text-[10px] text-[#54766b] mb-2">
+              Solo se muestran gift cards activas válidas para esta tienda.
+            </p>
 
             <!-- Mis gift cards activas -->
             <div v-if="gcLoading" class="text-[10px] text-[#555] mb-2">Cargando gift cards…</div>
@@ -680,6 +689,9 @@ function goToOrders() {
                 <span class="gc-chip__balance">Bs {{ fmt(gc.balance) }}</span>
               </button>
             </div>
+            <p v-else-if="!gcLoading" class="text-[10px] text-[#555550] mb-2 italic">
+              No tienes gift cards disponibles para esta tienda.
+            </p>
 
             <!-- Código manual -->
             <div class="flex gap-1.5">

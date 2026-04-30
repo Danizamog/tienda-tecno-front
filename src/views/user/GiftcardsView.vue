@@ -37,8 +37,37 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-const activeCards = computed(() => giftcards.value.filter(g => g.status === 'active'))
-const otherCards  = computed(() => giftcards.value.filter(g => g.status !== 'active'))
+function gcStoreId(gc) {
+  return Array.isArray(gc.store) ? gc.store[0] : gc.store
+}
+
+const activeCards = computed(() =>
+  giftcards.value.filter(g =>
+    g.status === 'active' &&
+    Number(g.balance || 0) > 0 &&
+    !!gcStoreId(g)
+  )
+)
+
+const otherCards = computed(() =>
+  giftcards.value.filter(g =>
+    g.status !== 'active' ||
+    Number(g.balance || 0) <= 0 ||
+    !gcStoreId(g)
+  )
+)
+
+// Agrupar activas por tienda para que se vea claramente "solo válidas en esta tienda".
+const activeByStore = computed(() => {
+  const groups = new Map()
+  for (const gc of activeCards.value) {
+    const key = gcStoreId(gc) || 'unknown'
+    const name = gc.expand?.store?.name || 'Tienda'
+    if (!groups.has(key)) groups.set(key, { storeId: key, storeName: name, items: [] })
+    groups.get(key).items.push(gc)
+  }
+  return Array.from(groups.values())
+})
 
 // ── Cargar gift cards ─────────────────────────────────────────────────────────
 async function load() {
@@ -138,31 +167,34 @@ onMounted(async () => {
         <p class="gc-empty__sub">Canjea un código arriba para comenzar</p>
       </div>
 
-      <!-- Gift cards activas -->
+      <!-- Gift cards activas (agrupadas por tienda) -->
       <template v-else>
-        <div v-if="activeCards.length">
+        <div v-if="activeByStore.length">
           <h2 class="gc-section-title">Activas</h2>
-          <div class="gc-grid">
-            <div v-for="gc in activeCards" :key="gc.id" class="gc-card gc-card--active">
-              <div class="gc-card__top">
-                <span class="gc-card__code">{{ gc.code }}</span>
-                <span class="badge badge-active">Activa</span>
-              </div>
-              <div class="gc-card__balance">
-                <span class="gc-card__balance-label">Saldo disponible</span>
-                <span class="gc-card__balance-amount">Bs {{ fmt(gc.balance) }}</span>
-              </div>
-              <div class="gc-card__meta">
-                <span v-if="gc.expand?.store?.name" class="gc-card__store">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                  </svg>
-                  {{ gc.expand.store.name }}
-                </span>
-                <span v-if="gc.expires_at" class="gc-card__exp">
-                  Vence: {{ fmtDate(gc.expires_at) }}
-                </span>
-                <span v-else class="gc-card__exp">Sin vencimiento</span>
+          <div v-for="group in activeByStore" :key="group.storeId" class="gc-store-group">
+            <p class="gc-store-group__title">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              {{ group.storeName }}
+              <span class="gc-store-group__hint">solo válidas en esta tienda</span>
+            </p>
+            <div class="gc-grid">
+              <div v-for="gc in group.items" :key="gc.id" class="gc-card gc-card--active">
+                <div class="gc-card__top">
+                  <span class="gc-card__code">{{ gc.code }}</span>
+                  <span class="badge badge-active">Activa</span>
+                </div>
+                <div class="gc-card__balance">
+                  <span class="gc-card__balance-label">Saldo disponible</span>
+                  <span class="gc-card__balance-amount">Bs {{ fmt(gc.balance) }}</span>
+                </div>
+                <div class="gc-card__meta">
+                  <span v-if="gc.expires_at" class="gc-card__exp">
+                    Vence: {{ fmtDate(gc.expires_at) }}
+                  </span>
+                  <span v-else class="gc-card__exp">Sin vencimiento</span>
+                </div>
               </div>
             </div>
           </div>
@@ -329,6 +361,27 @@ onMounted(async () => {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Group por tienda */
+.gc-store-group { margin-bottom: 1.5rem; }
+
+.gc-store-group__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: #b5b2ac;
+  margin-bottom: 0.6rem;
+}
+
+.gc-store-group__hint {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #54766b;
+  margin-left: 0.4rem;
+}
 
 /* Section title */
 .gc-section-title {
