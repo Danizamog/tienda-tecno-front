@@ -115,37 +115,6 @@ async function syncSessionRoleFromBackend() {
   const apiBase = import.meta.env.VITE_GATEWAY_API_BASE_URL
   if (!apiBase) return session.value
 
-  // Intento 1: sincronizar via token de Google (solo funciona con token fresco)
-  try {
-    const response = await fetch(`${apiBase}/auth/google/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accessToken: session.value.token }),
-    })
-
-    if (response.ok) {
-      const payload = await response.json().catch(() => null)
-      if (payload?.ok && payload?.user) {
-        const updated = normalizeSession({
-          ...session.value,
-          email: payload.user.email || session.value.email,
-          name: payload.user.name || session.value.name,
-          picture: payload.user.picture || session.value.picture,
-          userId: payload.user.id || session.value.userId,
-          role: payload.user.role || session.value.role || 'user',
-        })
-        if (updated?.token) {
-          session.value = updated
-          writeCookie(SESSION_COOKIE_NAME, JSON.stringify(updated))
-        }
-        return session.value
-      }
-    }
-  } catch {
-    // fallthrough
-  }
-
-  // Intento 2: obtener rol actualizado por email/userId (funciona aunque el token Google haya expirado)
   const email = session.value.email
   const userId = session.value.userId
   if (!email && !userId) return session.value
