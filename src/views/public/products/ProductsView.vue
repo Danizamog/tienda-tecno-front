@@ -1,8 +1,8 @@
 <script setup>
 import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import AppNavbar from '@/components/AppNavbar.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppNavbar from '@/components/layout/AppNavbar.vue'
+import AppFooter from '@/components/layout/AppFooter.vue'
 
 const route  = useRoute()
 const router = useRouter()

@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import AppNavbar from '@/components/AppNavbar.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppNavbar from '@/components/layout/AppNavbar.vue'
+import AppFooter from '@/components/layout/AppFooter.vue'
 import { useWishlistStore } from '@/composables/useWishlistStore'
 import { useCartStore } from '@/composables/useCartStore'
 import { useAuthSession } from '@/composables/useAuthSession'

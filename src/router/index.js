@@ -22,77 +22,77 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: () => import('@/views/HomeView.vue'),
+    component: () => import('@/views/public/home/HomeView.vue'),
   },
   {
     path: '/login',
     name: 'login',
-    component: () => import('@/views/LoginView.vue'),
+    component: () => import('@/views/public/auth/LoginView.vue'),
     meta: { guestOnly: true },
   },
   {
     path: '/auth/callback',
     name: 'auth-callback',
-    component: () => import('@/views/AuthCallbackView.vue'),
+    component: () => import('@/views/public/auth/AuthCallbackView.vue'),
   },
 
   {
     path: '/stores',
     name: 'stores',
-    component: () => import('@/views/StoresView.vue'),
+    component: () => import('@/views/public/stores/StoresView.vue'),
   },
   {
     path: '/products',
     name: 'products',
-    component: () => import('@/views/ProductsView.vue'),
+    component: () => import('@/views/public/products/ProductsView.vue'),
   },
   {
     path: '/auctions',
     name: 'auctions',
-    component: () => import('@/views/AuctionsView.vue'),
+    component: () => import('@/views/public/products/AuctionsView.vue'),
   },
   {
     path: '/auctions/:id',
     name: 'auction-detail',
-    component: () => import('@/views/AuctionDetailView.vue'),
+    component: () => import('@/views/public/products/AuctionDetailView.vue'),
   },
   {
     path: '/stores/:slug',
     name: 'store-products',
-    component: () => import('@/views/StoreProductsView.vue'),
+    component: () => import('@/views/public/stores/StoreProductsView.vue'),
   },
   {
     path: '/products/:id',
     name: 'product-detail',
-    component: () => import('@/views/ProductDetailView.vue'),
+    component: () => import('@/views/public/products/ProductDetailView.vue'),
   },
   {
     path: '/orders',
     name: 'orders',
-    component: () => import('@/views/OrdersView.vue'),
+    component: () => import('@/views/user/OrdersView.vue'),
   },
   {
     path: '/bid-orders',
     name: 'bid-orders',
-    component: () => import('@/views/BidOrdersView.vue'),
+    component: () => import('@/views/user/BidOrdersView.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/account',
     name: 'account',
-    component: () => import('@/views/AccountView.vue'),
+    component: () => import('@/views/user/AccountView.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/wishlist',
     name: 'wishlist',
-    component: () => import('@/views/WishlistView.vue'),
+    component: () => import('@/views/user/WishlistView.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/giftcards',
     name: 'giftcards',
-    component: () => import('@/views/GiftcardsView.vue'),
+    component: () => import('@/views/user/GiftcardsView.vue'),
     meta: { requiresAuth: true },
   },
 
@@ -100,7 +100,7 @@ const routes = [
   {
     path: '/vendor/select-store',
     name: 'vendor-select-store',
-    component: () => import('@/views/vendor/VendorStoreSelectView.vue'),
+    component: () => import('@/views/vendor/dashboard/VendorStoreSelectView.vue'),
     meta: { requiresVendor: true },
   },
   {
@@ -111,7 +111,7 @@ const routes = [
       {
         path: '',
         name: 'vendor-dashboard',
-        component: () => import('@/views/vendor/VendorDashboardView.vue'),
+        component: () => import('@/views/vendor/dashboard/VendorDashboardView.vue'),
       },
       {
         path: 'dashboard',
@@ -120,37 +120,37 @@ const routes = [
       {
         path: 'products',
         name: 'vendor-products',
-        component: () => import('@/views/vendor/VendorProductsView.vue'),
+        component: () => import('@/views/vendor/products/VendorProductsView.vue'),
       },
       {
         path: 'auctions',
         name: 'vendor-auctions',
-        component: () => import('@/views/vendor/VendorAuctionsView.vue'),
+        component: () => import('@/views/vendor/auctions/VendorAuctionsView.vue'),
       },
       {
         path: 'orders',
         name: 'vendor-orders',
-        component: () => import('@/views/vendor/VendorOrdersView.vue'),
+        component: () => import('@/views/vendor/orders/VendorOrdersView.vue'),
       },
       {
         path: 'payments',
         name: 'vendor-payments',
-        component: () => import('@/views/vendor/VendorPaymentsView.vue'),
+        component: () => import('@/views/vendor/payments/VendorPaymentsView.vue'),
       },
       {
         path: 'transactions',
         name: 'vendor-transactions',
-        component: () => import('@/views/vendor/VendorTransactionsView.vue'),
+        component: () => import('@/views/vendor/transactions/VendorTransactionsView.vue'),
       },
       {
         path: 'giftcards',
         name: 'vendor-giftcards',
-        component: () => import('@/views/vendor/VendorGiftcardsView.vue'),
+        component: () => import('@/views/vendor/giftcards/VendorGiftcardsView.vue'),
       },
       {
         path: 'bid-orders',
         name: 'vendor-bid-orders',
-        component: () => import('@/views/vendor/VendorBidOrdersView.vue'),
+        component: () => import('@/views/vendor/orders/VendorBidOrdersView.vue'),
       },
     ],
   },
@@ -164,7 +164,7 @@ const routes = [
       {
         path: '',
         name: 'admin-dashboard',
-        component: () => import('@/views/admin/AdminDashboardView.vue'),
+        component: () => import('@/views/admin/dashboard/AdminDashboardView.vue'),
       },
       {
         path: 'stores',

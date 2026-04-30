@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import AppNavbar from '@/components/AppNavbar.vue'
-import AppFooter from '@/components/AppFooter.vue'
-import GoogleMapPicker from '@/components/GoogleMapPicker.vue'
+import AppNavbar from '@/components/layout/AppNavbar.vue'
+import AppFooter from '@/components/layout/AppFooter.vue'
+import GoogleMapPicker from '@/components/ui/GoogleMapPicker.vue'
 import { useShippingAddressApi } from '@/composables/useShippingAddressApi'
 import { useReviewsApi } from '@/composables/useReviewsApi'
 import { useAuthSession } from '@/composables/useAuthSession'

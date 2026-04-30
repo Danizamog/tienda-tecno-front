@@ -4,7 +4,7 @@ import { useCartStore } from '@/composables/useCartStore'
 import { useAuthSession } from '@/composables/useAuthSession'
 import { useShippingAddressApi } from '@/composables/useShippingAddressApi'
 import { useGiftcardApi } from '@/composables/useGiftcardApi'
-import GoogleMapPicker from '@/components/GoogleMapPicker.vue'
+import GoogleMapPicker from '@/components/ui/GoogleMapPicker.vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({

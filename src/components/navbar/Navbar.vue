@@ -4,7 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useAuthSession } from '@/composables/useAuthSession'
 import { useCartStore } from '@/composables/useCartStore'
 import { useWishlistStore } from '@/composables/useWishlistStore'
-import CartDrawer from '@/components/CartDrawer.vue'
+import CartDrawer from '@/components/ui/CartDrawer.vue'
 
 const { isAuthenticated, displayName, avatarInitial, canViewVendor, isAdmin, clearSession, syncSessionRoleFromBackend } = useAuthSession()
 const { totalItemCount } = useCartStore()

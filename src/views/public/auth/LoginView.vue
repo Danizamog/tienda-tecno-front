@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -62,7 +62,7 @@ async function handleGoogle() {
 <template>
   <div class="min-h-screen bg-[#0a0a0a] flex">
 
-    <!-- ── Left panel (decorative) ──────────────────────────── -->
+    <!-- ÔöÇÔöÇ Left panel (decorative) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ -->
     <div class="hidden lg:flex lg:w-[55%] relative overflow-hidden">
       <!-- Background texture -->
       <div
@@ -108,7 +108,7 @@ async function handleGoogle() {
           </div>
           <div>
             <p class="font-display text-3xl font-light text-[#c9a96e]">98%</p>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#444440] mt-1">Satisfacción</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-[#444440] mt-1">Satisfacci├│n</p>
           </div>
         </div>
       </div>
@@ -117,7 +117,7 @@ async function handleGoogle() {
       <div class="absolute right-0 top-0 bottom-0 w-px bg-linear-to-b from-transparent via-[#c9a96e22] to-transparent" />
     </div>
 
-    <!-- ── Right panel (form) ────────────────────────────────── -->
+    <!-- ÔöÇÔöÇ Right panel (form) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ -->
     <div class="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
       <!-- Mobile brand -->
       <div class="lg:hidden mb-10">
@@ -130,7 +130,7 @@ async function handleGoogle() {
         <!-- Heading -->
         <div class="mb-10">
           <p class="section-label mb-3">Bienvenido</p>
-          <h2 class="font-display text-4xl font-light text-[#f0ede8]">Inicia sesión con Google</h2>
+          <h2 class="font-display text-4xl font-light text-[#f0ede8]">Inicia sesi├│n con Google</h2>
           <p class="text-[#555550] text-sm mt-3">
             Por ahora el acceso esta habilitado exclusivamente con Google.
           </p>
@@ -164,10 +164,11 @@ async function handleGoogle() {
             to="/"
             class="text-[10px] tracking-[0.15em] uppercase text-[#333330] hover:text-[#555550] transition-colors"
           >
-            ← Volver al inicio
+            ÔåÉ Volver al inicio
           </router-link>
         </div>
       </div>
     </div>
   </div>
 </template>
+

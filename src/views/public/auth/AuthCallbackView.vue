@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthSession } from '@/composables/useAuthSession'
@@ -53,7 +53,7 @@ onMounted(async () => {
   const oauthErrorDescription = hashParams.get('error_description')
 
   if (oauthError) {
-    errorMessage.value = oauthErrorDescription || 'Google canceló o rechazó el acceso.'
+    errorMessage.value = oauthErrorDescription || 'Google cancel├│ o rechaz├│ el acceso.'
     return
   }
 
@@ -74,7 +74,7 @@ onMounted(async () => {
 
       router.replace(target)
     } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : 'No se pudo iniciar sesión con Google.'
+      errorMessage.value = error instanceof Error ? error.message : 'No se pudo iniciar sesi├│n con Google.'
     }
     return
   }
@@ -145,3 +145,4 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+

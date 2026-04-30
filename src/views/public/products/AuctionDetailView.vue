@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
-import AppNavbar from '@/components/AppNavbar.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppNavbar from '@/components/layout/AppNavbar.vue'
+import AppFooter from '@/components/layout/AppFooter.vue'
 import { useAuctions } from '@/composables/useAuctions'
 import { useAuthSession } from '@/composables/useAuthSession'
 
