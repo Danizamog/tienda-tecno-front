@@ -295,7 +295,7 @@ async function sendBid(amount) {
     const result = await placeBid(route.params.id, { amount })
     bidAmount.value = ''
     if (result?.won_auction) {
-      showSuccess(`¡Ganaste la subasta por Bs ${money(result.final_amount)}!`)
+      await openPayModal()
     } else if (result?.capped) {
       showSuccess(`Puja ajustada al precio de compra: Bs ${money(result.final_amount)}`)
     } else {
@@ -322,7 +322,7 @@ async function confirmBuyNow() {
   try {
     await buyNow(route.params.id)
     buyNowOpen.value = false
-    showSuccess('¡Compra realizada!')
+    await openPayModal()
   } catch (e) {
     bidError.value = translateError(e)
   } finally {

@@ -57,6 +57,22 @@ export function useVendorApi() {
     return handleResponse(res)
   }
 
+  async function listFinanceTransactions({ storeId } = {}) {
+    const params = new URLSearchParams()
+    if (storeId) params.set('storeId', storeId)
+    const query = params.toString()
+    const res = await safeFetch(`${API}/finance/transactions${query ? `?${query}` : ''}`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
+  async function getFinanceSummary({ storeId } = {}) {
+    const params = new URLSearchParams()
+    if (storeId) params.set('storeId', storeId)
+    const query = params.toString()
+    const res = await safeFetch(`${API}/finance/dashboard/summary${query ? `?${query}` : ''}`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
   async function updateStoreInfo(storeId, data) {
     const res = await safeFetch(`${API}/stores/vendor/${storeId}`, {
       method: 'PATCH',
@@ -263,6 +279,8 @@ export function useVendorApi() {
     getMyStores,
     getVendorDashboard,
     getStoreDashboardMetrics,
+    listFinanceTransactions,
+    getFinanceSummary,
     updateStoreInfo,
     uploadStoreQr,
     listProducts,

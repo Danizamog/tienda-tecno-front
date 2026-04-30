@@ -1,6 +1,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useAdminApi } from '@/composables/useAdminApi'
+import { Line as LineChart } from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 const api = useAdminApi()
 
@@ -8,6 +12,8 @@ const loading = ref(true)
 const error = ref('')
 const transactions = ref([])
 const groups = ref([])
+const gananciaTotal = ref(0)
+const chartDataDaily = ref([])
 
 function money(value) {
   return new Intl.NumberFormat('es-BO', { maximumFractionDigits: 0 }).format(Number(value || 0))
@@ -51,6 +57,8 @@ async function load() {
       api.listTransactionsByStore(),
     ])
     transactions.value = txRes?.items || []
+    gananciaTotal.value = txRes?.gananciaTotal || 0
+    chartDataDaily.value = txRes?.chartDaily || []
     groups.value = groupRes?.items || []
   } catch (e) {
     error.value = e.message
@@ -62,6 +70,33 @@ async function load() {
 onMounted(load)
 
 const maxGross = computed(() => Math.max(...groups.value.map((g) => g.gross_amount || 0), 1))
+
+const chartData = computed(() => {
+  return {
+    labels: chartDataDaily.value.map(d => d.date),
+    datasets: [
+      {
+        label: 'Ganancias',
+        data: chartDataDaily.value.map(d => d.amount),
+        borderColor: '#c9a96e',
+        backgroundColor: 'rgba(201, 169, 110, 0.2)',
+        tension: 0.4
+      }
+    ]
+  }
+})
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: { beginAtZero: true, ticks: { color: '#666' } },
+    x: { ticks: { color: '#666' } }
+  },
+  plugins: {
+    legend: { labels: { color: '#e8e5e0' } }
+  }
+}
 </script>
 
 <template>
@@ -102,13 +137,33 @@ const maxGross = computed(() => Math.max(...groups.value.map((g) => g.gross_amou
               </div>
             </div>
               <div class="h-3 bg-[#121212] rounded-full overflow-hidden border border-[#1b1b1b]">
-                <div class="h-full bg-gradient-to-r from-[#c9a96e] to-[#8a6b2e] rounded-full" :style="{ width: `${Math.max(6, Math.round((group.gross_amount / maxGross) * 100))}%` }"></div>
+                <div
+                  class="h-full rounded-full"
+                  :style="{
+                    width: `${Math.max(6, Math.round((group.gross_amount / maxGross) * 100))}%`,
+                    backgroundImage: 'linear-gradient(90deg, #c9a96e, #8a6b2e)'
+                  }"
+                ></div>
             </div>
           </div>
         </div>
       </section>
 
       <div class="grid grid-cols-1 xl:grid-cols-[0.9fr_1.1fr] gap-6">
+        <section class="panel mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Evolución</p>
+              <h2 class="text-lg text-[#e8e5e0] mt-1">Ganancia Diaria</h2>
+            </div>
+            <p class="text-sm text-[#c9a96e]">Ganancia Total: {{ money(gananciaTotal) }}</p>
+          </div>
+          <div style="height: 250px" v-if="chartDataDaily.length > 0">
+            <LineChart :data="chartData" :options="chartOptions" />
+          </div>
+          <div v-else class="text-sm text-[#666] py-8 text-center">Sin datos de gráficos.</div>
+        </section>
+
         <section class="panel">
           <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Resumen</p>
           <div class="mt-4 grid grid-cols-2 gap-3">

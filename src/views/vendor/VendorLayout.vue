@@ -22,6 +22,8 @@ const pageLabel = computed(() => {
       return 'Órdenes'
     case 'vendor-payments':
       return 'Pagos QR'
+    case 'vendor-transactions':
+      return 'Transacciones'
     case 'vendor-giftcards':
       return 'Gift Cards'
     case 'vendor-bid-orders':
@@ -47,6 +49,7 @@ const navItems = [
       { to: '/vendor/auctions', label: 'Subastas',   icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
       { to: '/vendor/orders',     label: 'Órdenes',         icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
       { to: '/vendor/bid-orders', label: 'Pedidos Subasta', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { to: '/vendor/transactions', label: 'Transacciones', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
       { to: '/vendor/payments',   label: 'Pagos QR',        icon: 'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z' },
       { to: '/vendor/giftcards', label: 'Gift Cards', icon: 'M12 8v13m0-13V6a4 4 0 00-4-4H5.45a1 1 0 00-.9 1.447L6 6m6 2l1.45-2.553A1 1 0 0114.55 2H16a4 4 0 014 4v2M4 10h16M4 10a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2v-6a2 2 0 00-2-2M4 10h16' },
     ],

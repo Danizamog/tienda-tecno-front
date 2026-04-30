@@ -138,6 +138,11 @@ const routes = [
         component: () => import('@/views/vendor/VendorPaymentsView.vue'),
       },
       {
+        path: 'transactions',
+        name: 'vendor-transactions',
+        component: () => import('@/views/vendor/VendorTransactionsView.vue'),
+      },
+      {
         path: 'giftcards',
         name: 'vendor-giftcards',
         component: () => import('@/views/vendor/VendorGiftcardsView.vue'),
