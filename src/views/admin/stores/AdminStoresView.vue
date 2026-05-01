@@ -447,7 +447,8 @@ const pages = computed(() => {
             <tr
               v-for="store in stores"
               :key="store.id"
-              class="border-b border-[#111] hover:bg-[#0d0d0d] transition-colors"
+              class="border-b border-[#111] hover:bg-[#0d0d0d] transition-colors cursor-pointer"
+              @click="router.push(`/admin/stores/${store.id}`)"
             >
               <!-- Nombre + slug -->
               <td class="td">
@@ -468,11 +469,11 @@ const pages = computed(() => {
               </td>
 
               <!-- Verificada -->
-              <td class="td hidden sm:table-cell">
+              <td class="td hidden sm:table-cell" @click.stop>
                 <button
                   :class="['verify-btn', store.verified ? 'verify-btn-on' : 'verify-btn-off']"
                   :title="store.verified ? 'Quitar verificación' : 'Verificar tienda'"
-                  @click="toggleVerified(store)"
+                  @click.stop="toggleVerified(store)"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -497,17 +498,10 @@ const pages = computed(() => {
               </td>
 
               <!-- Acciones -->
-              <td class="td text-right">
+              <td class="td text-right" @click.stop>
                 <div class="flex items-center justify-end gap-1.5">
-                  <!-- Ver/editar -->
-                  <button class="action-btn" title="Ver detalle" @click="router.push(`/admin/stores/${store.id}`)">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  </button>
                   <!-- Gestionar propietarios -->
-                  <button class="action-btn" title="Gestionar propietarios" @click="openOwnersModal(store)">
+                  <button class="action-btn" title="Gestionar propietarios" @click.stop="openOwnersModal(store)">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -516,7 +510,7 @@ const pages = computed(() => {
                   <button
                     class="action-btn"
                     :title="store.status === 'active' ? 'Suspender' : 'Activar'"
-                    @click="toggleStatus(store)"
+                    @click.stop="toggleStatus(store)"
                   >
                     <svg v-if="store.status === 'active'" class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -527,7 +521,7 @@ const pages = computed(() => {
                     </svg>
                   </button>
                   <!-- Eliminar -->
-                  <button class="action-btn text-red-500/60 hover:text-red-400" title="Eliminar" @click="confirmDelete = { id: store.id, name: store.name }">
+                  <button class="action-btn text-red-500/60 hover:text-red-400" title="Eliminar" @click.stop="confirmDelete = { id: store.id, name: store.name }">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>

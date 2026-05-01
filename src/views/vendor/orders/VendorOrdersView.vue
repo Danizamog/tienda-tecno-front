@@ -1,6 +1,8 @@
 <script setup>
-import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
+import { ref, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { useVendorApi } from '@/composables/useVendorApi'
 import { useVendorStore } from '@/composables/useVendorStore'
 
@@ -123,36 +125,24 @@ async function openOrder(order, mode = 'view') {
   mapLng.value = isValidLatLng(mapPoint.lat, mapPoint.lng) ? mapPoint.lng : null
 
   showModal.value = true
+
+  if (mode === 'approve') {
+    nextTick(initMap)
+  }
+
   if (orderDetail?.payment_proof && orderDetail?.id) {
     try {
       const blob = await api.getOrderProofBlob(orderDetail.id, orderDetail.payment_proof)
       proofBlobUrl.value = URL.createObjectURL(blob)
-    } catch {
+    } catch (err) {
+      console.error('[orders] no se pudo cargar el comprobante:', err)
       proofBlobUrl.value = ''
     }
-  }
-  if (mode === 'approve') {
-    setTimeout(initMap, 300)
   }
 }
 
 // ── Leaflet map ───────────────────────────────────────────────────────────────
-function loadLeaflet() {
-  return new Promise((resolve) => {
-    if (window.L) { resolve(window.L); return }
-    const link = document.createElement('link')
-    link.rel   = 'stylesheet'
-    link.href  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
-    document.head.appendChild(link)
-    const script = document.createElement('script')
-    script.src   = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-    script.onload = () => resolve(window.L)
-    document.head.appendChild(script)
-  })
-}
-
-async function initMap() {
-  const L = await loadLeaflet()
+function initMap() {
   const el = document.getElementById('order-map')
   if (!el) return
   if (mapInstance) { mapInstance.remove(); mapInstance = null; mapMarker = null }
@@ -175,6 +165,10 @@ async function initMap() {
     if (mapMarker) mapMarker.setLatLng(e.latlng)
     else mapMarker = L.marker(e.latlng).addTo(mapInstance)
   })
+
+  // Recalcula tamaño una vez el modal terminó de animar la opacidad,
+  // así los tiles no quedan medio renderizados.
+  setTimeout(() => mapInstance && mapInstance.invalidateSize(), 250)
 }
 
 function closeModal() {

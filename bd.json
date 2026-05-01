@@ -1684,7 +1684,7 @@
         "listRule": "@request.auth.id != ''",
         "viewRule": "@request.auth.id != ''",
         "createRule": "@request.auth.role = 'admin' || (@request.auth.id != '' && store.owner = @request.auth.id)",
-        "updateRule": "@request.auth.role = 'admin' || (@request.auth.id != '' && store.owner = @request.auth.id)",
+        "updateRule": "@request.auth.role = 'admin'",
         "deleteRule": "@request.auth.role = 'admin'",
         "name": "giftcard_codes",
         "type": "base",
@@ -1868,8 +1868,8 @@
         "id": "pbc_giftc000001a",
         "listRule": "@request.auth.id != ''",
         "viewRule": "@request.auth.id != ''",
-        "createRule": "@request.auth.role = 'admin' || (@request.auth.id != '' && owner = @request.auth.id)",
-        "updateRule": "@request.auth.role = 'admin' || owner = @request.auth.id",
+        "createRule": "@request.auth.role = 'admin'",
+        "updateRule": "@request.auth.role = 'admin'",
         "deleteRule": "@request.auth.role = 'admin'",
         "name": "giftcards",
         "type": "base",
@@ -2028,7 +2028,6 @@
             }
         ],
         "indexes": [
-            "CREATE UNIQUE INDEX idx_giftcards_code ON giftcards (code)",
             "CREATE UNIQUE INDEX idx_giftcards_owner_source_unique ON giftcards (owner, source_code) WHERE source_code != ''",
             "CREATE INDEX idx_giftcards_owner_status ON giftcards (owner, status)",
             "CREATE INDEX idx_giftcards_store_status ON giftcards (store, status)",

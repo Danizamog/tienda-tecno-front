@@ -3,10 +3,13 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import { useAuctions } from '@/composables/useAuctions'
 
 const API    = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 const PB     = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
 const router = useRouter()
+
+const { subscribeToAuction } = useAuctions()
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 const stores          = ref([])
@@ -144,14 +147,32 @@ const vendorFeatures = [
   { title: 'Mayor alcance', desc: 'Conecta con compradores de todo el país' },
 ]
 
+let unsubAuctions = null
+
+function onAuctionEvent(e) {
+  if (!e?.record) return
+  const idx = auctions.value.findIndex(a => a.id === e.record.id)
+  if (idx === -1) return
+  if (e.action === 'delete' || e.record.status !== 'active') {
+    auctions.value.splice(idx, 1)
+    return
+  }
+  const prev = auctions.value[idx]
+  auctions.value[idx] = { ...prev, ...e.record, expand: prev.expand }
+}
+
 onMounted(() => {
   fetchStores()
   fetchProducts()
   fetchAuctions()
   fetchCategories()
   ticker = setInterval(() => { now.value = Date.now() }, 1000)
+  unsubAuctions = subscribeToAuction('*', onAuctionEvent)
 })
-onBeforeUnmount(() => clearInterval(ticker))
+onBeforeUnmount(() => {
+  clearInterval(ticker)
+  if (unsubAuctions) unsubAuctions()
+})
 </script>
 
 <template>

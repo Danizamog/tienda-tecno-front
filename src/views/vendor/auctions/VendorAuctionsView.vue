@@ -37,7 +37,7 @@ const createDiscountOpen = ref(false)
 
 function emptyForm() {
   return {
-    title: '', description: '', start_price: '', reserve_price: '',
+    title: '', description: '', start_price: '',
     buy_now_price: '', start_date: '', end_date: '',
     status: 'draft', discount_percent: '', discount_amount: '',
   }
@@ -84,7 +84,6 @@ function openEdit(auction) {
     title: auction.title || '',
     description: auction.description || '',
     start_price: String(auction.start_price || ''),
-    reserve_price: String(auction.reserve_price || ''),
     buy_now_price: String(auction.buy_now_price || ''),
     start_date: (auction.start_date || '').slice(0, 16),
     end_date: (auction.end_date || '').slice(0, 16),
@@ -161,7 +160,6 @@ async function save() {
     fd.append('start_date', startIso)
     fd.append('end_date', endIso)
     fd.append('status', form.value.status)
-    if (form.value.reserve_price)   fd.append('reserve_price',   form.value.reserve_price)
     if (form.value.buy_now_price)   fd.append('buy_now_price',   form.value.buy_now_price)
     if (modalMode.value === 'edit' || modalMode.value === 'create') {
       if (form.value.discount_percent) fd.append('discount_percent', form.value.discount_percent)
@@ -232,7 +230,6 @@ function toggleCreateDiscountPanel() {
 function validateAuctionForm() {
   const title = form.value.title.trim()
   const startPrice = Number(form.value.start_price)
-  const reservePriceRaw = String(form.value.reserve_price || '').trim()
   const buyNowPriceRaw = String(form.value.buy_now_price || '').trim()
   const discountPercentRaw = String(form.value.discount_percent || '').trim()
   const discountAmountRaw = String(form.value.discount_amount || '').trim()
@@ -244,17 +241,10 @@ function validateAuctionForm() {
   if (!startDate || !endDate) return 'Las fechas son obligatorias'
   if (new Date(startDate) >= new Date(endDate)) return 'La fecha de inicio debe ser anterior a la fecha de cierre'
 
-  if (reservePriceRaw !== '') {
-    const reservePrice = Number(reservePriceRaw)
-    if (!Number.isFinite(reservePrice) || reservePrice < 0) return 'El precio de reserva debe ser mayor o igual a 0'
-    if (reservePrice < startPrice) return 'El precio de reserva no puede ser menor al precio inicial'
-  }
-
   if (buyNowPriceRaw !== '') {
     const buyNowPrice = Number(buyNowPriceRaw)
     if (!Number.isFinite(buyNowPrice) || buyNowPrice < 0) return 'El precio de compra inmediata debe ser mayor o igual a 0'
     if (buyNowPrice < startPrice) return 'El precio de compra inmediata no puede ser menor al precio inicial'
-    if (reservePriceRaw !== '' && buyNowPrice < Number(reservePriceRaw)) return 'El precio de compra inmediata no puede ser menor al precio de reserva'
   }
 
   if (discountPercentRaw !== '') {
@@ -428,10 +418,6 @@ const STATUS_COLORS = {
             <div>
               <label class="form-label">Precio inicial (Bs) *</label>
               <input v-model="form.start_price" type="number" min="0" class="input-field w-full" />
-            </div>
-            <div>
-              <label class="form-label">Precio reserva (Bs)</label>
-              <input v-model="form.reserve_price" type="number" min="0" class="input-field w-full" placeholder="Opcional" />
             </div>
             <div>
               <label class="form-label">Comprar ahora (Bs)</label>

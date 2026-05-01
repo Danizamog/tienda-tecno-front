@@ -1,7 +1,9 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAdminApi } from '@/composables/useAdminApi'
 
+const router = useRouter()
 const api = useAdminApi()
 
 const users = ref([])
@@ -133,7 +135,12 @@ const pages = computed(() => {
             <tr v-if="users.length === 0">
               <td colspan="6" class="px-4 py-12 text-center text-[#444] text-sm">No se encontraron usuarios.</td>
             </tr>
-            <tr v-for="u in users" :key="u.id" class="border-b border-[#111] hover:bg-[#0d0d0d] transition-colors">
+            <tr
+              v-for="u in users"
+              :key="u.id"
+              class="border-b border-[#111] hover:bg-[#0d0d0d] transition-colors cursor-pointer"
+              @click="router.push(`/admin/users/${u.id}`)"
+            >
               <td class="td">
                 <p class="text-[#d8d5cf] font-medium">{{ u.name || 'Sin nombre' }}</p>
                 <p class="text-[10px] text-[#444] mt-0.5 hidden sm:block">{{ u.id }}</p>
@@ -145,12 +152,12 @@ const pages = computed(() => {
               <td class="td text-[#aaa] hidden md:table-cell">{{ u.verified ? 'Sí' : 'No' }}</td>
               <td class="td text-[#777] hidden lg:table-cell">{{ fmtDate(u.created) }}</td>
               <td class="td text-right">
-                <RouterLink
-                  :to="`/admin/users/${u.id}`"
-                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-[#1d1d1d] bg-[#0f0f0f] text-[#d8d5cf] text-[11px] tracking-[0.12em] uppercase hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors"
-                >
-                  Ver detalle
-                </RouterLink>
+                <span class="inline-flex items-center gap-1 text-[10px] tracking-[0.14em] uppercase text-[#555]">
+                  Ver
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
               </td>
             </tr>
           </tbody>
