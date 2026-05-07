@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import MediaGallery from '@/components/ui/MediaGallery.vue'
 import { useCartStore } from '@/composables/useCartStore'
 import { useWishlistStore } from '@/composables/useWishlistStore'
 import { useAuthSession } from '@/composables/useAuthSession'
@@ -22,7 +23,6 @@ function goBack() {
 const product      = ref(null)
 const loading      = ref(true)
 const error        = ref('')
-const activeImage  = ref(0)
 const showReviews  = ref(false)
 
 // ── Reseñas ───────────────────────────────────────────────────────────────────
@@ -147,6 +147,7 @@ const conditionMap = { new: 'Nuevo', used: 'Usado', refurbished: 'Reacondicionad
 const { addToCart, itemQuantity } = useCartStore()
 const cartQty       = ref(1)
 const cartFeedback  = ref('')  // 'added' | 'error' | ''
+const cartLoading   = ref(false)
 let feedbackTimer   = null
 
 const inCart = computed(() => product.value ? itemQuantity(product.value.id) > 0 : false)
@@ -175,8 +176,9 @@ async function handleToggleWishlist() {
   wishlistTimer = setTimeout(() => { wishlistFeedback.value = '' }, 2000)
 }
 
-function handleAddToCart() {
+async function handleAddToCart() {
   if (!product.value || !store.value?.id) return
+  if (cartLoading.value) return
 
   // Enriquecer con store
   const enriched = {
@@ -185,21 +187,26 @@ function handleAddToCart() {
     expand: { ...product.value.expand, store: store.value }
   }
 
-  const success = addToCart(enriched, cartQty.value)
-  if (!success) {
-    cartFeedback.value = 'error'
+  cartLoading.value = true
+  try {
+    const success = await addToCart(enriched, cartQty.value)
+    if (!success) {
+      cartFeedback.value = 'error'
+      clearTimeout(feedbackTimer)
+      feedbackTimer = setTimeout(() => { cartFeedback.value = '' }, 3000)
+      return
+    }
+
+    cartFeedback.value = 'added'
     clearTimeout(feedbackTimer)
-    feedbackTimer = setTimeout(() => { cartFeedback.value = '' }, 3000)
-    return
+    feedbackTimer = setTimeout(() => { cartFeedback.value = '' }, 2500)
+
+    // Si estaba en wishlist, quitarlo automáticamente
+    const wishItem = getWishlistItem(product.value.id)
+    if (wishItem) removeFromWishlist(wishItem.id, product.value.id)
+  } finally {
+    cartLoading.value = false
   }
-
-  cartFeedback.value = 'added'
-  clearTimeout(feedbackTimer)
-  feedbackTimer = setTimeout(() => { cartFeedback.value = '' }, 2500)
-
-  // Si estaba en wishlist, quitarlo automáticamente
-  const wishItem = getWishlistItem(product.value.id)
-  if (wishItem) removeFromWishlist(wishItem.id, product.value.id)
 }
 
 const stockStatus = computed(() => {
@@ -224,26 +231,26 @@ onMounted(fetchProduct)
 <template>
   <AppNavbar />
 
-  <main class="detail-shell text-[#f0ede8]">
+  <main class="detail-shell text-text-primary">
     <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-10">
 
       <!-- Volver + Breadcrumb -->
       <div class="flex items-center justify-between gap-4 mb-8">
-        <nav class="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-[#3a3835]">
-          <RouterLink to="/stores" class="hover:text-[#c9a96e] transition-colors">Directorio</RouterLink>
+        <nav class="flex items-center gap-2 text-[10px] tracking-[0.15em] uppercase text-text-disabled">
+          <RouterLink to="/stores" class="hover:text-accent transition-colors">Directorio</RouterLink>
           <span>/</span>
           <RouterLink
             v-if="store"
             :to="`/stores/${store.slug || store.id}`"
-            class="hover:text-[#c9a96e] transition-colors"
+            class="hover:text-accent transition-colors"
           >{{ store.name }}</RouterLink>
           <span v-if="store">/</span>
-          <span class="text-[#555550]">Producto</span>
+          <span class="text-text-muted">Producto</span>
         </nav>
 
         <button
           @click="goBack"
-          class="flex items-center gap-1.5 text-[10px] tracking-[0.15em] uppercase text-[#555550] border border-[#1e1e1e] px-3 h-8 hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors shrink-0"
+          class="flex items-center gap-1.5 text-[10px] tracking-[0.15em] uppercase text-text-muted border border-border-subtle px-3 h-8 hover:border-[var(--accent)44] hover:text-accent transition-colors shrink-0"
         >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
@@ -254,7 +261,7 @@ onMounted(fetchProduct)
 
       <!-- ══ ERROR ══════════════════════════════════════════════════ -->
       <div v-if="error" class="flex flex-col items-center py-24 gap-4">
-        <p class="text-[#555550] text-sm">{{ error }}</p>
+        <p class="text-text-muted text-sm">{{ error }}</p>
         <RouterLink to="/stores" class="btn-outline text-xs">Volver al directorio</RouterLink>
       </div>
 
@@ -281,82 +288,23 @@ onMounted(fetchProduct)
       <div v-else-if="product" class="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-16">
 
         <!-- ── GALERÍA DE IMÁGENES ─────────────────────────────────── -->
-        <div class="space-y-3">
-          <!-- Imagen principal -->
-          <div class="relative aspect-square bg-[#0f0f0f] border border-[#1a1a1a] overflow-hidden">
-            <img
-              v-if="images.length"
-              :src="imgUrl(images[activeImage], '800x800')"
-              :alt="product.name"
-              class="w-full h-full object-contain"
-            />
-            <div
-              v-else
-              class="w-full h-full flex flex-col items-center justify-center gap-3"
-              style="background:linear-gradient(135deg,#111111 0%,#14110d 100%);"
-            >
-              <svg class="w-16 h-16 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span class="text-[10px] tracking-widest uppercase text-[#2a2520]">Sin imagen</span>
-            </div>
-
-            <!-- Badge destacado -->
+        <MediaGallery
+          :images="images.map(f => imgUrl(f, '800x800'))"
+          :thumbs="images.map(f => imgUrl(f, '400x400'))"
+          :alt="product.name"
+          aspect="square"
+        >
+          <template #overlay>
             <div v-if="product.featured" class="absolute top-3 left-3">
               <span class="badge-gold">Destacado</span>
             </div>
-
-            <!-- Badge descuento -->
             <div v-if="pricing.hasDiscount" class="absolute top-3 right-3">
               <span class="inline-flex items-center px-2 py-1 text-[10px] tracking-widest uppercase bg-red-900/70 text-red-300 border border-red-800/40 font-medium">
                 {{ pricing.discountLabel }}
               </span>
             </div>
-
-            <!-- Flechas navegación (si hay más de 1 imagen) -->
-            <template v-if="images.length > 1">
-              <button
-                @click="activeImage = (activeImage - 1 + images.length) % images.length"
-                class="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/60 border border-[#2a2a2a] hover:border-[#c9a96e44] transition-colors"
-                aria-label="Imagen anterior"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-              <button
-                @click="activeImage = (activeImage + 1) % images.length"
-                class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/60 border border-[#2a2a2a] hover:border-[#c9a96e44] transition-colors"
-                aria-label="Imagen siguiente"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            </template>
-          </div>
-
-          <!-- Thumbnails -->
-          <div v-if="images.length > 1" class="grid grid-cols-5 gap-2">
-            <button
-              v-for="(img, idx) in images"
-              :key="img"
-              @click="activeImage = idx"
-              :class="[
-                'aspect-square border overflow-hidden transition-colors',
-                idx === activeImage
-                  ? 'border-[#c9a96e]'
-                  : 'border-[#1e1e1e] hover:border-[#333330]',
-              ]"
-            >
-              <img
-                :src="imgUrl(img, '400x400')"
-                :alt="`Imagen ${idx + 1}`"
-                class="w-full h-full object-cover"
-              />
-            </button>
-          </div>
-        </div>
+          </template>
+        </MediaGallery>
 
         <!-- ── DETALLES ─────────────────────────────────────────────── -->
         <div class="flex flex-col gap-5">
@@ -366,7 +314,7 @@ onMounted(fetchProduct)
             <span v-if="category" class="section-label">{{ category.name }}</span>
             <span
               v-if="product.condition"
-              class="inline-flex items-center px-2 py-0.5 text-[10px] tracking-widest uppercase border border-[#222] text-[#6f6a61]"
+              class="inline-flex items-center px-2 py-0.5 text-[10px] tracking-widest uppercase border border-border-default text-text-muted"
             >
               {{ conditionMap[product.condition] || product.condition }}
             </span>
@@ -379,10 +327,10 @@ onMounted(fetchProduct)
 
           <!-- Precio -->
           <div class="flex items-baseline gap-3">
-            <span class="text-2xl font-semibold text-[#c9a96e] tabular-nums">
+            <span class="text-2xl font-semibold text-accent tabular-nums">
               ${{ pricing.final.toLocaleString('es-CL') }}
             </span>
-            <span v-if="pricing.hasDiscount" class="text-base text-[#3a3835] line-through tabular-nums">
+            <span v-if="pricing.hasDiscount" class="text-base text-text-disabled line-through tabular-nums">
               ${{ pricing.base.toLocaleString('es-CL') }}
             </span>
           </div>
@@ -392,24 +340,24 @@ onMounted(fetchProduct)
             {{ stockStatus.label }}
           </p>
 
-          <div class="border-t border-[#141414]" />
+          <div class="border-t border-[var(--surface-overlay)]" />
 
           <!-- Descripción -->
           <div
             v-if="product.description"
-            class="prose-dark text-[13px] text-[#7a7570] leading-relaxed"
+            class="prose-dark text-[13px] text-text-muted leading-relaxed"
             v-html="product.description"
           />
 
-          <div class="border-t border-[#141414]" />
+          <div class="border-t border-[var(--surface-overlay)]" />
 
           <!-- Tienda vendedora -->
           <RouterLink
             v-if="store"
             :to="`/stores/${store.slug || store.id}`"
-            class="flex items-center gap-3 p-3 border border-[#1a1a1a] hover:border-[#c9a96e44] transition-colors group"
+            class="flex items-center gap-3 p-3 border border-border-subtle hover:border-[var(--accent)44] transition-colors group"
           >
-            <div class="w-10 h-10 shrink-0 border border-[#222] bg-[#0f0f0f] overflow-hidden">
+            <div class="w-10 h-10 shrink-0 border border-border-default bg-surface-raised overflow-hidden">
               <img
                 v-if="logoUrl(store)"
                 :src="logoUrl(store)"
@@ -417,18 +365,18 @@ onMounted(fetchProduct)
                 class="w-full h-full object-cover"
               />
               <div v-else class="w-full h-full flex items-center justify-center">
-                <span class="font-display text-sm font-light text-[#2a2520]">
+                <span class="font-display text-sm font-light text-text-disabled">
                   {{ storeInitials(store.name).charAt(0) }}
                 </span>
               </div>
             </div>
             <div class="min-w-0 flex-1">
-              <p class="text-[10px] tracking-[0.15em] uppercase text-[#444440] mb-0.5">Vendido por</p>
-              <p class="text-sm text-[#d8d4ce] group-hover:text-[#c9a96e] transition-colors truncate">
+              <p class="text-[10px] tracking-[0.15em] uppercase text-text-disabled mb-0.5">Vendido por</p>
+              <p class="text-sm text-text-secondary group-hover:text-accent transition-colors truncate">
                 {{ store.name }}
               </p>
             </div>
-            <svg class="w-3.5 h-3.5 text-[#333330] group-hover:text-[#c9a96e] transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-text-disabled group-hover:text-accent transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </RouterLink>
@@ -438,40 +386,52 @@ onMounted(fetchProduct)
             <!-- Selector de cantidad + botón agregar -->
             <div v-if="Number(product.stock) > 0" class="flex gap-2">
               <!-- Cantidad -->
-              <div class="flex items-center border border-[#222] bg-[#0f0f0f]">
+              <div class="flex items-center border border-border-default bg-surface-raised">
                 <button
                   @click="cartQty = Math.max(1, cartQty - 1)"
-                  class="w-9 h-11 flex items-center justify-center text-[#555] hover:text-[#c9a96e] transition-colors text-base"
+                  class="w-9 h-11 flex items-center justify-center text-text-muted hover:text-accent transition-colors text-base"
                 >−</button>
-                <span class="w-8 text-center text-[13px] text-[#e8e5e0] tabular-nums select-none">{{ cartQty }}</span>
+                <span class="w-8 text-center text-[13px] text-text-primary tabular-nums select-none">{{ cartQty }}</span>
                 <button
                   @click="cartQty = Math.min(Number(product.stock), cartQty + 1)"
-                  class="w-9 h-11 flex items-center justify-center text-[#555] hover:text-[#c9a96e] transition-colors text-base"
+                  class="w-9 h-11 flex items-center justify-center text-text-muted hover:text-accent transition-colors text-base"
                 >+</button>
               </div>
 
               <!-- Botón agregar -->
               <button
                 @click="handleAddToCart"
-                class="flex-1 h-11 px-5 flex items-center justify-center gap-2 text-xs tracking-[0.12em] uppercase transition-all duration-200"
+                :disabled="cartLoading"
+                class="add-to-cart-btn flex-1 h-11 px-5 flex items-center justify-center gap-2 text-xs tracking-[0.12em] uppercase font-medium border transition-all duration-200 ease-out cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface-base) disabled:cursor-not-allowed"
                 :class="cartFeedback === 'added'
-                  ? 'bg-emerald-900/40 border border-emerald-700/50 text-emerald-400'
+                  ? 'bg-emerald-900/40 border-emerald-700/50 text-emerald-400'
                   : cartFeedback === 'error'
-                  ? 'bg-red-900/40 border border-red-700/50 text-red-400'
-                  : 'bg-[#c9a96e15] border border-[#c9a96e44] text-[#c9a96e] hover:bg-[#c9a96e25] hover:border-[#c9a96e66]'"
+                  ? 'bg-red-900/40 border-red-700/50 text-red-400 animate-shake'
+                  : 'bg-accent text-accent-on border-accent shadow-sm hover:bg-accent-hover hover:border-accent-hover hover:shadow-[0_0_18px_-4px_var(--accent-glow)] hover:-translate-y-px active:translate-y-0 active:scale-[0.98]'"
               >
                 <Transition name="cart-icon" mode="out-in">
-                  <svg v-if="cartFeedback === 'added'" key="check" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <svg v-if="cartLoading" key="spin" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  <svg v-else-if="cartFeedback === 'added'" key="check" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <svg v-else-if="cartFeedback === 'error'" key="error" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M12 9v2m0 4v2m-6.773-7.618A9 9 0 1 1 20.773 16.618a9 9 0 0 1-14.546-7.618z" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <svg v-else key="cart" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <svg v-else key="cart" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
                   </svg>
                 </Transition>
-                {{ cartFeedback === 'added' ? '¡Agregado!' : (cartFeedback === 'error' ? 'Error al agregar' : (inCart ? 'Agregar más' : 'Agregar al carrito')) }}
+                <span class="leading-none">
+                  {{
+                    cartLoading ? 'Agregando...'
+                    : cartFeedback === 'added' ? '¡Agregado!'
+                    : cartFeedback === 'error' ? 'Error al agregar'
+                    : (inCart ? 'Agregar más' : 'Agregar al carrito')
+                  }}
+                </span>
               </button>
             </div>
 
@@ -483,8 +443,8 @@ onMounted(fetchProduct)
                 @click="handleToggleWishlist"
                 class="flex-1 flex items-center justify-center gap-2 h-11 px-5 border text-xs tracking-[0.12em] uppercase transition-colors duration-200"
                 :class="inWishlist
-                  ? 'bg-[#c9a96e12] border-[#c9a96e55] text-[#c9a96e]'
-                  : 'border-[#2a2a2a] text-[#666259] hover:border-[#c9a96e44] hover:text-[#c9a96e]'"
+                  ? 'bg-[var(--accent)12] border-[var(--accent)55] text-accent'
+                  : 'border-border-default text-text-muted hover:border-[var(--accent)44] hover:text-accent'"
               >
                 <svg class="w-4 h-4 transition-all duration-200" :fill="inWishlist ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -509,7 +469,7 @@ onMounted(fetchProduct)
               <!-- Ver reseñas -->
               <button
                 @click="toggleReviews"
-                class="flex-1 flex items-center justify-center gap-2 h-11 px-5 border border-[#2a2a2a] text-[#666259] text-xs tracking-[0.12em] uppercase hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors"
+                class="flex-1 flex items-center justify-center gap-2 h-11 px-5 border border-border-default text-text-muted text-xs tracking-[0.12em] uppercase hover:border-[var(--accent)44] hover:text-accent transition-colors"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -520,24 +480,24 @@ onMounted(fetchProduct)
           </div>
 
           <!-- Panel de reseñas -->
-          <div v-if="showReviews" class="border border-[#1a1a1a] bg-[#0c0c0c]">
+          <div v-if="showReviews" class="border border-border-subtle bg-surface-sunken">
             <!-- Header del panel -->
-            <div class="flex items-center justify-between px-5 py-4 border-b border-[#141414]">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--surface-overlay)]">
               <div class="flex items-center gap-3">
-                <h2 class="text-sm font-medium text-[#d8d4ce] tracking-wide">Reseñas del producto</h2>
+                <h2 class="text-sm font-medium text-text-secondary tracking-wide">Reseñas del producto</h2>
                 <!-- Promedio -->
                 <div v-if="reviewsAvg !== null" class="flex items-center gap-1.5">
                   <div class="flex items-center gap-0.5">
-                    <svg v-for="i in 5" :key="i" class="w-3 h-3" :class="i <= Math.round(reviewsAvg) ? 'text-[#c9a96e]' : 'text-[#2a2520]'" fill="currentColor" viewBox="0 0 24 24">
+                    <svg v-for="i in 5" :key="i" class="w-3 h-3" :class="i <= Math.round(reviewsAvg) ? 'text-accent' : 'text-text-disabled'" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                     </svg>
                   </div>
-                  <span class="text-[11px] text-[#c9a96e] font-medium">{{ reviewsAvg }}</span>
-                  <span class="text-[10px] text-[#555550]">({{ reviewsTotal }})</span>
+                  <span class="text-[11px] text-accent font-medium">{{ reviewsAvg }}</span>
+                  <span class="text-[10px] text-text-muted">({{ reviewsTotal }})</span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <button @click="showReviews = false" class="text-[#333330] hover:text-[#c9a96e] transition-colors p-1">
+                <button @click="showReviews = false" class="text-text-disabled hover:text-accent transition-colors p-1">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -556,31 +516,31 @@ onMounted(fetchProduct)
 
             <!-- Error -->
             <div v-else-if="reviewsError" class="px-5 py-6 flex items-center justify-center">
-              <p class="text-[11px] text-[#555550]">{{ reviewsError }}</p>
+              <p class="text-[11px] text-text-muted">{{ reviewsError }}</p>
             </div>
 
             <!-- Sin reseñas -->
             <div v-else-if="reviews.length === 0" class="flex flex-col items-center py-10 gap-3">
-              <svg class="w-10 h-10 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+              <svg class="w-10 h-10 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                 <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <p class="font-display text-base font-light text-[#333330]">Sin reseñas aún</p>
-              <p class="text-[10px] tracking-widest uppercase text-[#252520]">Las reseñas se publican desde Mis pedidos tras recibir el producto</p>
+              <p class="font-display text-base font-light text-text-disabled">Sin reseñas aún</p>
+              <p class="text-[10px] tracking-widest uppercase text-text-disabled">Las reseñas se publican desde Mis pedidos tras recibir el producto</p>
             </div>
 
             <!-- Lista de reseñas -->
-            <div v-else class="divide-y divide-[#0f0f0f]">
+            <div v-else class="divide-y divide-[var(--surface-raised)]">
               <div v-for="rev in reviews" :key="rev.id" class="px-5 py-4">
                 <div class="flex items-start justify-between gap-3 mb-2">
                   <div class="flex items-center gap-2">
                     <!-- Avatar inicial -->
-                    <div class="w-7 h-7 rounded-full bg-[#1a1a1a] border border-[#222] flex items-center justify-center shrink-0">
-                      <span class="text-[10px] text-[#555550] font-medium uppercase">{{ reviewerName(rev).charAt(0) }}</span>
+                    <div class="w-7 h-7 rounded-full bg-surface-overlay border border-border-default flex items-center justify-center shrink-0">
+                      <span class="text-[10px] text-text-muted font-medium uppercase">{{ reviewerName(rev).charAt(0) }}</span>
                     </div>
                     <div>
-                      <p class="text-[11px] text-[#888880]">{{ reviewerName(rev) }}</p>
+                      <p class="text-[11px] text-text-muted">{{ reviewerName(rev) }}</p>
                       <div class="flex items-center gap-1 mt-0.5">
-                        <svg v-for="i in 5" :key="i" class="w-2.5 h-2.5" :class="i <= rev.rating ? 'text-[#c9a96e]' : 'text-[#2a2520]'" fill="currentColor" viewBox="0 0 24 24">
+                        <svg v-for="i in 5" :key="i" class="w-2.5 h-2.5" :class="i <= rev.rating ? 'text-accent' : 'text-text-disabled'" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                         </svg>
                       </div>
@@ -591,21 +551,21 @@ onMounted(fetchProduct)
                       <svg class="w-2 h-2" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                       Compra verificada
                     </span>
-                    <span class="text-[9px] text-[#3a3835]">{{ fmtDate(rev.created) }}</span>
+                    <span class="text-[9px] text-text-disabled">{{ fmtDate(rev.created) }}</span>
                   </div>
                 </div>
-                <p v-if="rev.title" class="text-[12px] text-[#c8c4be] font-medium mb-1">{{ rev.title }}</p>
-                <p v-if="rev.comment" class="text-[11px] text-[#7a7570] leading-relaxed">{{ rev.comment }}</p>
+                <p v-if="rev.title" class="text-[12px] text-text-secondary font-medium mb-1">{{ rev.title }}</p>
+                <p v-if="rev.comment" class="text-[11px] text-text-muted leading-relaxed">{{ rev.comment }}</p>
               </div>
             </div>
 
             <!-- Paginación de reseñas -->
-            <div v-if="reviewsTotalPages > 1" class="flex items-center justify-center gap-2 px-5 py-4 border-t border-[#0f0f0f]">
+            <div v-if="reviewsTotalPages > 1" class="flex items-center justify-center gap-2 px-5 py-4 border-t border-[var(--surface-raised)]">
               <button
                 v-for="p in reviewsTotalPages"
                 :key="p"
                 @click="loadReviews(p)"
-                :class="['w-7 h-7 text-[10px] border transition-colors', p === reviewsPage ? 'border-[#c9a96e] text-[#c9a96e] bg-[#c9a96e10]' : 'border-[#1e1e1e] text-[#555] hover:border-[#333]']"
+                :class="['w-7 h-7 text-[10px] border transition-colors', p === reviewsPage ? 'border-accent text-accent bg-[var(--accent)10]' : 'border-border-subtle text-text-muted hover:border-border-default']"
               >
                 {{ p }}
               </button>
@@ -623,7 +583,7 @@ onMounted(fetchProduct)
 
 <style scoped>
 .detail-shell {
-  background: linear-gradient(180deg, #090909 0%, #0a0a0a 100%);
+  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 100%);
   flex: 1;
   width: 100%;
   overflow-x: hidden;
@@ -631,16 +591,16 @@ onMounted(fetchProduct)
 
 /* Prose oscuro para la descripción HTML */
 .prose-dark :deep(p)      { margin-bottom: 0.75rem; }
-.prose-dark :deep(strong) { color: #c9a96e; font-weight: 500; }
-.prose-dark :deep(em)     { color: #9a9590; }
+.prose-dark :deep(strong) { color: var(--accent); font-weight: 500; }
+.prose-dark :deep(em)     { color: var(--text-muted); }
 .prose-dark :deep(ul)     { list-style: disc; padding-left: 1.25rem; }
 .prose-dark :deep(ol)     { list-style: decimal; padding-left: 1.25rem; }
 .prose-dark :deep(li)     { margin-bottom: 0.25rem; }
-.prose-dark :deep(a)      { color: #c9a96e; text-decoration: underline; }
+.prose-dark :deep(a)      { color: var(--accent); text-decoration: underline; }
 
 /* Skeleton para reseñas */
 .skeleton {
-  background: linear-gradient(90deg, #131313 25%, #1a1a1a 50%, #131313 75%);
+  background: linear-gradient(90deg, var(--surface-overlay) 25%, var(--border-subtle) 50%, var(--surface-overlay) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 2px;
@@ -648,8 +608,24 @@ onMounted(fetchProduct)
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 /* Transición icono carrito */
-.cart-icon-enter-active { transition: opacity 0.15s ease, transform 0.15s ease; }
-.cart-icon-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
-.cart-icon-enter-from   { opacity: 0; transform: scale(0.6); }
-.cart-icon-leave-to     { opacity: 0; transform: scale(0.6); }
+.cart-icon-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.cart-icon-leave-active { transition: opacity 0.12s ease, transform 0.12s ease; }
+.cart-icon-enter-from   { opacity: 0; transform: scale(0.5) rotate(-12deg); }
+.cart-icon-leave-to     { opacity: 0; transform: scale(0.5) rotate(12deg); }
+
+/* Botón agregar al carrito */
+.add-to-cart-btn {
+  will-change: transform, box-shadow, background-color;
+  -webkit-tap-highlight-color: transparent;
+}
+.add-to-cart-btn:disabled { opacity: 0.7; }
+
+@keyframes cart-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
+}
+.animate-shake { animation: cart-shake 0.4s ease-in-out; }
 </style>

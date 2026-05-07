@@ -124,14 +124,14 @@ onMounted(fetchStores)
 <template>
   <AppNavbar />
 
-  <main class="stores-shell text-[#f0ede8]">
+  <main class="stores-shell text-text-primary">
 
     <!-- ══ HERO ══════════════════════════════════════════════════ -->
-    <section class="relative overflow-hidden border-b border-[#1a1a1a]">
-      <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_left,#2f2718_0%,#0a0a0a_55%)] opacity-75" />
+    <section class="relative overflow-hidden border-b border-border-subtle">
+      <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_left,var(--accent-soft)_0%,var(--surface-base)_55%)] opacity-75" />
       <div
         class="absolute inset-0 pointer-events-none opacity-[0.05]"
-        style="background-image:linear-gradient(#c9a96e 1px,transparent 1px),linear-gradient(90deg,#c9a96e 1px,transparent 1px);background-size:72px 72px;"
+        style="background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:72px 72px;"
       />
       <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-14 md:py-20">
         <div class="max-w-xl">
@@ -139,7 +139,7 @@ onMounted(fetchStores)
           <h1 class="font-display text-4xl md:text-6xl font-light leading-[0.95] mb-4">
             Todas las tiendas
           </h1>
-          <p class="text-[#6f6a61] text-sm leading-relaxed">
+          <p class="text-text-muted text-sm leading-relaxed">
             Explora el directorio completo de vendedores. Encuentra tu marca favorita
             o descubre nuevos comercios de confianza.
           </p>
@@ -148,7 +148,7 @@ onMounted(fetchStores)
     </section>
 
     <!-- ══ BARRA DE FILTROS ══════════════════════════════════════ -->
-    <section class="w-full border-b border-[#1a1a1a] bg-[#0c0c0c] sticky top-[57px] z-40">
+    <section class="w-full border-b border-border-subtle bg-surface-sunken sticky top-[57px] z-40">
       <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-3">
         <div class="flex flex-wrap items-center gap-2.5">
 
@@ -158,10 +158,10 @@ onMounted(fetchStores)
               v-model="filters.search"
               type="text"
               placeholder="Buscar tienda..."
-              class="input-dark pr-9 text-sm h-9 w-full"
+              class="filter-input pr-9 w-full"
             />
             <svg
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#444440] pointer-events-none"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-disabled pointer-events-none"
               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
             >
               <circle cx="11" cy="11" r="8"/>
@@ -206,13 +206,13 @@ onMounted(fetchStores)
           <button
             v-if="hasActiveFilters"
             @click="clearFilters"
-            class="h-9 px-3 text-[10px] tracking-[0.15em] uppercase text-[#666259] border border-[#252520] hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors whitespace-nowrap"
+            class="h-9 px-3 text-[10px] tracking-[0.15em] uppercase text-text-muted border border-[var(--text-disabled)] hover:border-[var(--accent)44] hover:text-accent transition-colors whitespace-nowrap"
           >
             Limpiar
           </button>
 
           <!-- Contador -->
-          <span class="ml-auto text-[10px] tracking-[0.18em] uppercase text-[#383835] hidden sm:block whitespace-nowrap">
+          <span class="ml-auto text-[10px] tracking-[0.18em] uppercase text-text-disabled hidden sm:block whitespace-nowrap">
             {{ totalItems }} tienda{{ totalItems !== 1 ? 's' : '' }}
           </span>
 
@@ -257,12 +257,12 @@ onMounted(fetchStores)
         </div>
 
         <!-- Sin resultados -->
-        <div v-else-if="!stores.length" class="flex flex-col items-center py-24 border border-[#141414]">
-          <svg class="w-10 h-10 text-[#252520] mb-5" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+        <div v-else-if="!stores.length" class="flex flex-col items-center py-24 border border-[var(--surface-overlay)]">
+          <svg class="w-10 h-10 text-text-disabled mb-5" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
             <path d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <p class="font-display text-2xl font-light text-[#444440] mb-2">Sin tiendas</p>
-          <p class="text-[#333330] text-xs tracking-widest uppercase mb-6">
+          <p class="font-display text-2xl font-light text-text-disabled mb-2">Sin tiendas</p>
+          <p class="text-text-disabled text-xs tracking-widest uppercase mb-6">
             {{ filters.search ? 'Intenta con otra búsqueda' : 'Aún no hay tiendas registradas' }}
           </p>
           <button v-if="hasActiveFilters" @click="clearFilters" class="btn-outline text-xs">
@@ -279,19 +279,19 @@ onMounted(fetchStores)
             class="card-dark group flex flex-col overflow-hidden"
           >
             <!-- Banner — altura fija estándar: 160 px independiente del tamaño de la imagen -->
-            <div class="relative h-40 shrink-0 bg-[#0f0f0f] overflow-hidden">
+            <div class="relative h-40 shrink-0 bg-surface-raised overflow-hidden">
               <img
                 v-if="bannerUrl(store)"
                 :src="bannerUrl(store)"
                 :alt="store.name"
-                class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                class="w-full h-full object-cover object-top"
               />
               <div
                 v-else
                 class="w-full h-full flex items-center justify-center"
-                style="background:linear-gradient(135deg,#111111 0%,#14110d 100%);"
+                style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
               >
-                <span class="font-display text-5xl font-light text-[#1e1b16]">
+                <span class="font-display text-5xl font-light text-text-disabled">
                   {{ initials(store.name) }}
                 </span>
               </div>
@@ -316,7 +316,7 @@ onMounted(fetchStores)
               <!-- Logo + nombre -->
               <div class="flex items-center gap-3">
                 <!-- Logo — tamaño fijo 40×40 px -->
-                <div class="w-10 h-10 flex-shrink-0 border border-[#222] bg-[#0f0f0f] overflow-hidden">
+                <div class="w-10 h-10 flex-shrink-0 border border-border-default bg-surface-raised overflow-hidden">
                   <img
                     v-if="logoUrl(store)"
                     :src="logoUrl(store)"
@@ -324,17 +324,17 @@ onMounted(fetchStores)
                     class="w-full h-full object-cover object-center"
                   />
                   <div v-else class="w-full h-full flex items-center justify-center">
-                    <span class="font-display text-sm font-light text-[#2a2520]">
+                    <span class="font-display text-sm font-light text-text-disabled">
                       {{ initials(store.name).charAt(0) }}
                     </span>
                   </div>
                 </div>
 
                 <div class="min-w-0 flex-1">
-                  <h2 class="text-sm font-medium text-[#e8e4de] leading-snug truncate group-hover:text-[#c9a96e] transition-colors duration-200">
+                  <h2 class="text-sm font-medium text-text-primary leading-snug truncate group-hover:text-accent transition-colors duration-200">
                     {{ store.name }}
                   </h2>
-                  <p v-if="store.location" class="text-[11px] text-[#4a4845] mt-0.5 truncate flex items-center gap-1">
+                  <p v-if="store.location" class="text-[11px] text-text-disabled mt-0.5 truncate flex items-center gap-1">
                     <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"/>
                       <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -347,18 +347,18 @@ onMounted(fetchStores)
               <!-- Descripción -->
               <p
                 v-if="store.description"
-                class="text-[11px] text-[#5a5750] leading-relaxed line-clamp-2"
+                class="text-[11px] text-text-muted leading-relaxed line-clamp-2"
                 v-html="store.description"
               />
 
               <!-- Pie: rating + reseñas -->
-              <div class="mt-auto pt-3 border-t border-[#141414] flex items-center justify-between gap-2">
+              <div class="mt-auto pt-3 border-t border-[var(--surface-overlay)] flex items-center justify-between gap-2">
 
                 <!-- Estrellas -->
                 <div class="flex items-center gap-1.5">
                   <div class="flex items-center gap-0.5">
                     <template v-for="n in ratingStars(store.rating).full" :key="`f${n}`">
-                      <svg class="w-3 h-3 text-[#c9a96e]" fill="currentColor" viewBox="0 0 20 20">
+                      <svg class="w-3 h-3 text-accent" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                       </svg>
                     </template>
@@ -366,25 +366,25 @@ onMounted(fetchStores)
                       <svg class="w-3 h-3" viewBox="0 0 20 20">
                         <defs>
                           <linearGradient :id="`hs-${store.id}`" x1="0" x2="1" y1="0" y2="0">
-                            <stop offset="50%" stop-color="#c9a96e"/>
-                            <stop offset="50%" stop-color="#1e1b16"/>
+                            <stop offset="50%" stop-color="var(--accent)"/>
+                            <stop offset="50%" stop-color="var(--text-disabled)"/>
                           </linearGradient>
                         </defs>
                         <path :fill="`url(#hs-${store.id})`" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                       </svg>
                     </template>
                     <template v-for="n in ratingStars(store.rating).empty" :key="`e${n}`">
-                      <svg class="w-3 h-3 text-[#1e1b16]" fill="currentColor" viewBox="0 0 20 20">
+                      <svg class="w-3 h-3 text-text-disabled" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                       </svg>
                     </template>
                   </div>
-                  <span class="text-[10px] text-[#555550] tabular-nums">
+                  <span class="text-[10px] text-text-muted tabular-nums">
                     {{ Number(store.rating || 0).toFixed(1) }}
                   </span>
                 </div>
 
-                <span class="text-[10px] text-[#383835] tabular-nums">
+                <span class="text-[10px] text-text-disabled tabular-nums">
                   {{ store.reviews_count || 0 }} reseña{{ (store.reviews_count || 0) !== 1 ? 's' : '' }}
                 </span>
               </div>
@@ -401,7 +401,7 @@ onMounted(fetchStores)
           </button>
 
           <button v-if="pageWindow[0] > 1" @click="goPage(1)" class="page-btn">1</button>
-          <span v-if="pageWindow[0] > 2" class="text-[#2a2a28] text-xs px-1 select-none">…</span>
+          <span v-if="pageWindow[0] > 2" class="text-text-disabled text-xs px-1 select-none">…</span>
 
           <button
             v-for="p in pageWindow"
@@ -410,7 +410,7 @@ onMounted(fetchStores)
             :class="['page-btn', p === filters.page && 'page-btn--active']"
           >{{ p }}</button>
 
-          <span v-if="pageWindow[pageWindow.length - 1] < totalPages - 1" class="text-[#2a2a28] text-xs px-1 select-none">…</span>
+          <span v-if="pageWindow[pageWindow.length - 1] < totalPages - 1" class="text-text-disabled text-xs px-1 select-none">…</span>
           <button v-if="pageWindow[pageWindow.length - 1] < totalPages" @click="goPage(totalPages)" class="page-btn">{{ totalPages }}</button>
 
           <button @click="goPage(filters.page + 1)" :disabled="filters.page === totalPages" class="page-btn" aria-label="Siguiente">
@@ -430,47 +430,10 @@ onMounted(fetchStores)
 
 <style scoped>
 .stores-shell {
-  background: linear-gradient(180deg, #0a0a0a 0%, #090909 40%, #0a0a0a 100%);
+  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 40%, var(--surface-base) 100%);
   flex: 1;
   width: 100%;
   overflow-x: hidden;
-}
-
-/* ── Select personalizado ────────────────────────────── */
-.filter-select {
-  appearance: none;
-  -webkit-appearance: none;
-  background-color: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  color: #f0ede8;
-  font-size: 0.8125rem;  /* 13px — sin cortes */
-  padding: 0 2.25rem 0 0.75rem;
-  height: 2.25rem;       /* h-9 */
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.2s;
-  white-space: nowrap;
-  /* Ancho mínimo para que el texto más largo quepa cómodamente */
-  min-width: 12rem;
-}
-.filter-select:focus {
-  border-color: #c9a96e;
-}
-.filter-select option {
-  background-color: #111111;
-  color: #f0ede8;
-}
-
-/* Flecha del select */
-.select-chevron {
-  position: absolute;
-  right: 0.625rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0.875rem;
-  height: 0.875rem;
-  color: #444440;
-  pointer-events: none;
 }
 
 /* ── Paginación ──────────────────────────────────────── */
@@ -483,23 +446,23 @@ onMounted(fetchStores)
   padding: 0 0.4rem;
   font-size: 0.7rem;
   letter-spacing: 0.06em;
-  color: #555550;
-  border: 1px solid #1e1e1e;
-  background: #101010;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
 .page-btn:hover:not(:disabled) {
-  border-color: #c9a96e44;
-  color: #c9a96e;
+  border-color: var(--accent)44;
+  color: var(--accent);
 }
 .page-btn:disabled {
   opacity: 0.25;
   cursor: not-allowed;
 }
 .page-btn--active {
-  border-color: #c9a96e !important;
-  color: #c9a96e !important;
-  background: #14110d;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background: var(--accent-soft);
 }
 </style>

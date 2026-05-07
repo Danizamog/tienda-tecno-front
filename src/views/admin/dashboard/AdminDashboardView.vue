@@ -180,16 +180,16 @@ function shortDate(str) {
 <template>
   <div class="p-6 lg:p-8 min-h-screen">
     <div class="mb-8">
-      <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1">Panel de</p>
-      <h1 class="text-2xl font-light tracking-wide text-[#e8e5e0]">Administración</h1>
-      <p class="text-sm text-[#666] mt-2 max-w-2xl">Resumen general de tiendas, usuarios y transacciones con enfoque operativo.</p>
+      <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-1">Panel de</p>
+      <h1 class="text-2xl font-light tracking-wide text-text-primary">Administración</h1>
+      <p class="text-sm text-text-muted mt-2 max-w-2xl">Resumen general de tiendas, usuarios y transacciones con enfoque operativo.</p>
     </div>
 
     <div v-if="error" class="mb-4 px-4 py-3 bg-red-950/40 border border-red-900/50 text-red-400 text-sm rounded-sm">
       {{ error }}
     </div>
 
-    <div v-if="loading" class="flex items-center justify-center py-24 text-[#666]">Cargando dashboard...</div>
+    <div v-if="loading" class="flex items-center justify-center py-24 text-text-muted">Cargando dashboard...</div>
 
     <template v-else>
       <!-- Métricas de marketplace en vivo -->
@@ -215,24 +215,24 @@ function shortDate(str) {
         <section class="panel">
           <div class="flex items-center justify-between mb-5">
             <div>
-              <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Transacciones por tienda</p>
-              <h2 class="text-lg text-[#e8e5e0] mt-1">Carga operativa</h2>
+              <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Transacciones por tienda</p>
+              <h2 class="text-lg text-text-primary mt-1">Carga operativa</h2>
             </div>
           </div>
-          <div v-if="topStores.length === 0" class="text-sm text-[#666] py-8">No hay transacciones para mostrar.</div>
+          <div v-if="topStores.length === 0" class="text-sm text-text-muted py-8">No hay transacciones para mostrar.</div>
           <div v-else class="flex flex-col gap-4">
             <div v-for="item in topStores" :key="item.store_id || item.store_name" class="store-row">
               <div class="flex items-center justify-between gap-3 mb-2">
                 <div>
-                  <p class="text-sm text-[#e8e5e0]">{{ item.store_name }}</p>
-                  <p class="text-[10px] text-[#666] tracking-[0.16em] uppercase">{{ item.transactions_count }} transacciones</p>
+                  <p class="text-sm text-text-primary">{{ item.store_name }}</p>
+                  <p class="text-[10px] text-text-muted tracking-[0.16em] uppercase">{{ item.transactions_count }} transacciones</p>
                 </div>
-                <p class="text-sm text-[#c9a96e]">{{ money(item.gross_amount) }}</p>
+                <p class="text-sm text-accent">{{ money(item.gross_amount) }}</p>
               </div>
-              <div class="h-3 bg-[#121212] rounded-full overflow-hidden border border-[#1b1b1b]">
-                <div class="h-full bg-linear-to-r from-[#c9a96e] to-[#8a6b2e] rounded-full" :style="{ width: `${percent(item.gross_amount, maxStoreAmount)}%` }"></div>
+              <div class="h-3 bg-surface-overlay rounded-full overflow-hidden border border-border-subtle">
+                <div class="h-full bg-linear-to-r from-[var(--accent)] to-accent-hover rounded-full" :style="{ width: `${percent(item.gross_amount, maxStoreAmount)}%` }"></div>
               </div>
-              <div class="mt-2 grid grid-cols-3 gap-2 text-[10px] text-[#666]">
+              <div class="mt-2 grid grid-cols-3 gap-2 text-[10px] text-text-muted">
                 <div class="mini-stat"><span>Completadas</span><strong>{{ item.completed_count }}</strong></div>
                 <div class="mini-stat"><span>Pendientes</span><strong>{{ item.pending_count }}</strong></div>
                 <div class="mini-stat"><span>Ticket bruto</span><strong>{{ money(item.gross_amount) }}</strong></div>
@@ -243,34 +243,34 @@ function shortDate(str) {
 
         <aside class="panel flex flex-col gap-5">
           <div>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Salud del marketplace</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Salud del marketplace</p>
             <div class="mt-4 flex flex-col gap-3">
               <div v-for="item in healthBars" :key="item.label" class="health-row">
                 <div class="flex items-center justify-between gap-3 mb-2">
                   <div>
-                    <p class="text-sm text-[#e8e5e0]">{{ item.label }}</p>
-                    <p class="text-[10px] text-[#666] tracking-[0.16em] uppercase">{{ item.note }}</p>
+                    <p class="text-sm text-text-primary">{{ item.label }}</p>
+                    <p class="text-[10px] text-text-muted tracking-[0.16em] uppercase">{{ item.note }}</p>
                   </div>
-                  <p class="text-sm text-[#c9a96e]">{{ item.value }} / {{ item.total }}</p>
+                  <p class="text-sm text-accent">{{ item.value }} / {{ item.total }}</p>
                 </div>
-                <div class="h-3 bg-[#121212] rounded-full overflow-hidden border border-[#1b1b1b]">
-                  <div class="h-full bg-linear-to-r from-[#c9a96e] to-[#5e4b26] rounded-full" :style="{ width: `${item.percent}%` }"></div>
+                <div class="h-3 bg-surface-overlay rounded-full overflow-hidden border border-border-subtle">
+                  <div class="h-full bg-linear-to-r from-[var(--accent)] to-[#5e4b26] rounded-full" :style="{ width: `${item.percent}%` }"></div>
                 </div>
               </div>
             </div>
           </div>
 
           <div>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Tiendas mejor valoradas</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Tiendas mejor valoradas</p>
             <div class="mt-4 flex flex-col gap-3">
               <div v-for="store in topRatedStores" :key="store.id" class="top-rated-row">
                 <div>
-                  <p class="text-sm text-[#e8e5e0]">{{ store.name }}</p>
-                  <p class="text-[10px] text-[#666] tracking-[0.16em] uppercase">{{ store.status }} · {{ store.verified ? 'verificada' : 'sin verificar' }}</p>
+                  <p class="text-sm text-text-primary">{{ store.name }}</p>
+                  <p class="text-[10px] text-text-muted tracking-[0.16em] uppercase">{{ store.status }} · {{ store.verified ? 'verificada' : 'sin verificar' }}</p>
                 </div>
                 <div class="text-right">
-                  <p class="text-sm text-[#c9a96e]">{{ formatDecimal(store.rating || 0) }}</p>
-                  <p class="text-[10px] text-[#666]">{{ store.reviews_count || 0 }} reviews</p>
+                  <p class="text-sm text-accent">{{ formatDecimal(store.rating || 0) }}</p>
+                  <p class="text-[10px] text-text-muted">{{ store.reviews_count || 0 }} reviews</p>
                 </div>
               </div>
             </div>
@@ -285,9 +285,9 @@ function shortDate(str) {
         <!-- Header con selector de período y botón de sync -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Ventas históricas</p>
-            <h2 class="text-lg font-light text-[#e8e5e0] mt-0.5">Análisis del período</h2>
-            <p class="text-xs text-[#555] mt-0.5">Datos de <code class="text-[#c9a96e66] text-[10px]">dashboard_metrics</code> — el dashboard-service corre cada día a las 01:00 UTC, calcula el día anterior y hace upsert.</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Ventas históricas</p>
+            <h2 class="text-lg font-light text-text-primary mt-0.5">Análisis del período</h2>
+            <p class="text-xs text-text-muted mt-0.5">Datos de <code class="text-[var(--accent)66] text-[10px]">dashboard_metrics</code> — el dashboard-service corre cada día a las 01:00 UTC, calcula el día anterior y hace upsert.</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
             <div class="flex items-center gap-1">
@@ -302,7 +302,7 @@ function shortDate(str) {
             <!-- Botón de sync manual -->
             <button
               class="flex items-center gap-1.5 px-3 py-1.5 text-[9px] tracking-[0.14em] uppercase border rounded-sm transition-all disabled:opacity-40"
-              :class="syncing ? 'border-[#2a3a2a] text-[#8ab4a066]' : 'border-[#c9a96e44] text-[#c9a96e88] hover:text-[#c9a96e] hover:border-[#c9a96e88]'"
+              :class="syncing ? 'border-[#2a3a2a] text-[var(--vendor)66]' : 'border-[var(--accent)44] text-[var(--accent)88] hover:text-accent hover:border-[var(--accent)88]'"
               :disabled="syncing"
               @click="runSync"
             >
@@ -329,7 +329,7 @@ function shortDate(str) {
           Servicio de métricas no disponible: {{ errorHistory }}
         </div>
 
-        <div v-else-if="loadingHistory" class="flex items-center justify-center py-10 text-[#555] text-xs">
+        <div v-else-if="loadingHistory" class="flex items-center justify-center py-10 text-text-muted text-xs">
           Cargando métricas históricas...
         </div>
 
@@ -338,7 +338,7 @@ function shortDate(str) {
           <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 mb-7">
             <div v-for="card in globalCards" :key="card.label" class="period-card">
               <p class="metric-label">{{ card.label }}</p>
-              <p class="text-xl font-light text-[#e8e5e0]">{{ card.value }}</p>
+              <p class="text-xl font-light text-text-primary">{{ card.value }}</p>
               <p class="metric-note">{{ card.note }}</p>
             </div>
           </div>
@@ -346,12 +346,12 @@ function shortDate(str) {
           <div class="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-6">
             <!-- Gráfico de barras diario (global) -->
             <div>
-              <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-3">Ventas diarias globales (Bs)</p>
-              <div v-if="!dailyItems.length" class="py-8 text-center text-[#555] text-xs">
+              <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-3">Ventas diarias globales (Bs)</p>
+              <div v-if="!dailyItems.length" class="py-8 text-center text-text-muted text-xs">
                 Sin datos para este período. El cron job genera métricas automáticamente cada día.
               </div>
               <div v-else>
-                <div class="flex items-end gap-px h-32 border-b border-[#1a1a1a] mb-1 overflow-x-auto scrollbar-none pb-0.5">
+                <div class="flex items-end gap-px h-32 border-b border-border-subtle mb-1 overflow-x-auto scrollbar-none pb-0.5">
                   <div
                     v-for="item in dailyItems"
                     :key="item.metric_date"
@@ -361,17 +361,17 @@ function shortDate(str) {
                     <!-- Tooltip -->
                     <div class="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-10
                                 hidden group-hover:flex flex-col items-center pointer-events-none">
-                      <div class="bg-[#111] border border-[#2a2a2a] rounded-sm px-2 py-1.5 text-center whitespace-nowrap">
-                        <p class="text-[9px] text-[#888] tracking-wider">{{ shortDate(item.metric_date) }}</p>
-                        <p class="text-[12px] text-[#c9a96e] font-medium">Bs {{ money(item.sales_total) }}</p>
-                        <p class="text-[9px] text-[#666]">{{ item.transactions_count }} trans.</p>
+                      <div class="bg-surface-raised border border-border-default rounded-sm px-2 py-1.5 text-center whitespace-nowrap">
+                        <p class="text-[9px] text-text-muted tracking-wider">{{ shortDate(item.metric_date) }}</p>
+                        <p class="text-[12px] text-accent font-medium">Bs {{ money(item.sales_total) }}</p>
+                        <p class="text-[9px] text-text-muted">{{ item.transactions_count }} trans.</p>
                       </div>
-                      <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[#2a2a2a]"></div>
+                      <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[var(--border-default)]"></div>
                     </div>
                     <!-- Barra -->
                     <div
                       class="w-full rounded-t-[1px] transition-all duration-200 group-hover:opacity-80"
-                      :class="Number(item.sales_total || 0) > 0 ? 'bg-linear-to-t from-[#7a5c1e] to-[#c9a96e]' : 'bg-[#181818]'"
+                      :class="Number(item.sales_total || 0) > 0 ? 'bg-linear-to-t from-accent-hover to-[var(--accent)]' : 'bg-surface-overlay'"
                       :style="{ height: `${barHeightDaily(item)}%` }"
                     ></div>
                   </div>
@@ -385,11 +385,11 @@ function shortDate(str) {
                   >
                     <span
                       v-if="idx === 0 || idx === Math.floor(dailyItems.length / 2) || idx === dailyItems.length - 1"
-                      class="text-[8px] text-[#444] block"
+                      class="text-[8px] text-text-disabled block"
                     >{{ shortDate(item.metric_date) }}</span>
                   </div>
                 </div>
-                <div class="mt-2 flex items-center justify-between text-[9px] text-[#444]">
+                <div class="mt-2 flex items-center justify-between text-[9px] text-text-disabled">
                   <span>0 Bs</span>
                   <span>máx. Bs {{ money(maxDailySales) }}</span>
                 </div>
@@ -398,23 +398,23 @@ function shortDate(str) {
 
             <!-- Ranking de tiendas por ventas en el período -->
             <div>
-              <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-3">Top tiendas por ventas</p>
-              <div v-if="!storesList.length" class="py-8 text-center text-[#555] text-xs">
+              <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-3">Top tiendas por ventas</p>
+              <div v-if="!storesList.length" class="py-8 text-center text-text-muted text-xs">
                 Sin datos de tiendas para este período.
               </div>
               <div v-else class="flex flex-col gap-2.5">
                 <div v-for="(store, idx) in storesList" :key="store.store_id" class="store-rank-row">
                   <div class="flex items-center gap-2.5 mb-1.5">
-                    <span class="text-[10px] text-[#3a3a38] w-4 shrink-0 font-medium">{{ idx + 1 }}</span>
+                    <span class="text-[10px] text-text-disabled w-4 shrink-0 font-medium">{{ idx + 1 }}</span>
                     <div class="flex-1 min-w-0">
-                      <p class="text-[12px] text-[#d8d5cf] truncate">{{ store.store_name }}</p>
-                      <p class="text-[9px] text-[#555] tracking-wider">{{ store.transactions_count }} transacciones</p>
+                      <p class="text-[12px] text-text-secondary truncate">{{ store.store_name }}</p>
+                      <p class="text-[9px] text-text-muted tracking-wider">{{ store.transactions_count }} transacciones</p>
                     </div>
-                    <p class="text-[12px] text-[#c9a96e] shrink-0">Bs {{ money(store.sales_total) }}</p>
+                    <p class="text-[12px] text-accent shrink-0">Bs {{ money(store.sales_total) }}</p>
                   </div>
-                  <div class="h-1.5 bg-[#141414] rounded-full overflow-hidden">
+                  <div class="h-1.5 bg-surface-overlay rounded-full overflow-hidden">
                     <div
-                      class="h-full bg-linear-to-r from-[#7a5c1e] to-[#c9a96e] rounded-full"
+                      class="h-full bg-linear-to-r from-accent-hover to-[var(--accent)] rounded-full"
                       :style="{ width: `${Math.max(4, Math.round((store.sales_total / maxStoreSales) * 100))}%` }"
                     ></div>
                   </div>
@@ -429,34 +429,34 @@ function shortDate(str) {
 </template>
 
 <style scoped>
-.metric-card, .panel { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 1rem 1.1rem; }
-.period-card { background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; padding: 0.75rem 0.85rem; }
-.metric-label { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: #3a3a38; margin-bottom: 0.35rem; }
-.metric-value { font-size: 1.3rem; font-weight: 300; color: #e8e5e0; line-height: 1.05; }
-.metric-note  { margin-top: 0.4rem; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: #666; }
+.metric-card, .panel { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 1rem 1.1rem; }
+.period-card { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; padding: 0.75rem 0.85rem; }
+.metric-label { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--border-strong); margin-bottom: 0.35rem; }
+.metric-value { font-size: 1.3rem; font-weight: 300; color: var(--text-primary); line-height: 1.05; }
+.metric-note  { margin-top: 0.4rem; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
 
-.store-row { padding: 0.95rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; }
-.mini-stat { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.55rem; background: #0b0b0b; border: 1px solid #161616; border-radius: 3px; }
-.mini-stat span   { color: #666; }
-.mini-stat strong { color: #d8d5cf; font-weight: 500; }
-.health-row { padding: 0.9rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; }
-.top-rated-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0.8rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; }
-.store-rank-row { padding: 0.65rem 0.75rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; }
+.store-row { padding: 0.95rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; }
+.mini-stat { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.55rem; background: var(--surface-base); border: 1px solid var(--surface-overlay); border-radius: 3px; }
+.mini-stat span   { color: var(--text-muted); }
+.mini-stat strong { color: var(--text-secondary); font-weight: 500; }
+.health-row { padding: 0.9rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; }
+.top-rated-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0.8rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; }
+.store-rank-row { padding: 0.65rem 0.75rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; }
 
 .range-btn {
   padding: 0.2rem 0.6rem;
   font-size: 0.6rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border: 1px solid #1e1e1e;
-  color: #555;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
   border-radius: 2px;
   transition: all 0.15s ease;
   background: transparent;
   cursor: pointer;
 }
-.range-btn:hover   { color: #888; border-color: #2a2a2a; }
-.range-btn--active { color: #c9a96e; border-color: #c9a96e44; background: #13110c; }
+.range-btn:hover   { color: var(--text-muted); border-color: var(--border-default); }
+.range-btn--active { color: var(--accent); border-color: var(--accent)44; background: #13110c; }
 
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }

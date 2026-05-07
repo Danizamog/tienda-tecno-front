@@ -126,18 +126,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+  <div class="min-h-screen bg-surface-base flex items-center justify-center">
     <div class="flex flex-col items-center gap-4 px-6 text-center">
-      <svg class="w-8 h-8 animate-spin text-[#c9a96e]" fill="none" viewBox="0 0 24 24">
+      <svg class="w-8 h-8 animate-spin text-accent" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
       </svg>
-      <p v-if="!errorMessage" class="text-[10px] tracking-[0.3em] uppercase text-[#444440]">Iniciando sesion...</p>
+      <p v-if="!errorMessage" class="text-[10px] tracking-[0.3em] uppercase text-text-disabled">Iniciando sesion...</p>
       <div v-else class="space-y-4">
         <p class="text-sm text-red-300">{{ errorMessage }}</p>
         <router-link
           to="/login"
-          class="text-[10px] tracking-[0.2em] uppercase text-[#c9a96e] hover:text-[#f0ede8] transition-colors"
+          class="text-[10px] tracking-[0.2em] uppercase text-accent hover:text-text-primary transition-colors"
         >
           Volver a login
         </router-link>

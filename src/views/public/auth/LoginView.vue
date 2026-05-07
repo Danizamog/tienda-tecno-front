@@ -60,37 +60,37 @@ async function handleGoogle() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0a0a] flex">
+  <div class="min-h-screen bg-surface-base flex">
 
     <!-- ÔöÇÔöÇ Left panel (decorative) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ -->
     <div class="hidden lg:flex lg:w-[55%] relative overflow-hidden">
       <!-- Background texture -->
       <div
         class="absolute inset-0"
-        style="background: linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0f0d0a 100%);"
+        style="background: linear-gradient(135deg, var(--surface-base) 0%, var(--surface-raised) 50%, #0f0d0a 100%);"
       />
       <!-- Grid pattern -->
       <div
         class="absolute inset-0 opacity-[0.04]"
-        style="background-image: linear-gradient(#c9a96e 1px, transparent 1px), linear-gradient(90deg, #c9a96e 1px, transparent 1px); background-size: 60px 60px;"
+        style="background-image: linear-gradient(var(--accent) 1px, transparent 1px), linear-gradient(90deg, var(--accent) 1px, transparent 1px); background-size: 60px 60px;"
       />
       <!-- Content -->
       <div class="relative z-10 flex flex-col justify-between p-16 w-full">
         <!-- Brand -->
         <div>
-          <span class="font-display text-3xl font-light tracking-[0.25em] text-[#f0ede8] uppercase">
-            TuVenta<span class="text-[#c9a96e]">Confiada</span>
+          <span class="font-display text-3xl font-light tracking-[0.25em] text-text-primary uppercase">
+            TuVenta<span class="text-accent">Confiada</span>
           </span>
         </div>
 
         <!-- Hero text -->
         <div class="space-y-6">
           <p class="section-label">El marketplace de moda</p>
-          <h1 class="font-display text-6xl font-light leading-tight text-[#f0ede8]">
+          <h1 class="font-display text-6xl font-light leading-tight text-text-primary">
             Compra, Vende<br />
-            <em class="not-italic text-[#c9a96e]">tus prendas</em>
+            <em class="not-italic text-accent">tus prendas</em>
           </h1>
-          <p class="text-[#555550] text-sm font-light leading-relaxed max-w-sm">
+          <p class="text-text-muted text-sm font-light leading-relaxed max-w-sm">
             Conectamos tiendas de ropa con compradores en todo el pais.
             Encuentra las mejores colecciones o participa en subastas exclusivas.
           </p>
@@ -99,30 +99,30 @@ async function handleGoogle() {
         <!-- Stats row -->
         <div class="flex gap-12">
           <div>
-            <p class="font-display text-3xl font-light text-[#c9a96e]">500+</p>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#444440] mt-1">Tiendas</p>
+            <p class="font-display text-3xl font-light text-accent">500+</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mt-1">Tiendas</p>
           </div>
           <div>
-            <p class="font-display text-3xl font-light text-[#c9a96e]">24k</p>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#444440] mt-1">Productos</p>
+            <p class="font-display text-3xl font-light text-accent">24k</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mt-1">Productos</p>
           </div>
           <div>
-            <p class="font-display text-3xl font-light text-[#c9a96e]">98%</p>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#444440] mt-1">Satisfacci├│n</p>
+            <p class="font-display text-3xl font-light text-accent">98%</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mt-1">Satisfacci├│n</p>
           </div>
         </div>
       </div>
 
       <!-- Vertical gold line -->
-      <div class="absolute right-0 top-0 bottom-0 w-px bg-linear-to-b from-transparent via-[#c9a96e22] to-transparent" />
+      <div class="absolute right-0 top-0 bottom-0 w-px bg-linear-to-b from-transparent via-[var(--accent)22] to-transparent" />
     </div>
 
     <!-- ÔöÇÔöÇ Right panel (form) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ -->
     <div class="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
       <!-- Mobile brand -->
       <div class="lg:hidden mb-10">
-        <span class="font-display text-2xl font-light tracking-[0.25em] text-[#f0ede8] uppercase">
-          TuVenta<span class="text-[#c9a96e]">Confiada</span>
+        <span class="font-display text-2xl font-light tracking-[0.25em] text-text-primary uppercase">
+          TuVenta<span class="text-accent">Confiada</span>
         </span>
       </div>
 
@@ -130,8 +130,8 @@ async function handleGoogle() {
         <!-- Heading -->
         <div class="mb-10">
           <p class="section-label mb-3">Bienvenido</p>
-          <h2 class="font-display text-4xl font-light text-[#f0ede8]">Inicia sesi├│n con Google</h2>
-          <p class="text-[#555550] text-sm mt-3">
+          <h2 class="font-display text-4xl font-light text-text-primary">Inicia sesi├│n con Google</h2>
+          <p class="text-text-muted text-sm mt-3">
             Por ahora el acceso esta habilitado exclusivamente con Google.
           </p>
         </div>
@@ -139,7 +139,7 @@ async function handleGoogle() {
         <!-- Google button -->
         <button
           type="button"
-          class="w-full flex items-center justify-center gap-3 border border-[#2a2a2a] hover:border-[#c9a96e33] bg-[#111111] text-[#f0ede8] py-3.5 px-4 transition-all duration-300 group mb-6"
+          class="w-full flex items-center justify-center gap-3 border border-border-default hover:border-[var(--accent)33] bg-surface-raised text-text-primary py-3.5 px-4 transition-all duration-300 group mb-6"
           @click="handleGoogle"
         >
           <!-- Google SVG -->
@@ -149,7 +149,7 @@ async function handleGoogle() {
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
           </svg>
-          <span class="text-xs tracking-[0.15em] uppercase group-hover:text-[#c9a96e] transition-colors">
+          <span class="text-xs tracking-[0.15em] uppercase group-hover:text-accent transition-colors">
             Ingresar con Google
           </span>
         </button>
@@ -162,7 +162,7 @@ async function handleGoogle() {
         <div class="mt-8 text-center">
           <router-link
             to="/"
-            class="text-[10px] tracking-[0.15em] uppercase text-[#333330] hover:text-[#555550] transition-colors"
+            class="text-[10px] tracking-[0.15em] uppercase text-text-disabled hover:text-text-muted transition-colors"
           >
             ÔåÉ Volver al inicio
           </router-link>

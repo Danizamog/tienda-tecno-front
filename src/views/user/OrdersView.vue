@@ -27,11 +27,11 @@ const STATUS_LABELS = {
   shipped:          { label: 'Enviado',             cls: 'text-purple-400  border-purple-800/40 bg-purple-900/20' },
   delivered:        { label: 'Entregado',           cls: 'text-teal-400    border-teal-800/40   bg-teal-900/20'   },
   rejected:         { label: 'Rechazado',           cls: 'text-red-400     border-red-800/40    bg-red-900/20'    },
-  cancelled:        { label: 'Cancelado',           cls: 'text-[#555]      border-[#222]        bg-[#111]'        },
+  cancelled:        { label: 'Cancelado',           cls: 'text-text-muted      border-border-default        bg-surface-raised'        },
 }
 
 function statusInfo(status) {
-  return STATUS_LABELS[status] || { label: status, cls: 'text-[#888] border-[#222] bg-[#111]' }
+  return STATUS_LABELS[status] || { label: status, cls: 'text-text-muted border-border-default bg-surface-raised' }
 }
 
 function fmt(n) { return Number(n || 0).toLocaleString('es-CL') }
@@ -195,18 +195,18 @@ onMounted(async () => {
 <template>
   <AppNavbar />
 
-  <main class="orders-shell text-[#f0ede8]">
+  <main class="orders-shell text-text-primary">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 py-10">
 
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
         <div>
           <h1 class="font-display text-3xl font-light">Mis pedidos</h1>
-          <p class="text-[11px] tracking-[0.15em] uppercase text-[#555550] mt-1">Historial de compras</p>
+          <p class="text-[11px] tracking-[0.15em] uppercase text-text-muted mt-1">Historial de compras</p>
         </div>
         <RouterLink
           to="/products"
-          class="h-9 px-4 text-[10px] tracking-[0.15em] uppercase border border-[#1e1e1e] text-[#555] hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors flex items-center"
+          class="h-9 px-4 text-[10px] tracking-[0.15em] uppercase border border-border-subtle text-text-muted hover:border-[var(--accent)44] hover:text-accent transition-colors flex items-center"
         >
           Seguir comprando
         </RouterLink>
@@ -214,11 +214,11 @@ onMounted(async () => {
 
       <!-- Sin autenticar -->
       <div v-if="!isAuthenticated" class="flex flex-col items-center py-24 gap-4">
-        <svg class="w-12 h-12 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
           <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <p class="text-[#555550] text-sm">Inicia sesión para ver tus pedidos</p>
-        <RouterLink to="/login" class="h-9 px-5 text-[10px] tracking-[0.15em] uppercase bg-[#c9a96e15] border border-[#c9a96e33] text-[#c9a96e] hover:bg-[#c9a96e25] transition-colors flex items-center">
+        <p class="text-text-muted text-sm">Inicia sesión para ver tus pedidos</p>
+        <RouterLink to="/login" class="h-9 px-5 text-[10px] tracking-[0.15em] uppercase bg-[var(--accent)15] border border-[var(--accent)33] text-accent hover:bg-[var(--accent)25] transition-colors flex items-center">
           Ingresar
         </RouterLink>
       </div>
@@ -228,7 +228,7 @@ onMounted(async () => {
         <div class="flex flex-wrap gap-2 mb-6">
           <button
             @click="applyFilter('')"
-            :class="['px-3 h-7 text-[10px] tracking-[0.15em] uppercase border transition-colors', filterStatus === '' ? 'border-[#c9a96e] text-[#c9a96e] bg-[#c9a96e10]' : 'border-[#1e1e1e] text-[#555] hover:border-[#333] hover:text-[#888]']"
+            :class="['px-3 h-7 text-[10px] tracking-[0.15em] uppercase border transition-colors', filterStatus === '' ? 'border-accent text-accent bg-[var(--accent)10]' : 'border-border-subtle text-text-muted hover:border-border-default hover:text-text-muted']"
           >
             Todos
           </button>
@@ -236,7 +236,7 @@ onMounted(async () => {
             v-for="(info, key) in STATUS_LABELS"
             :key="key"
             @click="applyFilter(key)"
-            :class="['px-3 h-7 text-[10px] tracking-[0.15em] uppercase border transition-colors', filterStatus === key ? 'border-[#c9a96e] text-[#c9a96e] bg-[#c9a96e10]' : 'border-[#1e1e1e] text-[#555] hover:border-[#333] hover:text-[#888]']"
+            :class="['px-3 h-7 text-[10px] tracking-[0.15em] uppercase border transition-colors', filterStatus === key ? 'border-accent text-accent bg-[var(--accent)10]' : 'border-border-subtle text-text-muted hover:border-border-default hover:text-text-muted']"
           >
             {{ info.label }}
           </button>
@@ -244,7 +244,7 @@ onMounted(async () => {
 
         <!-- Loading -->
         <div v-if="loading" class="space-y-4">
-          <div v-for="i in 3" :key="i" class="border border-[#1a1a1a] bg-[#0c0c0c] p-5">
+          <div v-for="i in 3" :key="i" class="border border-border-subtle bg-surface-sunken p-5">
             <div class="skeleton h-3 w-32 mb-3" />
             <div class="skeleton h-3 w-48 mb-2" />
             <div class="skeleton h-3 w-24" />
@@ -253,22 +253,22 @@ onMounted(async () => {
 
         <!-- Error -->
         <div v-else-if="error" class="flex flex-col items-center py-16 gap-3">
-          <p class="text-[#555550] text-sm">{{ error }}</p>
-          <button @click="fetchOrders" class="h-8 px-4 text-[10px] tracking-[0.15em] uppercase border border-[#1e1e1e] text-[#555] hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors">
+          <p class="text-text-muted text-sm">{{ error }}</p>
+          <button @click="fetchOrders" class="h-8 px-4 text-[10px] tracking-[0.15em] uppercase border border-border-subtle text-text-muted hover:border-[var(--accent)44] hover:text-accent transition-colors">
             Reintentar
           </button>
         </div>
 
         <!-- Sin resultados -->
         <div v-else-if="orders.length === 0" class="flex flex-col items-center py-20 gap-4">
-          <svg class="w-14 h-14 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+          <svg class="w-14 h-14 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
             <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <p class="font-display text-lg font-light text-[#2a2520]">Sin pedidos</p>
-          <p class="text-[10px] tracking-widest uppercase text-[#252520]">
+          <p class="font-display text-lg font-light text-text-disabled">Sin pedidos</p>
+          <p class="text-[10px] tracking-widest uppercase text-text-disabled">
             {{ filterStatus ? 'Sin pedidos con ese estado' : 'Aún no has realizado ningún pedido' }}
           </p>
-          <RouterLink to="/stores" class="mt-2 h-9 px-5 text-[10px] tracking-[0.15em] uppercase border border-[#1e1e1e] text-[#555] hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors flex items-center">
+          <RouterLink to="/stores" class="mt-2 h-9 px-5 text-[10px] tracking-[0.15em] uppercase border border-border-subtle text-text-muted hover:border-[var(--accent)44] hover:text-accent transition-colors flex items-center">
             Explorar tiendas
           </RouterLink>
         </div>
@@ -278,28 +278,28 @@ onMounted(async () => {
           <div
             v-for="order in orders"
             :key="order.id"
-            class="border border-[#1a1a1a] bg-[#0c0c0c] overflow-hidden"
+            class="border border-border-subtle bg-surface-sunken overflow-hidden"
           >
             <!-- Header del pedido -->
-            <div class="flex items-center justify-between flex-wrap gap-2 px-5 py-3.5 border-b border-[#121212]">
+            <div class="flex items-center justify-between flex-wrap gap-2 px-5 py-3.5 border-b border-[var(--surface-overlay)]">
               <div class="flex items-center gap-3">
-                <span class="text-[10px] font-mono text-[#555550]">#{{ order.id?.slice(0, 8) }}</span>
+                <span class="text-[10px] font-mono text-text-muted">#{{ order.id?.slice(0, 8) }}</span>
                 <span :class="['inline-flex items-center px-2 py-0.5 text-[9px] tracking-[0.12em] uppercase border font-medium', statusInfo(order.status).cls]">
                   {{ statusInfo(order.status).label }}
                 </span>
               </div>
               <div class="flex items-center gap-4">
-                <span class="text-[10px] text-[#3a3835]">{{ fmtDate(order.created) }}</span>
-                <span class="text-sm font-medium text-[#c9a96e] tabular-nums">${{ fmt(order.total) }}</span>
+                <span class="text-[10px] text-text-disabled">{{ fmtDate(order.created) }}</span>
+                <span class="text-sm font-medium text-accent tabular-nums">${{ fmt(order.total) }}</span>
               </div>
             </div>
 
             <!-- Tienda -->
-            <div class="px-5 py-3 border-b border-[#0f0f0f] flex items-center gap-2">
-              <svg class="w-3 h-3 text-[#333330]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="px-5 py-3 border-b border-[var(--surface-raised)] flex items-center gap-2">
+              <svg class="w-3 h-3 text-text-disabled" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span class="text-[11px] text-[#888880]">
+              <span class="text-[11px] text-text-muted">
                 {{ order.expand?.store?.name || order.store }}
               </span>
             </div>
@@ -311,7 +311,7 @@ onMounted(async () => {
                 :key="item.id"
                 class="flex items-center gap-3"
               >
-                <div class="w-10 h-10 shrink-0 bg-[#0f0f0f] border border-[#1a1a1a] overflow-hidden">
+                <div class="w-10 h-10 shrink-0 bg-surface-raised border border-border-subtle overflow-hidden">
                   <img
                     v-if="item.expand?.product?.images?.length || item.expand?.product?.images"
                     :src="productImgUrl(item.product, Array.isArray(item.expand?.product?.images) ? item.expand.product.images[0] : item.expand.product.images)"
@@ -319,17 +319,17 @@ onMounted(async () => {
                     class="w-full h-full object-cover"
                   />
                   <div v-else class="w-full h-full flex items-center justify-center">
-                    <svg class="w-4 h-4 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                       <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-[12px] text-[#c8c4be] truncate">{{ item.expand?.product?.name || 'Producto' }}</p>
-                  <p class="text-[10px] text-[#555550]">× {{ item.quantity }} · ${{ fmt(item.unit_price) }} c/u</p>
+                  <p class="text-[12px] text-text-secondary truncate">{{ item.expand?.product?.name || 'Producto' }}</p>
+                  <p class="text-[10px] text-text-muted">× {{ item.quantity }} · ${{ fmt(item.unit_price) }} c/u</p>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
-                  <span class="text-[12px] text-[#e8e5e0] tabular-nums">${{ fmt(item.total) }}</span>
+                  <span class="text-[12px] text-text-primary tabular-nums">${{ fmt(item.total) }}</span>
                   <!-- Botón de reseña solo para pedidos entregados -->
                   <template v-if="order.status === 'delivered'">
                     <span
@@ -344,7 +344,7 @@ onMounted(async () => {
                     <button
                       v-else
                       @click="openReviewModal(order, item)"
-                      class="inline-flex items-center gap-1 px-2 h-6 text-[9px] tracking-[0.1em] uppercase border border-[#c9a96e33] text-[#c9a96e] hover:bg-[#c9a96e15] transition-colors"
+                      class="inline-flex items-center gap-1 px-2 h-6 text-[9px] tracking-[0.1em] uppercase border border-[var(--accent)33] text-accent hover:bg-[var(--accent)15] transition-colors"
                     >
                       <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -357,12 +357,12 @@ onMounted(async () => {
             </div>
 
             <!-- Footer del pedido -->
-            <div class="px-5 py-3 bg-[#090909] border-t border-[#0f0f0f] flex items-center justify-between flex-wrap gap-2">
-              <div class="flex items-center gap-4 text-[10px] text-[#3a3835]">
+            <div class="px-5 py-3 bg-surface-base border-t border-[var(--surface-raised)] flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-4 text-[10px] text-text-disabled">
                 <span v-if="order.payment_method">Pago: {{ order.payment_method }}</span>
                 <span v-if="order.notes" class="truncate max-w-[200px]">Nota: {{ order.notes }}</span>
               </div>
-              <div class="flex items-center gap-3 text-[10px] text-[#555550]">
+              <div class="flex items-center gap-3 text-[10px] text-text-muted">
                 <span>Subtotal: ${{ fmt(order.subtotal) }}</span>
                 <span v-if="order.shipping_cost > 0">Envío: ${{ fmt(order.shipping_cost) }}</span>
                 <span v-if="order.discount_total > 0" class="text-emerald-500">Desc: -${{ fmt(order.discount_total) }}</span>
@@ -384,7 +384,7 @@ onMounted(async () => {
               v-for="p in totalPages"
               :key="p"
               @click="changePage(p)"
-              :class="['w-8 h-8 text-[11px] border transition-colors', p === page ? 'border-[#c9a96e] text-[#c9a96e] bg-[#c9a96e10]' : 'border-[#1e1e1e] text-[#555] hover:border-[#333]']"
+              :class="['w-8 h-8 text-[11px] border transition-colors', p === page ? 'border-accent text-accent bg-[var(--accent)10]' : 'border-border-subtle text-text-muted hover:border-border-default']"
             >
               {{ p }}
             </button>
@@ -405,14 +405,14 @@ onMounted(async () => {
       >
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="closeReviewModal" />
 
-        <div class="relative w-full max-w-md bg-[#0d0d0d] border border-[#1e1e1e] overflow-hidden">
+        <div class="relative w-full max-w-md bg-surface-sunken border border-border-subtle overflow-hidden">
           <!-- Header modal -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-[#141414]">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--surface-overlay)]">
             <div>
-              <h2 class="text-sm font-medium text-[#d8d4ce]">Escribir reseña</h2>
-              <p class="text-[10px] text-[#555550] mt-0.5 truncate max-w-[280px]">{{ reviewModal.productName }}</p>
+              <h2 class="text-sm font-medium text-text-secondary">Escribir reseña</h2>
+              <p class="text-[10px] text-text-muted mt-0.5 truncate max-w-[280px]">{{ reviewModal.productName }}</p>
             </div>
-            <button @click="closeReviewModal" class="text-[#333330] hover:text-[#c9a96e] transition-colors p-1">
+            <button @click="closeReviewModal" class="text-text-disabled hover:text-accent transition-colors p-1">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -426,15 +426,15 @@ onMounted(async () => {
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <p class="text-sm text-[#d8d4ce] font-medium">¡Reseña enviada!</p>
-            <p class="text-[11px] text-[#555550]">Gracias por tu opinión</p>
+            <p class="text-sm text-text-secondary font-medium">¡Reseña enviada!</p>
+            <p class="text-[11px] text-text-muted">Gracias por tu opinión</p>
           </div>
 
           <!-- Formulario -->
           <div v-else class="px-6 py-5 flex flex-col gap-5">
             <!-- Estrellas -->
             <div>
-              <p class="text-[10px] tracking-[0.15em] uppercase text-[#555550] mb-2">Puntuación</p>
+              <p class="text-[10px] tracking-[0.15em] uppercase text-text-muted mb-2">Puntuación</p>
               <div class="flex items-center gap-1">
                 <button
                   v-for="star in 5"
@@ -444,14 +444,14 @@ onMounted(async () => {
                 >
                   <svg
                     class="w-7 h-7 transition-colors"
-                    :class="star <= reviewModal.rating ? 'text-[#c9a96e]' : 'text-[#2a2520]'"
+                    :class="star <= reviewModal.rating ? 'text-accent' : 'text-text-disabled'"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                   </svg>
                 </button>
-                <span class="ml-2 text-[11px] text-[#555550]">
+                <span class="ml-2 text-[11px] text-text-muted">
                   {{ ['', 'Muy malo', 'Malo', 'Regular', 'Bueno', 'Excelente'][reviewModal.rating] || '' }}
                 </span>
               </div>
@@ -459,28 +459,28 @@ onMounted(async () => {
 
             <!-- Título -->
             <div>
-              <label class="block text-[10px] tracking-[0.15em] uppercase text-[#555550] mb-1.5">
-                Título <span class="text-[#333330]">(opcional)</span>
+              <label class="block text-[10px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
+                Título <span class="text-text-disabled">(opcional)</span>
               </label>
               <input
                 v-model="reviewModal.title"
                 type="text"
                 maxlength="100"
                 placeholder="Resume tu experiencia"
-                class="w-full h-9 px-3 bg-[#0a0a0a] border border-[#1e1e1e] text-[13px] text-[#c8c4be] placeholder-[#2a2520] focus:outline-none focus:border-[#c9a96e44] transition-colors"
+                class="w-full h-9 px-3 bg-surface-base border border-border-subtle text-[13px] text-text-secondary placeholder-[var(--text-disabled)] focus:outline-none focus:border-[var(--accent)44] transition-colors"
               />
             </div>
 
             <!-- Comentario -->
             <div>
-              <label class="block text-[10px] tracking-[0.15em] uppercase text-[#555550] mb-1.5">
-                Comentario <span class="text-[#333330]">(opcional)</span>
+              <label class="block text-[10px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
+                Comentario <span class="text-text-disabled">(opcional)</span>
               </label>
               <textarea
                 v-model="reviewModal.comment"
                 rows="4"
                 placeholder="Comparte los detalles de tu experiencia con este producto..."
-                class="w-full px-3 py-2.5 bg-[#0a0a0a] border border-[#1e1e1e] text-[13px] text-[#c8c4be] placeholder-[#2a2520] focus:outline-none focus:border-[#c9a96e44] transition-colors resize-none"
+                class="w-full px-3 py-2.5 bg-surface-base border border-border-subtle text-[13px] text-text-secondary placeholder-[var(--text-disabled)] focus:outline-none focus:border-[var(--accent)44] transition-colors resize-none"
               />
             </div>
 
@@ -491,14 +491,14 @@ onMounted(async () => {
             <div class="flex gap-3 pt-1">
               <button
                 @click="closeReviewModal"
-                class="flex-1 h-10 text-[10px] tracking-[0.15em] uppercase border border-[#1e1e1e] text-[#555] hover:border-[#333] hover:text-[#888] transition-colors"
+                class="flex-1 h-10 text-[10px] tracking-[0.15em] uppercase border border-border-subtle text-text-muted hover:border-border-default hover:text-text-muted transition-colors"
               >
                 Cancelar
               </button>
               <button
                 @click="submitReview"
                 :disabled="reviewModal.loading || !reviewModal.rating"
-                class="flex-1 h-10 text-[10px] tracking-[0.15em] uppercase bg-[#c9a96e15] border border-[#c9a96e44] text-[#c9a96e] hover:bg-[#c9a96e25] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                class="flex-1 h-10 text-[10px] tracking-[0.15em] uppercase bg-[var(--accent)15] border border-[var(--accent)44] text-accent hover:bg-[var(--accent)25] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {{ reviewModal.loading ? 'Enviando…' : 'Publicar reseña' }}
               </button>
@@ -514,14 +514,14 @@ onMounted(async () => {
 
 <style scoped>
 .orders-shell {
-  background: linear-gradient(180deg, #090909 0%, #0a0a0a 100%);
+  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 100%);
   flex: 1;
   width: 100%;
   overflow-x: hidden;
   min-height: calc(100vh - 64px);
 }
 .skeleton {
-  background: linear-gradient(90deg, #131313 25%, #1a1a1a 50%, #131313 75%);
+  background: linear-gradient(90deg, #131313 25%, var(--border-subtle) 50%, #131313 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: 2px;

@@ -54,7 +54,7 @@ async function handleRemove(item) {
   await removeFromWishlist(item.id, productId)
 }
 
-function handleMoveToCart(item) {
+async function handleMoveToCart(item) {
   const product = item.expand?.product
   if (!product) return
 
@@ -67,7 +67,7 @@ function handleMoveToCart(item) {
     expand: { ...product.expand, store },
   }
 
-  const success = addToCart(enriched, 1)
+  const success = await addToCart(enriched, 1)
   if (success) {
     handleRemove(item)
   }
@@ -88,23 +88,23 @@ onMounted(async () => {
 <template>
   <AppNavbar />
 
-  <main class="wishlist-shell text-[#f0ede8]">
+  <main class="wishlist-shell text-text-primary">
     <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-10">
 
       <!-- ══ ENCABEZADO ════════════════════════════════════════════ -->
       <div class="flex items-end justify-between gap-4 mb-10">
         <div>
-          <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3835] mb-2">Mi cuenta</p>
+          <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-2">Mi cuenta</p>
           <h1 class="font-display text-3xl md:text-4xl font-light leading-tight">
             Wishlist
-            <span v-if="totalWishlistCount > 0" class="text-[#c9a96e] text-2xl font-light ml-2">
+            <span v-if="totalWishlistCount > 0" class="text-accent text-2xl font-light ml-2">
               ({{ totalWishlistCount }})
             </span>
           </h1>
         </div>
         <RouterLink
           to="/products"
-          class="flex items-center gap-1.5 text-[10px] tracking-[0.15em] uppercase text-[#555550] border border-[#1e1e1e] px-3 h-8 hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors shrink-0"
+          class="flex items-center gap-1.5 text-[10px] tracking-[0.15em] uppercase text-text-muted border border-border-subtle px-3 h-8 hover:border-[var(--accent)44] hover:text-accent transition-colors shrink-0"
         >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -129,25 +129,25 @@ onMounted(async () => {
       <!-- ══ VACÍO ═════════════════════════════════════════════════ -->
       <div
         v-else-if="!loading && wishlistItems.length === 0"
-        class="flex flex-col items-center py-28 border border-[#141414]"
+        class="flex flex-col items-center py-28 border border-[var(--surface-overlay)]"
       >
         <div class="relative mb-6">
-          <svg class="w-16 h-16 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="0.8" viewBox="0 0 24 24">
+          <svg class="w-16 h-16 text-text-disabled" fill="none" stroke="currentColor" stroke-width="0.8" viewBox="0 0 24 24">
             <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <div class="absolute inset-0 flex items-center justify-center">
-            <svg class="w-6 h-6 text-[#2a2520]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <svg class="w-6 h-6 text-text-disabled" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
         </div>
-        <p class="font-display text-2xl font-light text-[#3a3835] mb-2">Tu wishlist está vacía</p>
-        <p class="text-[10px] tracking-[0.18em] uppercase text-[#252520] mb-8">
+        <p class="font-display text-2xl font-light text-text-disabled mb-2">Tu wishlist está vacía</p>
+        <p class="text-[10px] tracking-[0.18em] uppercase text-text-disabled mb-8">
           Guarda los productos que te interesan
         </p>
         <RouterLink
           to="/products"
-          class="h-10 px-6 flex items-center gap-2 text-xs tracking-[0.12em] uppercase bg-[#c9a96e15] border border-[#c9a96e44] text-[#c9a96e] hover:bg-[#c9a96e25] hover:border-[#c9a96e66] transition-colors"
+          class="h-10 px-6 flex items-center gap-2 text-xs tracking-[0.12em] uppercase bg-[var(--accent)15] border border-[var(--accent)44] text-accent hover:bg-[var(--accent)25] hover:border-[var(--accent)66] transition-colors"
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -166,7 +166,7 @@ onMounted(async () => {
           <!-- Imagen -->
           <RouterLink
             :to="item.expand?.product ? `/products/${item.expand.product.id}` : '#'"
-            class="relative aspect-square bg-[#0f0f0f] overflow-hidden block"
+            class="relative aspect-square bg-surface-raised overflow-hidden block"
           >
             <img
               v-if="productImageUrl(item)"
@@ -177,9 +177,9 @@ onMounted(async () => {
             <div
               v-else
               class="w-full h-full flex items-center justify-center"
-              style="background:linear-gradient(135deg,#111111 0%,#14110d 100%);"
+              style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
             >
-              <svg class="w-10 h-10 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+              <svg class="w-10 h-10 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                 <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
@@ -221,14 +221,14 @@ onMounted(async () => {
           <div class="p-3 flex flex-col gap-1.5 flex-1">
 
             <!-- Categoría -->
-            <p v-if="item.expand?.product?.expand?.category?.name" class="text-[10px] tracking-[0.12em] uppercase text-[#c9a96e]/60">
+            <p v-if="item.expand?.product?.expand?.category?.name" class="text-[10px] tracking-[0.12em] uppercase text-accent/60">
               {{ item.expand.product.expand.category.name }}
             </p>
 
             <!-- Nombre -->
             <RouterLink
               :to="item.expand?.product ? `/products/${item.expand.product.id}` : '#'"
-              class="text-[12px] font-medium text-[#d8d4ce] leading-snug line-clamp-2 hover:text-[#c9a96e] transition-colors duration-200"
+              class="text-[12px] font-medium text-text-secondary leading-snug line-clamp-2 hover:text-accent transition-colors duration-200"
             >
               {{ item.expand?.product?.name || 'Producto eliminado' }}
             </RouterLink>
@@ -239,18 +239,18 @@ onMounted(async () => {
               :to="`/stores/${item.expand.product.expand.store.slug || item.expand.product.expand.store.id}`"
               class="flex items-center gap-1.5 mt-0.5"
             >
-              <div class="w-4 h-4 rounded-sm overflow-hidden border border-[#222] bg-[#111] shrink-0">
+              <div class="w-4 h-4 rounded-sm overflow-hidden border border-border-default bg-surface-raised shrink-0">
                 <img
                   v-if="storeLogoUrl(item)"
                   :src="storeLogoUrl(item)"
                   :alt="item.expand.product.expand.store.name"
                   class="w-full h-full object-cover"
                 />
-                <span v-else class="w-full h-full flex items-center justify-center text-[6px] text-[#2a2520]">
+                <span v-else class="w-full h-full flex items-center justify-center text-[6px] text-text-disabled">
                   {{ (item.expand.product.expand.store.name || 'T').charAt(0).toUpperCase() }}
                 </span>
               </div>
-              <span class="text-[10px] text-[#4a4845] hover:text-[#c9a96e] transition-colors truncate">
+              <span class="text-[10px] text-text-disabled hover:text-accent transition-colors truncate">
                 {{ item.expand.product.expand.store.name }}
               </span>
             </RouterLink>
@@ -258,12 +258,12 @@ onMounted(async () => {
             <!-- Precio -->
             <div class="mt-auto pt-2 flex items-baseline gap-2">
               <template v-if="item.expand?.product">
-                <span class="text-sm font-semibold text-[#c9a96e] tabular-nums">
+                <span class="text-sm font-semibold text-accent tabular-nums">
                   ${{ fmt(calcPrice(item.expand.product).final) }}
                 </span>
                 <span
                   v-if="calcPrice(item.expand.product).hasDiscount"
-                  class="text-[10px] text-[#444440] line-through tabular-nums"
+                  class="text-[10px] text-text-disabled line-through tabular-nums"
                 >
                   ${{ fmt(item.expand.product.price) }}
                 </span>
@@ -290,7 +290,7 @@ onMounted(async () => {
               <button
                 v-if="item.expand?.product?.stock > 0 && item.expand?.product?.expand?.store"
                 @click="handleMoveToCart(item)"
-                class="flex-1 h-7 text-[9px] tracking-[0.12em] uppercase flex items-center justify-center gap-1 border border-[#1e1e1e] text-[#555550] hover:border-[#c9a96e44] hover:text-[#c9a96e] hover:bg-[#c9a96e08] transition-all duration-200"
+                class="flex-1 h-7 text-[9px] tracking-[0.12em] uppercase flex items-center justify-center gap-1 border border-border-subtle text-text-muted hover:border-[var(--accent)44] hover:text-accent hover:bg-[var(--accent)08] transition-all duration-200"
               >
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -301,7 +301,7 @@ onMounted(async () => {
               <!-- Quitar de wishlist -->
               <button
                 @click="handleRemove(item)"
-                class="w-7 h-7 flex items-center justify-center border border-[#1e1e1e] text-[#3a3835] hover:border-red-800/40 hover:text-red-400 hover:bg-red-900/10 transition-all duration-200 shrink-0"
+                class="w-7 h-7 flex items-center justify-center border border-border-subtle text-text-disabled hover:border-red-800/40 hover:text-red-400 hover:bg-red-900/10 transition-all duration-200 shrink-0"
                 aria-label="Quitar de wishlist"
               >
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -322,7 +322,7 @@ onMounted(async () => {
 
 <style scoped>
 .wishlist-shell {
-  background: linear-gradient(180deg, #090909 0%, #0a0a0a 100%);
+  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 100%);
   flex: 1;
   width: 100%;
   overflow-x: hidden;

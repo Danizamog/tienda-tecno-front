@@ -793,8 +793,8 @@
     },
     {
         "id": "pbc_abids000001a",
-        "listRule": "@request.auth.id != ''",
-        "viewRule": "@request.auth.id != ''",
+        "listRule": "",
+        "viewRule": "",
         "createRule": "@request.auth.id != '' && auction.status = 'active'",
         "updateRule": null,
         "deleteRule": null,
@@ -1157,6 +1157,119 @@
             "CREATE INDEX idx_auctions_updated ON auctions (updated)",
             "CREATE INDEX idx_auctions_status ON auctions (status)",
             "CREATE INDEX idx_auctions_store_status ON auctions (store, status)"
+        ],
+        "system": false
+    },
+    {
+        "id": "pbc_cartit00001a",
+        "listRule": "@request.auth.id != '' && user = @request.auth.id",
+        "viewRule": "@request.auth.id != '' && user = @request.auth.id",
+        "createRule": "@request.auth.id != '' && user = @request.auth.id",
+        "updateRule": "@request.auth.id != '' && user = @request.auth.id",
+        "deleteRule": "@request.auth.id != '' && user = @request.auth.id",
+        "name": "cart_items",
+        "type": "base",
+        "fields": [
+            {
+                "cascadeDelete": true,
+                "collectionId": "_pb_users_auth_",
+                "hidden": false,
+                "id": "fci_user0000001a",
+                "maxSelect": 1,
+                "minSelect": 1,
+                "name": "user",
+                "presentable": false,
+                "required": true,
+                "system": false,
+                "type": "relation"
+            },
+            {
+                "cascadeDelete": true,
+                "collectionId": "pbc_produ000001a",
+                "hidden": false,
+                "id": "fci_prod0000001a",
+                "maxSelect": 1,
+                "minSelect": 1,
+                "name": "product",
+                "presentable": false,
+                "required": true,
+                "system": false,
+                "type": "relation"
+            },
+            {
+                "hidden": false,
+                "id": "fci_qty00000001a",
+                "max": 999,
+                "min": 1,
+                "name": "quantity",
+                "onlyInt": true,
+                "presentable": false,
+                "required": true,
+                "system": false,
+                "type": "number"
+            },
+            {
+                "hidden": false,
+                "id": "fci_psnap000001a",
+                "max": null,
+                "min": 0,
+                "name": "price_snapshot",
+                "onlyInt": false,
+                "presentable": false,
+                "required": true,
+                "system": false,
+                "type": "number"
+            },
+            {
+                "hidden": false,
+                "id": "fci_expat000001a",
+                "max": "",
+                "min": "",
+                "name": "expires_at",
+                "presentable": false,
+                "required": true,
+                "system": false,
+                "type": "date"
+            },
+            {
+                "autogeneratePattern": "[a-z0-9]{15}",
+                "hidden": false,
+                "id": "text3208210257",
+                "max": 15,
+                "min": 15,
+                "name": "id",
+                "pattern": "^[a-z0-9]+$",
+                "presentable": false,
+                "primaryKey": true,
+                "required": true,
+                "system": true,
+                "type": "text"
+            },
+            {
+                "hidden": false,
+                "id": "autodate2990389177",
+                "name": "created",
+                "onCreate": true,
+                "onUpdate": false,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            },
+            {
+                "hidden": false,
+                "id": "autodate3332085496",
+                "name": "updated",
+                "onCreate": true,
+                "onUpdate": true,
+                "presentable": false,
+                "system": false,
+                "type": "autodate"
+            }
+        ],
+        "indexes": [
+            "CREATE UNIQUE INDEX idx_cart_items_user_product ON cart_items (user, product)",
+            "CREATE INDEX idx_cart_items_user ON cart_items (user)",
+            "CREATE INDEX idx_cart_items_expires ON cart_items (expires_at)"
         ],
         "system": false
     },

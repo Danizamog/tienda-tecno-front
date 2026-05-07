@@ -77,15 +77,15 @@ const pages = computed(() => {
   <div class="p-6 lg:p-8 min-h-screen">
     <div class="flex items-center justify-between mb-8">
       <div>
-        <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1">Administración</p>
-        <h1 class="text-2xl font-light tracking-wide text-[#e8e5e0]">Usuarios</h1>
+        <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-1">Administración</p>
+        <h1 class="text-2xl font-light tracking-wide text-text-primary">Usuarios</h1>
       </div>
-      <p class="text-xs text-[#666]">{{ totalItems }} registros</p>
+      <p class="text-xs text-text-muted">{{ totalItems }} registros</p>
     </div>
 
     <div class="flex flex-wrap gap-3 mb-6">
       <div class="relative flex-1" style="min-width: 220px;">
-        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
@@ -116,13 +116,13 @@ const pages = computed(() => {
       {{ error }}
     </div>
 
-    <div class="border border-[#181818] rounded-sm overflow-x-auto">
-      <div v-if="loading" class="px-4 py-10 text-center text-[#666] text-sm">Cargando usuarios...</div>
+    <div class="border border-[var(--surface-overlay)] rounded-sm overflow-x-auto">
+      <div v-if="loading" class="px-4 py-10 text-center text-text-muted text-sm">Cargando usuarios...</div>
 
       <template v-else>
         <table class="w-full min-w-135 text-sm">
           <thead>
-            <tr class="border-b border-[#181818] bg-[#0c0c0c]">
+            <tr class="border-b border-[var(--surface-overlay)] bg-surface-sunken">
               <th class="th">Nombre</th>
               <th class="th hidden sm:table-cell">Correo</th>
               <th class="th">Rol</th>
@@ -133,26 +133,26 @@ const pages = computed(() => {
           </thead>
           <tbody>
             <tr v-if="users.length === 0">
-              <td colspan="6" class="px-4 py-12 text-center text-[#444] text-sm">No se encontraron usuarios.</td>
+              <td colspan="6" class="px-4 py-12 text-center text-text-disabled text-sm">No se encontraron usuarios.</td>
             </tr>
             <tr
               v-for="u in users"
               :key="u.id"
-              class="border-b border-[#111] hover:bg-[#0d0d0d] transition-colors cursor-pointer"
+              class="border-b border-border-subtle hover:bg-surface-sunken transition-colors cursor-pointer"
               @click="router.push(`/admin/users/${u.id}`)"
             >
               <td class="td">
-                <p class="text-[#d8d5cf] font-medium">{{ u.name || 'Sin nombre' }}</p>
-                <p class="text-[10px] text-[#444] mt-0.5 hidden sm:block">{{ u.id }}</p>
+                <p class="text-text-secondary font-medium">{{ u.name || 'Sin nombre' }}</p>
+                <p class="text-[10px] text-text-disabled mt-0.5 hidden sm:block">{{ u.id }}</p>
               </td>
-              <td class="td text-[#b5b2ac] hidden sm:table-cell">{{ u.email }}</td>
+              <td class="td text-text-secondary hidden sm:table-cell">{{ u.email }}</td>
               <td class="td">
                 <span :class="['badge', roleClass(u.role)]">{{ roleLabel(u.role) }}</span>
               </td>
-              <td class="td text-[#aaa] hidden md:table-cell">{{ u.verified ? 'Sí' : 'No' }}</td>
-              <td class="td text-[#777] hidden lg:table-cell">{{ fmtDate(u.created) }}</td>
+              <td class="td text-text-secondary hidden md:table-cell">{{ u.verified ? 'Sí' : 'No' }}</td>
+              <td class="td text-text-muted hidden lg:table-cell">{{ fmtDate(u.created) }}</td>
               <td class="td text-right">
-                <span class="inline-flex items-center gap-1 text-[10px] tracking-[0.14em] uppercase text-[#555]">
+                <span class="inline-flex items-center gap-1 text-[10px] tracking-[0.14em] uppercase text-text-muted">
                   Ver
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -163,8 +163,8 @@ const pages = computed(() => {
           </tbody>
         </table>
 
-        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-[#181818] bg-[#0c0c0c]">
-          <p class="text-xs text-[#444]">Página {{ filters.page }} de {{ totalPages }}</p>
+        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-[var(--surface-overlay)] bg-surface-sunken">
+          <p class="text-xs text-text-disabled">Página {{ filters.page }} de {{ totalPages }}</p>
           <div class="flex gap-1">
             <button class="page-btn" :disabled="filters.page <= 1" @click="filters.page -= 1; load()">‹</button>
             <button
@@ -183,27 +183,27 @@ const pages = computed(() => {
 </template>
 
 <style scoped>
-.th { padding: 0.65rem 1rem; text-align: left; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: #3a3a38; font-weight: 500; }
+.th { padding: 0.65rem 1rem; text-align: left; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--border-strong); font-weight: 500; }
 .td { padding: 0.75rem 1rem; vertical-align: middle; }
 
-.admin-input { background: #0f0f0f; border: 1px solid #1f1f1f; border-radius: 3px; padding: 0.45rem 0.75rem; font-size: 0.8rem; color: #d0cdc8; outline: none; transition: border-color 0.18s; }
-.admin-input:focus { border-color: #c9a96e55; }
-.admin-input::placeholder { color: #3a3a38; }
+.admin-input { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; padding: 0.45rem 0.75rem; font-size: 0.8rem; color: var(--text-secondary); outline: none; transition: border-color 0.18s; }
+.admin-input:focus { border-color: var(--accent)55; }
+.admin-input::placeholder { color: var(--border-strong); }
 
 .badge { display: inline-flex; align-items: center; padding: 0.2rem 0.55rem; border-radius: 3px; font-size: 0.68rem; letter-spacing: 0.06em; font-weight: 500; }
-.badge-admin { background: #1f1504; color: #facc15; }
-.badge-vendor { background: #051f17; color: #34d399; }
-.badge-user { background: #141414; color: #9ca3af; }
+.badge-admin { background: var(--accent-soft); color: var(--warning); }
+.badge-vendor { background: #051f17; color: var(--success); }
+.badge-user { background: var(--surface-overlay); color: var(--text-muted); }
 
-.page-btn { min-width: 2rem; height: 2rem; padding: 0 0.4rem; border: 1px solid #1a1a1a; background: #0f0f0f; color: #555; font-size: 0.75rem; border-radius: 3px; transition: all 0.18s; }
-.page-btn:hover:not(:disabled) { border-color: #c9a96e44; color: #c9a96e; }
+.page-btn { min-width: 2rem; height: 2rem; padding: 0 0.4rem; border: 1px solid var(--border-subtle); background: var(--surface-raised); color: var(--text-muted); font-size: 0.75rem; border-radius: 3px; transition: all 0.18s; }
+.page-btn:hover:not(:disabled) { border-color: var(--accent)44; color: var(--accent); }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.page-btn-active { background: #1a1508; border-color: #c9a96e44; color: #c9a96e; }
+.page-btn-active { background: var(--accent-soft); border-color: var(--accent)44; color: var(--accent); }
 
-.filter-chip { padding: 0.38rem 0.75rem; border: 1px solid #1a1a1a; background: #0f0f0f; color: #6a6860; border-radius: 999px; font-size: 0.72rem; letter-spacing: 0.04em; transition: all 0.18s; }
-.filter-chip:hover { border-color: #c9a96e44; color: #d8d5cf; }
-.filter-chip-active { color: #0a0a0a; background: #c9a96e; border-color: #c9a96e; }
-.filter-chip-admin { background: #facc15; }
-.filter-chip-vendor { background: #34d399; }
-.filter-chip-user { background: #9ca3af; }
+.filter-chip { padding: 0.38rem 0.75rem; border: 1px solid var(--border-subtle); background: var(--surface-raised); color: var(--text-muted); border-radius: 999px; font-size: 0.72rem; letter-spacing: 0.04em; transition: all 0.18s; }
+.filter-chip:hover { border-color: var(--accent)44; color: var(--text-secondary); }
+.filter-chip-active { color: var(--surface-base); background: var(--accent); border-color: var(--accent); }
+.filter-chip-admin { background: var(--warning); }
+.filter-chip-vendor { background: var(--success); }
+.filter-chip-user { background: var(--text-muted); }
 </style>

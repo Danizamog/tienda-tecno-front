@@ -274,7 +274,7 @@ const STATUS_COLORS = {
   draft:     'text-yellow-400 border-yellow-900/50 bg-yellow-950/40',
   active:    'text-emerald-400 border-emerald-900/50 bg-emerald-950/40',
   ended:     'text-blue-400 border-blue-900/50 bg-blue-950/40',
-  cancelled: 'text-[#555] border-[#333] bg-[#111]',
+  cancelled: 'text-text-muted border-border-default bg-surface-raised',
 }
 </script>
 
@@ -283,8 +283,8 @@ const STATUS_COLORS = {
 
     <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
       <div class="flex-1">
-        <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-0.5">Vendedor</p>
-        <h1 class="text-xl lg:text-2xl font-light tracking-wide text-[#e8e5e0]">Subastas</h1>
+        <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-0.5">Vendedor</p>
+        <h1 class="text-xl lg:text-2xl font-light tracking-wide text-text-primary">Subastas</h1>
       </div>
       <button class="btn-primary shrink-0" @click="openCreate">
         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -300,26 +300,31 @@ const STATUS_COLORS = {
         <option value="">Todas</option>
         <option v-for="(label, val) in STATUS_LABELS" :key="val" :value="val">{{ label }}</option>
       </select>
-      <span class="text-[11px] text-[#555] self-center">{{ totalItems }} subastas</span>
+      <span class="text-[11px] text-text-muted self-center">{{ totalItems }} subastas</span>
     </div>
 
     <div v-if="error" class="mb-4 px-4 py-3 bg-red-950/40 border border-red-900/50 text-red-400 text-sm rounded-sm">{{ error }}</div>
-    <div v-if="loading" class="flex items-center justify-center py-20 text-[#555] text-sm">Cargando...</div>
+    <div v-if="loading" class="flex items-center justify-center py-20 text-text-muted text-sm">Cargando...</div>
 
     <div v-else-if="!auctions.length" class="panel flex items-center justify-center py-20">
       <div class="text-center">
-        <svg class="w-10 h-10 text-[#2a2a2a] mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+        <svg class="w-10 h-10 text-text-disabled mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p class="text-[#555] text-sm">No hay subastas. ¡Crea la primera!</p>
+        <p class="text-text-muted text-sm">No hay subastas. ¡Crea la primera!</p>
       </div>
     </div>
 
     <!-- Grid de subastas -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-      <div v-for="auction in auctions" :key="auction.id" class="auction-card">
+      <div
+        v-for="auction in auctions"
+        :key="auction.id"
+        class="auction-card cursor-pointer"
+        @click="auction.status === 'ended' ? openDetail(auction) : openEdit(auction)"
+      >
         <!-- Imagen -->
-        <div class="h-36 bg-[#0f0f0f] border-b border-[#161616] overflow-hidden relative">
+        <div class="h-36 bg-surface-raised border-b border-border-subtle overflow-hidden relative">
           <img
             v-if="firstImg(auction)"
             :src="imgUrl(auction.id, firstImg(auction))"
@@ -327,7 +332,7 @@ const STATUS_COLORS = {
             class="w-full h-full object-cover"
           />
           <div v-else class="w-full h-full flex items-center justify-center">
-            <svg class="w-8 h-8 text-[#222]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+            <svg class="w-8 h-8 text-[var(--border-default)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -338,35 +343,35 @@ const STATUS_COLORS = {
 
         <!-- Info -->
         <div class="p-3.5">
-          <p class="text-[13px] font-medium text-[#e8e5e0] mb-1 truncate">{{ auction.title }}</p>
+          <p class="text-[13px] font-medium text-text-primary mb-1 truncate">{{ auction.title }}</p>
           <div class="flex items-center justify-between mb-3">
             <div>
-              <p class="text-[10px] text-[#555] uppercase tracking-wide">Precio inicial</p>
-              <p class="text-[13px] text-[#c9a96e]">Bs {{ money(auction.start_price) }}</p>
+              <p class="text-[10px] text-text-muted uppercase tracking-wide">Precio inicial</p>
+              <p class="text-[13px] text-accent">Bs {{ money(auction.start_price) }}</p>
             </div>
             <div class="text-right">
-              <p class="text-[10px] text-[#555] uppercase tracking-wide">Actual</p>
-              <p class="text-[13px] text-[#8ab4a0]">Bs {{ money(auction.current_price || auction.start_price) }}</p>
+              <p class="text-[10px] text-text-muted uppercase tracking-wide">Actual</p>
+              <p class="text-[13px] text-vendor">Bs {{ money(auction.current_price || auction.start_price) }}</p>
             </div>
           </div>
-          <div class="flex gap-2 text-[10px] text-[#555] mb-3">
+          <div class="flex gap-2 text-[10px] text-text-muted mb-3">
             <span>Inicio: {{ fmtDate(auction.start_date) }}</span>
             <span>·</span>
             <span>Cierre: {{ fmtDate(auction.end_date) }}</span>
           </div>
-          <div class="flex items-center gap-1.5">
+          <div class="flex items-center gap-1.5" @click.stop>
             <button
               v-if="auction.status === 'ended'"
               class="btn-outline flex-1 text-[10px]"
-              @click="openDetail(auction)"
+              @click.stop="openDetail(auction)"
             >Ver resultado</button>
             <button
               v-if="auction.status !== 'ended'"
               class="btn-outline flex-1 text-[10px]"
               :disabled="updatingStatusId === auction.id"
-              @click="quickSetAuctionStatus(auction)"
+              @click.stop="quickSetAuctionStatus(auction)"
             >{{ updatingStatusId === auction.id ? '...' : statusActionLabel(auction.status) }}</button>
-            <button class="icon-btn" title="Editar" @click="openEdit(auction)">
+            <button class="icon-btn" title="Editar" @click.stop="openEdit(auction)">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
@@ -375,7 +380,7 @@ const STATUS_COLORS = {
               v-if="['draft','cancelled'].includes(auction.status)"
               class="icon-btn text-red-500/60 hover:text-red-400"
               title="Eliminar"
-              @click="confirmId = auction.id"
+              @click.stop="confirmId = auction.id"
             >
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -389,7 +394,7 @@ const STATUS_COLORS = {
     <!-- Paginación -->
     <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-5">
       <button class="page-btn" :disabled="page <= 1" @click="page--">←</button>
-      <span class="text-[11px] text-[#555]">{{ page }} / {{ totalPages }}</span>
+      <span class="text-[11px] text-text-muted">{{ page }} / {{ totalPages }}</span>
       <button class="page-btn" :disabled="page >= totalPages" @click="page++">→</button>
     </div>
 
@@ -398,7 +403,7 @@ const STATUS_COLORS = {
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-start justify-center bg-black/70 backdrop-blur-sm overflow-y-auto py-8 px-4">
         <div class="modal-box w-full max-w-xl my-auto">
           <div class="flex items-center justify-between mb-5">
-            <h2 class="text-[15px] font-medium text-[#e8e5e0]">{{ modalMode === 'create' ? 'Nueva subasta' : 'Editar subasta' }}</h2>
+            <h2 class="text-[15px] font-medium text-text-primary">{{ modalMode === 'create' ? 'Nueva subasta' : 'Editar subasta' }}</h2>
             <button class="icon-btn" @click="showModal = false">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
@@ -442,7 +447,7 @@ const STATUS_COLORS = {
             <template v-if="modalMode === 'edit'">
               <div class="sm:col-span-2 discount-panel">
                 <div class="flex items-center justify-between mb-3">
-                  <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Descuento de subasta</p>
+                  <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Descuento de subasta</p>
                   <div class="flex items-center gap-1.5">
                     <button type="button" class="mini-chip" @click="form.discount_percent = '5'">5%</button>
                     <button type="button" class="mini-chip" @click="form.discount_percent = '10'">10%</button>
@@ -475,8 +480,8 @@ const STATUS_COLORS = {
                 <div v-else class="discount-panel discount-panel--create">
                   <button type="button" class="discount-panel-head" @click="toggleCreateDiscountPanel">
                     <div>
-                      <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Descuento</p>
-                      <p class="text-[11px] text-[#666] mt-1">Opcional al crear</p>
+                      <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Descuento</p>
+                      <p class="text-[11px] text-text-muted mt-1">Opcional al crear</p>
                     </div>
                     <span class="discount-panel-pill">
                       {{ hasCreateDiscountValues() ? 'Bloqueado' : (createDiscountOpen ? 'Ocultar' : 'Mostrar') }}
@@ -506,7 +511,7 @@ const STATUS_COLORS = {
             <div v-if="existingImages.length" class="sm:col-span-2">
               <label class="form-label">Imágenes actuales</label>
               <div class="flex flex-wrap gap-2">
-                <div v-for="img in existingImages" :key="img" class="relative w-16 h-16 rounded-sm border border-[#222] overflow-hidden group">
+                <div v-for="img in existingImages" :key="img" class="relative w-16 h-16 rounded-sm border border-border-default overflow-hidden group">
                   <img :src="imgUrl(editingId, img)" class="w-full h-full object-cover" />
                   <button class="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity" @click="removeExistingImage(img)">
                     <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -515,15 +520,15 @@ const STATUS_COLORS = {
               </div>
             </div>
             <div class="sm:col-span-2">
-              <label class="form-label">Imágenes <span class="text-[#555]">(máx. {{ Math.max(0, 5 - existingImages.length - newImages.length) }})</span></label>
+              <label class="form-label">Imágenes <span class="text-text-muted">(máx. {{ Math.max(0, 5 - existingImages.length - newImages.length) }})</span></label>
               <input type="file" multiple accept="image/jpeg,image/png,image/webp"
-                class="input-field w-full text-[#888] file:mr-3 file:py-1 file:px-3 file:rounded-sm file:border-0 file:bg-[#161616] file:text-[#999] file:text-xs"
+                class="input-field w-full text-text-muted file:mr-3 file:py-1 file:px-3 file:rounded-sm file:border-0 file:bg-surface-overlay file:text-text-muted file:text-xs"
                 @change="onFileChange" />
               <div v-if="newImagePreviews.length" class="flex flex-wrap gap-2 mt-2">
                 <div
                   v-for="(url, idx) in newImagePreviews"
                   :key="url"
-                  class="relative w-24 h-24 rounded-sm border border-[#222] overflow-hidden group"
+                  class="relative w-24 h-24 rounded-sm border border-border-default overflow-hidden group"
                 >
                   <img :src="url" class="w-full h-full object-cover" />
                   <button
@@ -538,7 +543,7 @@ const STATUS_COLORS = {
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#181818]">
+          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[var(--surface-overlay)]">
             <button class="btn-ghost" :disabled="saving" @click="showModal = false">Cancelar</button>
             <button class="btn-primary" :disabled="saving" @click="save">
               {{ saving ? 'Guardando...' : (modalMode === 'create' ? 'Crear subasta' : 'Guardar') }}
@@ -553,32 +558,32 @@ const STATUS_COLORS = {
       <div v-if="showDetail" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
         <div class="modal-box w-full max-w-md">
           <div class="flex items-center justify-between mb-5">
-            <h2 class="text-[15px] font-medium text-[#e8e5e0]">Resultado de la subasta</h2>
+            <h2 class="text-[15px] font-medium text-text-primary">Resultado de la subasta</h2>
             <button class="icon-btn" @click="showDetail = false">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
 
-          <div v-if="loadingDetail" class="py-10 text-center text-[#555] text-sm">Cargando...</div>
+          <div v-if="loadingDetail" class="py-10 text-center text-text-muted text-sm">Cargando...</div>
 
           <template v-else-if="detailData">
-            <p class="text-[14px] font-medium text-[#e8e5e0] mb-4 truncate">{{ detailData.title }}</p>
+            <p class="text-[14px] font-medium text-text-primary mb-4 truncate">{{ detailData.title }}</p>
 
             <!-- Ganador -->
-            <div v-if="detailData.winner || detailData.expand?.winner" class="p-3.5 rounded-sm border border-[#1e2e28] bg-[#0d110f] mb-4">
-              <p class="text-[9px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1.5">Ganador</p>
+            <div v-if="detailData.winner || detailData.expand?.winner" class="p-3.5 rounded-sm border border-vendor-border bg-vendor-soft mb-4">
+              <p class="text-[9px] tracking-[0.2em] uppercase text-text-disabled mb-1.5">Ganador</p>
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full border border-[#8ab4a033] bg-[#111] flex items-center justify-center text-[#8ab4a0] text-sm font-medium shrink-0">
+                <div class="w-8 h-8 rounded-full border border-[var(--vendor)33] bg-surface-raised flex items-center justify-center text-vendor text-sm font-medium shrink-0">
                   {{ (detailData.expand?.winner?.name || detailData.expand?.winner?.email || '?')[0].toUpperCase() }}
                 </div>
                 <div>
-                  <p class="text-[13px] text-[#d8d5cf]">{{ detailData.expand?.winner?.name || 'Usuario' }}</p>
-                  <p class="text-[11px] text-[#555]">{{ detailData.expand?.winner?.email }}</p>
+                  <p class="text-[13px] text-text-secondary">{{ detailData.expand?.winner?.name || 'Usuario' }}</p>
+                  <p class="text-[11px] text-text-muted">{{ detailData.expand?.winner?.email }}</p>
                 </div>
               </div>
             </div>
-            <div v-else class="p-3.5 rounded-sm border border-[#222] bg-[#0f0f0f] mb-4 text-center">
-              <p class="text-[#555] text-sm">Sin ganador</p>
+            <div v-else class="p-3.5 rounded-sm border border-border-default bg-surface-raised mb-4 text-center">
+              <p class="text-text-muted text-sm">Sin ganador</p>
             </div>
 
             <!-- Precios -->
@@ -589,7 +594,7 @@ const STATUS_COLORS = {
               </div>
               <div class="mini-stat">
                 <span>Final</span>
-                <strong class="text-[#8ab4a0]">Bs {{ money(detailData.current_price || detailData.start_price) }}</strong>
+                <strong class="text-vendor">Bs {{ money(detailData.current_price || detailData.start_price) }}</strong>
               </div>
               <div class="mini-stat">
                 <span>Pujas</span>
@@ -599,20 +604,20 @@ const STATUS_COLORS = {
 
             <!-- Últimas pujas -->
             <div v-if="detailData.bids?.length" class="mb-2">
-              <p class="text-[9px] tracking-[0.2em] uppercase text-[#3a3a38] mb-2">Últimas pujas</p>
+              <p class="text-[9px] tracking-[0.2em] uppercase text-text-disabled mb-2">Últimas pujas</p>
               <div class="flex flex-col gap-1 max-h-40 overflow-y-auto">
                 <div
                   v-for="bid in detailData.bids"
                   :key="bid.id"
-                  class="flex items-center justify-between px-3 py-1.5 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm"
+                  class="flex items-center justify-between px-3 py-1.5 bg-surface-raised border border-border-subtle rounded-sm"
                 >
-                  <span class="text-[11px] text-[#888]">{{ bid.expand?.bidder?.name || 'Anónimo' }}</span>
-                  <span class="text-[12px] text-[#c9a96e]">Bs {{ money(bid.amount) }}</span>
+                  <span class="text-[11px] text-text-muted">{{ bid.expand?.bidder?.name || 'Anónimo' }}</span>
+                  <span class="text-[12px] text-accent">Bs {{ money(bid.amount) }}</span>
                 </div>
               </div>
             </div>
 
-            <div class="text-[10px] text-[#555] mt-3">
+            <div class="text-[10px] text-text-muted mt-3">
               Cerrada: {{ fmtDateTime(detailData.end_date) }}
             </div>
           </template>
@@ -624,8 +629,8 @@ const STATUS_COLORS = {
     <Transition name="modal">
       <div v-if="confirmId" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
         <div class="modal-box w-full max-w-sm text-center">
-          <p class="text-[#e8e5e0] text-[14px] mb-2">¿Eliminar esta subasta?</p>
-          <p class="text-[#666] text-xs mb-6">Esta acción no se puede deshacer.</p>
+          <p class="text-text-primary text-[14px] mb-2">¿Eliminar esta subasta?</p>
+          <p class="text-text-muted text-xs mb-6">Esta acción no se puede deshacer.</p>
           <div class="flex gap-3 justify-center">
             <button class="btn-ghost" :disabled="deleting" @click="confirmId = null">Cancelar</button>
             <button class="btn-danger" :disabled="deleting" @click="doDelete">{{ deleting ? 'Eliminando...' : 'Eliminar' }}</button>
@@ -638,40 +643,40 @@ const STATUS_COLORS = {
 </template>
 
 <style scoped>
-.panel { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 1rem; }
-.auction-card { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; overflow: hidden; }
+.panel { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 1rem; }
+.auction-card { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; overflow: hidden; }
 .status-badge { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.18rem 0.45rem; border-radius: 2px; border-width: 1px; border-style: solid; }
-.icon-btn { padding: 0.3rem; border-radius: 2px; color: #555; transition: color 0.15s, background 0.15s; }
-.icon-btn:hover { color: #d8d5cf; background: #111; }
-.input-field { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 2px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: #d8d5cf; outline: none; transition: border-color 0.15s; }
-.input-field:focus { border-color: #8ab4a044; }
-.form-label { display: block; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #555; margin-bottom: 0.4rem; }
-.btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #8ab4a022; border: 1px solid #8ab4a044; border-radius: 2px; color: #8ab4a0; font-size: 0.75rem; transition: all 0.15s; }
-.btn-primary:hover:not(:disabled) { background: #8ab4a033; border-color: #8ab4a066; }
+.icon-btn { padding: 0.3rem; border-radius: 2px; color: var(--text-muted); transition: color 0.15s, background 0.15s; }
+.icon-btn:hover { color: var(--text-secondary); background: var(--surface-raised); }
+.input-field { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 2px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: var(--text-secondary); outline: none; transition: border-color 0.15s; }
+.input-field:focus { border-color: var(--vendor)44; }
+.form-label { display: block; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+.btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--vendor)22; border: 1px solid var(--vendor)44; border-radius: 2px; color: var(--vendor); font-size: 0.75rem; transition: all 0.15s; }
+.btn-primary:hover:not(:disabled) { background: var(--vendor)33; border-color: var(--vendor)66; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-outline { display: inline-flex; align-items: center; justify-content: center; padding: 0.35rem 0.75rem; background: transparent; border: 1px solid #222; border-radius: 2px; color: #666; font-size: 0.7rem; transition: all 0.15s; }
-.btn-outline:hover { border-color: #8ab4a044; color: #8ab4a0; }
-.btn-ghost { padding: 0.5rem 1rem; background: transparent; border: 1px solid #222; border-radius: 2px; color: #666; font-size: 0.75rem; transition: all 0.15s; }
-.btn-ghost:hover:not(:disabled) { border-color: #333; color: #aaa; }
+.btn-outline { display: inline-flex; align-items: center; justify-content: center; padding: 0.35rem 0.75rem; background: transparent; border: 1px solid var(--border-default); border-radius: 2px; color: var(--text-muted); font-size: 0.7rem; transition: all 0.15s; }
+.btn-outline:hover { border-color: var(--vendor)44; color: var(--vendor); }
+.btn-ghost { padding: 0.5rem 1rem; background: transparent; border: 1px solid var(--border-default); border-radius: 2px; color: var(--text-muted); font-size: 0.75rem; transition: all 0.15s; }
+.btn-ghost:hover:not(:disabled) { border-color: var(--text-disabled); color: var(--text-secondary); }
 .btn-ghost:disabled { opacity: 0.5; }
-.btn-danger { padding: 0.5rem 1rem; background: #7f1d1d33; border: 1px solid #991b1b55; border-radius: 2px; color: #f87171; font-size: 0.75rem; transition: all 0.15s; }
-.btn-danger:hover:not(:disabled) { background: #7f1d1d55; }
+.btn-danger { padding: 0.5rem 1rem; background: var(--danger-soft)33; border: 1px solid var(--danger)55; border-radius: 2px; color: var(--danger); font-size: 0.75rem; transition: all 0.15s; }
+.btn-danger:hover:not(:disabled) { background: var(--danger-soft)55; }
 .btn-danger:disabled { opacity: 0.5; }
-.page-btn { padding: 0.3rem 0.7rem; background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 2px; color: #666; font-size: 0.75rem; transition: all 0.15s; }
-.page-btn:hover:not(:disabled) { color: #aaa; border-color: #333; }
+.page-btn { padding: 0.3rem 0.7rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 2px; color: var(--text-muted); font-size: 0.75rem; transition: all 0.15s; }
+.page-btn:hover:not(:disabled) { color: var(--text-secondary); border-color: var(--text-disabled); }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.discount-panel { border: 1px solid #1e2e28; background: #0d110f; border-radius: 3px; overflow: hidden; }
+.discount-panel { border: 1px solid var(--vendor-soft); background: var(--vendor-soft); border-radius: 3px; overflow: hidden; }
 .discount-panel--create { padding: 0; }
 .discount-panel-head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.8rem; text-align: left; }
-.discount-panel-body { padding: 0.8rem; border-top: 1px solid #1e2e28; }
-.discount-panel-pill { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #8ab4a0; border: 1px solid #1e2e28; background: #0a0f0c; border-radius: 999px; padding: 0.22rem 0.55rem; white-space: nowrap; }
-.discount-show-btn { width: 100%; padding: 0.85rem 1rem; border: 1px dashed #1e2e28; border-radius: 3px; background: #0d110f; color: #8ab4a0; text-align: left; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
-.mini-chip { border: 1px solid #2a2a2a; background: #111; color: #777; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; padding: 0.18rem 0.5rem; transition: all 0.15s; }
-.mini-chip:hover { border-color: #8ab4a044; color: #8ab4a0; }
-.mini-stat { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.65rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; font-size: 0.62rem; }
-.mini-stat span { color: #555; text-transform: uppercase; letter-spacing: 0.1em; }
-.mini-stat strong { color: #d8d5cf; font-weight: 500; font-size: 0.8rem; }
-.modal-box { background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 4px; padding: 1.5rem; }
+.discount-panel-body { padding: 0.8rem; border-top: 1px solid var(--vendor-soft); }
+.discount-panel-pill { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--vendor); border: 1px solid var(--vendor-soft); background: var(--vendor-soft); border-radius: 999px; padding: 0.22rem 0.55rem; white-space: nowrap; }
+.discount-show-btn { width: 100%; padding: 0.85rem 1rem; border: 1px dashed var(--vendor-soft); border-radius: 3px; background: var(--vendor-soft); color: var(--vendor); text-align: left; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.mini-chip { border: 1px solid var(--border-default); background: var(--surface-raised); color: var(--text-muted); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; padding: 0.18rem 0.5rem; transition: all 0.15s; }
+.mini-chip:hover { border-color: var(--vendor)44; color: var(--vendor); }
+.mini-stat { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.65rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; font-size: 0.62rem; }
+.mini-stat span { color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.mini-stat strong { color: var(--text-secondary); font-weight: 500; font-size: 0.8rem; }
+.modal-box { background: var(--surface-base); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1.5rem; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 </style>

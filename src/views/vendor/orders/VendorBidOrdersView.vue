@@ -155,8 +155,8 @@ const statusColor = {
   shipped:   'bg-blue-900/20 text-blue-400 border-blue-900/40',
   delivered: 'bg-emerald-900/30 text-emerald-300 border-emerald-900/40',
   rejected:  'bg-red-900/20 text-red-400 border-red-900/40',
-  calcelled: 'bg-[#111] text-[#555] border-[#222]',
-  cancelled: 'bg-[#111] text-[#555] border-[#222]',
+  calcelled: 'bg-surface-raised text-text-muted border-border-default',
+  cancelled: 'bg-surface-raised text-text-muted border-border-default',
 }
 
 function isPending(order) {
@@ -178,10 +178,10 @@ onMounted(loadOrders)
 <template>
   <div>
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-      <h1 class="text-xl font-light tracking-widest uppercase text-[#f0ede8]">Pedidos de Subastas</h1>
+      <h1 class="text-xl font-light tracking-widest uppercase text-text-primary">Pedidos de Subastas</h1>
       <select
         v-model="statusFilter"
-        class="bg-[#0f0f0f] border border-[#222] text-[#aaa] text-[12px] tracking-wide rounded-sm px-3 py-2 focus:outline-none focus:border-[#c9a96e44]"
+        class="bg-surface-raised border border-border-default text-text-secondary text-[12px] tracking-wide rounded-sm px-3 py-2 focus:outline-none focus:border-[var(--accent)44]"
       >
         <option value="">Todos los estados</option>
         <option value="">Pendientes de pago</option>
@@ -193,9 +193,9 @@ onMounted(loadOrders)
       </select>
     </div>
 
-    <div v-if="loading" class="text-center py-16 text-[#555]">Cargando…</div>
+    <div v-if="loading" class="text-center py-16 text-text-muted">Cargando…</div>
     <div v-else-if="error" class="text-red-400 text-sm text-center py-10">{{ error }}</div>
-    <div v-else-if="!orders.length" class="text-center py-16 text-[#555] text-sm">
+    <div v-else-if="!orders.length" class="text-center py-16 text-text-muted text-sm">
       No hay pedidos de subastas para este filtro.
     </div>
 
@@ -203,18 +203,20 @@ onMounted(loadOrders)
       <div
         v-for="order in orders"
         :key="order.id"
-        class="bg-[#0c0c0c] border border-[#1a1a1a] rounded-sm p-5 hover:border-[#c9a96e22] transition-colors"
+        class="bg-surface-sunken border border-border-subtle rounded-sm p-5 hover:border-[var(--accent)22] transition-colors"
+        :class="hasProof(order) ? 'cursor-pointer' : ''"
+        @click="hasProof(order) && viewProof(order)"
       >
         <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
           <!-- Info comprador + monto -->
           <div>
-            <div class="text-[10px] tracking-[0.2em] uppercase text-[#555] mb-1">
+            <div class="text-[10px] tracking-[0.2em] uppercase text-text-muted mb-1">
               {{ order.expand?.buyer?.name || order.expand?.buyer?.email || 'Comprador' }}
             </div>
-            <div class="text-[#c9a96e] font-medium text-lg">
+            <div class="text-accent font-medium text-lg">
               Bs {{ money(order.total) }}
             </div>
-            <div class="text-[11px] text-[#555] mt-0.5">
+            <div class="text-[11px] text-text-muted mt-0.5">
               {{ new Date(order.created).toLocaleDateString('es-BO', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) }}
             </div>
             <div v-if="order.payment_until" class="text-[11px] text-amber-400/70 mt-0.5">
@@ -234,30 +236,30 @@ onMounted(loadOrders)
         </div>
 
         <!-- Info subasta -->
-        <div v-if="order.expand?.bid" class="flex items-center gap-3 mb-4 p-3 bg-[#090909] rounded-sm border border-[#151515]">
+        <div v-if="order.expand?.bid" class="flex items-center gap-3 mb-4 p-3 bg-surface-base rounded-sm border border-border-subtle">
           <img
             v-if="auctionImage(order.expand.bid)"
             :src="auctionImage(order.expand.bid)"
-            class="w-12 h-9 object-cover rounded-sm border border-[#1a1a1a] shrink-0"
+            class="w-12 h-9 object-cover rounded-sm border border-border-subtle shrink-0"
           />
           <div>
-            <p class="text-sm text-[#e8e5e0]">{{ order.expand.bid.title }}</p>
-            <p class="text-[11px] text-[#555]">Precio final: Bs {{ money(order.expand.bid.current_price) }}</p>
+            <p class="text-sm text-text-primary">{{ order.expand.bid.title }}</p>
+            <p class="text-[11px] text-text-muted">Precio final: Bs {{ money(order.expand.bid.current_price) }}</p>
           </div>
         </div>
 
         <!-- Nota de aprobación -->
-        <div v-if="order.approval_note" class="text-[11px] text-[#888] mb-3">
+        <div v-if="order.approval_note" class="text-[11px] text-text-muted mb-3">
           Nota: {{ order.approval_note }}
         </div>
 
         <!-- Acciones -->
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2" @click.stop>
           <!-- Ver comprobante -->
           <button
             v-if="hasProof(order)"
-            @click="viewProof(order)"
-            class="px-3 py-1.5 border border-[#2a2a2a] text-[#aaa] text-[10px] tracking-[0.14em] uppercase rounded-sm hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors"
+            @click.stop="viewProof(order)"
+            class="px-3 py-1.5 border border-border-default text-text-secondary text-[10px] tracking-[0.14em] uppercase rounded-sm hover:border-[var(--accent)44] hover:text-accent transition-colors"
           >
             Ver comprobante
           </button>
@@ -265,7 +267,7 @@ onMounted(loadOrders)
           <!-- Aprobar -->
           <button
             v-if="canApprove(order)"
-            @click="openAction(order, 'approve')"
+            @click.stop="openAction(order, 'approve')"
             class="px-3 py-1.5 bg-emerald-900/30 border border-emerald-900/50 text-emerald-400 text-[10px] tracking-[0.14em] uppercase rounded-sm hover:bg-emerald-900/50 transition-colors"
           >
             Aprobar
@@ -274,7 +276,7 @@ onMounted(loadOrders)
           <!-- Rechazar -->
           <button
             v-if="canReject(order)"
-            @click="openAction(order, 'reject')"
+            @click.stop="openAction(order, 'reject')"
             class="px-3 py-1.5 bg-red-900/20 border border-red-900/40 text-red-400 text-[10px] tracking-[0.14em] uppercase rounded-sm hover:bg-red-900/40 transition-colors"
           >
             Rechazar
@@ -283,7 +285,7 @@ onMounted(loadOrders)
           <!-- Enviar -->
           <button
             v-if="canShip(order)"
-            @click="openAction(order, 'ship')"
+            @click.stop="openAction(order, 'ship')"
             class="px-3 py-1.5 bg-blue-900/20 border border-blue-900/40 text-blue-400 text-[10px] tracking-[0.14em] uppercase rounded-sm hover:bg-blue-900/40 transition-colors"
           >
             Marcar enviado
@@ -292,7 +294,7 @@ onMounted(loadOrders)
           <!-- Entregar -->
           <button
             v-if="canDeliver(order)"
-            @click="openAction(order, 'deliver')"
+            @click.stop="openAction(order, 'deliver')"
             class="px-3 py-1.5 bg-emerald-900/20 border border-emerald-900/40 text-emerald-400 text-[10px] tracking-[0.14em] uppercase rounded-sm hover:bg-emerald-900/40 transition-colors"
           >
             Marcar entregado
@@ -308,16 +310,16 @@ onMounted(loadOrders)
         class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
         @click.self="showProof = false"
       >
-        <div class="bg-[#0e0e0e] border border-[#1f1f1f] rounded-sm w-full max-w-md">
-          <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#1a1a1a]">
-            <h2 class="text-[12px] tracking-[0.18em] uppercase text-[#e8e5e0]">Comprobante de pago</h2>
-            <button @click="showProof = false" class="text-[#555] hover:text-[#c9a96e] text-xl leading-none">&times;</button>
+        <div class="bg-surface-base border border-border-subtle rounded-sm w-full max-w-md">
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-border-subtle">
+            <h2 class="text-[12px] tracking-[0.18em] uppercase text-text-primary">Comprobante de pago</h2>
+            <button @click="showProof = false" class="text-text-muted hover:text-accent text-xl leading-none">&times;</button>
           </div>
           <div class="p-5">
             <div v-if="proofBlobUrl">
               <img :src="proofBlobUrl" class="w-full max-h-80 object-contain rounded-sm" alt="Comprobante" />
             </div>
-            <div v-else class="text-center py-10 text-[#555] text-sm">
+            <div v-else class="text-center py-10 text-text-muted text-sm">
               Cargando comprobante…
             </div>
           </div>
@@ -332,28 +334,28 @@ onMounted(loadOrders)
         class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
         @click.self="showAction = false"
       >
-        <div class="bg-[#0e0e0e] border border-[#1f1f1f] rounded-sm w-full max-w-sm">
-          <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#1a1a1a]">
-            <h2 class="text-[12px] tracking-[0.18em] uppercase text-[#e8e5e0]">{{ actionLabels[actionType] }}</h2>
-            <button @click="showAction = false" class="text-[#555] hover:text-[#c9a96e] text-xl leading-none">&times;</button>
+        <div class="bg-surface-base border border-border-subtle rounded-sm w-full max-w-sm">
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-border-subtle">
+            <h2 class="text-[12px] tracking-[0.18em] uppercase text-text-primary">{{ actionLabels[actionType] }}</h2>
+            <button @click="showAction = false" class="text-text-muted hover:text-accent text-xl leading-none">&times;</button>
           </div>
           <div class="p-5 flex flex-col gap-4">
             <!-- Información de la orden -->
-            <div class="bg-[#141414] rounded-sm p-3 text-sm text-[#888]">
-              Comprador: <span class="text-[#e8e5e0]">{{ actionOrder?.expand?.buyer?.name || actionOrder?.expand?.buyer?.email }}</span><br />
-              Total: <span class="text-[#c9a96e]">Bs {{ money(actionOrder?.total) }}</span>
+            <div class="bg-surface-overlay rounded-sm p-3 text-sm text-text-muted">
+              Comprador: <span class="text-text-primary">{{ actionOrder?.expand?.buyer?.name || actionOrder?.expand?.buyer?.email }}</span><br />
+              Total: <span class="text-accent">Bs {{ money(actionOrder?.total) }}</span>
             </div>
 
             <!-- Nota (aprobar o rechazar) -->
             <div v-if="actionType === 'approve' || actionType === 'reject'">
-              <label class="block text-[10px] tracking-[0.15em] uppercase text-[#666] mb-1.5">
+              <label class="block text-[10px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
                 {{ actionType === 'approve' ? 'Nota (opcional)' : 'Motivo del rechazo' }}
               </label>
               <textarea
                 v-model="actionNote"
                 rows="3"
                 :placeholder="actionType === 'reject' ? 'Ej: Comprobante no válido...' : 'Instrucciones adicionales...'"
-                class="w-full bg-[#0a0a0a] border border-[#222] text-[#e8e5e0] text-sm rounded-sm px-3 py-2 focus:outline-none focus:border-[#c9a96e44] resize-none"
+                class="w-full bg-surface-base border border-border-default text-text-primary text-sm rounded-sm px-3 py-2 focus:outline-none focus:border-[var(--accent)44] resize-none"
               />
             </div>
 
@@ -367,7 +369,7 @@ onMounted(loadOrders)
             <div class="flex gap-2">
               <button
                 @click="showAction = false"
-                class="flex-1 py-2 border border-[#222] text-[#888] text-[11px] tracking-[0.14em] uppercase rounded-sm hover:border-[#333] transition-colors"
+                class="flex-1 py-2 border border-border-default text-text-muted text-[11px] tracking-[0.14em] uppercase rounded-sm hover:border-border-default transition-colors"
               >
                 Cancelar
               </button>
@@ -378,7 +380,7 @@ onMounted(loadOrders)
                   'flex-1 py-2 text-[11px] tracking-[0.14em] uppercase font-semibold rounded-sm transition-colors disabled:opacity-50',
                   actionType === 'reject'
                     ? 'bg-red-900/40 border border-red-900/60 text-red-400 hover:bg-red-900/60'
-                    : 'bg-[#c9a96e] text-[#0a0a0a] hover:bg-[#d4b97e]'
+                    : 'bg-accent text-accent-on hover:bg-[var(--accent-hover)]'
                 ]"
               >
                 {{ actionLoad ? 'Procesando…' : 'Confirmar' }}

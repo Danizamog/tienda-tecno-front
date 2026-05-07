@@ -62,13 +62,13 @@ function logoUrl(store) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#080808] flex flex-col items-center justify-center px-4 py-12">
+  <div class="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12">
 
     <!-- Logo / título -->
     <div class="mb-10 text-center">
-      <p class="text-[10px] tracking-[0.25em] uppercase text-[#3a3a38] mb-2">Panel de Vendedor</p>
-      <h1 class="text-2xl font-light tracking-wide text-[#e8e5e0]">Selecciona tu tienda</h1>
-      <p class="text-sm text-[#555] mt-2">Elige con qué tienda quieres operar</p>
+      <p class="text-[10px] tracking-[0.25em] uppercase text-text-disabled mb-2">Panel de Vendedor</p>
+      <h1 class="text-2xl font-light tracking-wide text-text-primary">Selecciona tu tienda</h1>
+      <p class="text-sm text-text-muted mt-2">Elige con qué tienda quieres operar</p>
     </div>
 
     <!-- Error -->
@@ -77,17 +77,17 @@ function logoUrl(store) {
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="text-[#555] text-sm">Cargando tiendas...</div>
+    <div v-if="loading" class="text-text-muted text-sm">Cargando tiendas...</div>
 
     <!-- Sin tiendas -->
     <div v-else-if="!stores.length && !error" class="text-center max-w-sm">
-      <div class="w-16 h-16 rounded-full border border-[#222] bg-[#0f0f0f] flex items-center justify-center mx-auto mb-4">
-        <svg class="w-7 h-7 text-[#333]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <div class="w-16 h-16 rounded-full border border-border-default bg-surface-raised flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
         </svg>
       </div>
-      <p class="text-[#555] text-sm mb-1">No tienes tiendas registradas</p>
-      <p class="text-[#3a3a38] text-xs">Contacta al administrador para activar tu tienda</p>
+      <p class="text-text-muted text-sm mb-1">No tienes tiendas registradas</p>
+      <p class="text-text-disabled text-xs">Contacta al administrador para activar tu tienda</p>
     </div>
 
     <!-- Lista de tiendas -->
@@ -99,21 +99,21 @@ function logoUrl(store) {
         @click="selectStore(store)"
       >
         <!-- Logo -->
-        <div class="w-12 h-12 rounded-sm border border-[#222] bg-[#111] flex items-center justify-center shrink-0 overflow-hidden">
+        <div class="w-12 h-12 rounded-sm border border-border-default bg-surface-raised flex items-center justify-center shrink-0 overflow-hidden">
           <img
             v-if="logoUrl(store)"
             :src="logoUrl(store)"
             :alt="store.name"
             class="w-full h-full object-cover"
           />
-          <svg v-else class="w-5 h-5 text-[#333]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <svg v-else class="w-5 h-5 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
           </svg>
         </div>
 
         <!-- Info -->
         <div class="flex-1 min-w-0 text-left">
-          <p class="text-[14px] font-medium text-[#e8e5e0] group-hover:text-white transition-colors truncate">
+          <p class="text-[14px] font-medium text-text-primary group-hover:text-white transition-colors truncate">
             {{ store.name }}
           </p>
           <div class="flex items-center gap-3 mt-0.5">
@@ -125,23 +125,23 @@ function logoUrl(store) {
                 'text-red-400 border-red-900/50 bg-red-950/40': store.status === 'suspended',
               }"
             >{{ store.status }}</span>
-            <span v-if="store.verified" class="text-[9px] tracking-[0.18em] uppercase text-[#8ab4a0]">
+            <span v-if="store.verified" class="text-[9px] tracking-[0.18em] uppercase text-vendor">
               ✓ verificada
             </span>
-            <span v-if="store.rating > 0" class="text-[10px] text-[#666]">
+            <span v-if="store.rating > 0" class="text-[10px] text-text-muted">
               ★ {{ Number(store.rating).toFixed(1) }}
             </span>
           </div>
         </div>
 
         <!-- Flecha -->
-        <svg class="w-4 h-4 text-[#3a3a38] group-hover:text-[#8ab4a0] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <svg class="w-4 h-4 text-text-disabled group-hover:text-vendor transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </button>
 
       <div v-if="totalPages > 1" class="flex items-center justify-between gap-3 pt-2">
-        <p class="text-[11px] text-[#555]">
+        <p class="text-[11px] text-text-muted">
           Página {{ page }} de {{ totalPages }} · {{ totalItems }} tiendas
         </p>
         <div class="flex items-center gap-2">
@@ -178,17 +178,17 @@ function logoUrl(store) {
   width: 100%;
   max-width: 26rem;
   padding: 0.95rem 1rem;
-  border: 1px solid #20322c;
+  border: 1px solid var(--vendor-border);
   border-radius: 18px;
-  background: linear-gradient(180deg, #111111 0%, #0d0d0d 100%);
-  color: #d8d5cf;
+  background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-sunken) 100%);
+  color: var(--text-secondary);
   transition: all 0.18s ease;
 }
 
 .back-link:hover {
-  border-color: #8ab4a044;
-  background: linear-gradient(180deg, #0f1714 0%, #111111 100%);
-  color: #f0ede8;
+  border-color: var(--vendor)44;
+  background: linear-gradient(180deg, var(--vendor-soft) 0%, var(--surface-raised) 100%);
+  color: var(--text-primary);
 }
 
 .back-link__icon {
@@ -198,9 +198,9 @@ function logoUrl(store) {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 999px;
-  border: 1px solid #20322c;
-  background: #0d110f;
-  color: #8ab4a0;
+  border: 1px solid var(--vendor-border);
+  background: var(--vendor-soft);
+  color: var(--vendor);
   flex-shrink: 0;
 }
 
@@ -213,13 +213,13 @@ function logoUrl(store) {
 .back-link__copy strong {
   font-size: 0.86rem;
   font-weight: 500;
-  color: #f0ede8;
+  color: var(--text-primary);
 }
 
 .back-link__copy small {
   margin-top: 0.15rem;
   font-size: 0.7rem;
-  color: #7a7770;
+  color: var(--text-muted);
 }
 
 .store-card {
@@ -227,32 +227,32 @@ function logoUrl(store) {
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.1rem;
-  background: #0c0c0c;
-  border: 1px solid #181818;
+  background: var(--surface-sunken);
+  border: 1px solid var(--surface-overlay);
   border-radius: 3px;
   transition: border-color 0.18s ease, background 0.18s ease;
   cursor: pointer;
 }
 .store-card:hover {
-  border-color: #1e2e28;
-  background: #0d110f;
+  border-color: var(--vendor-soft);
+  background: var(--vendor-soft);
 }
 
 .page-btn {
   min-width: 2rem;
   height: 2rem;
   padding: 0 0.5rem;
-  border: 1px solid #1e1e1e;
+  border: 1px solid var(--border-subtle);
   border-radius: 3px;
-  background: #0f0f0f;
-  color: #666;
+  background: var(--surface-raised);
+  color: var(--text-muted);
   font-size: 0.75rem;
   transition: all 0.18s ease;
 }
 
 .page-btn:hover:not(:disabled) {
-  border-color: #8ab4a044;
-  color: #8ab4a0;
+  border-color: var(--vendor)44;
+  color: var(--vendor);
 }
 
 .page-btn:disabled {

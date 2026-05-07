@@ -282,10 +282,10 @@ function pad(n) { return String(n).padStart(2, '0') }
 
 function urgencyClass(endDateStr) {
   const diff = new Date(endDateStr).getTime() - now.value
-  if (diff <= 0)           return 'text-[#555550]'
+  if (diff <= 0)           return 'text-text-muted'
   if (diff < 3600000)      return 'text-red-400'
   if (diff < 86400000)     return 'text-amber-400'
-  return 'text-[#c9a96e]'
+  return 'text-accent'
 }
 
 const auctionPageWindow = computed(() => {
@@ -341,7 +341,7 @@ async function handleToggleFollow() {
   await toggleFollow(store.value.id)
 }
 
-function quickAdd(event, product) {
+async function quickAdd(event, product) {
   event.preventDefault()
   event.stopPropagation()
 
@@ -354,7 +354,7 @@ function quickAdd(event, product) {
     store:  store.value?.id,
   }
 
-  const success = addToCart(enriched, 1)
+  const success = await addToCart(enriched, 1)
   if (!success) return
 
   // Si estaba en wishlist, quitarlo automáticamente
@@ -379,21 +379,21 @@ async function quickToggleWishlist(event, product) {
 <template>
   <AppNavbar />
 
-  <main class="store-shell text-[#f0ede8]">
+  <main class="store-shell text-text-primary">
 
     <!-- ══ ERROR TIENDA ═══════════════════════════════════════════ -->
     <div v-if="storeError" class="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <p class="text-[#666259] text-sm">{{ storeError }}</p>
+      <p class="text-text-muted text-sm">{{ storeError }}</p>
       <RouterLink to="/stores" class="btn-outline text-xs">Volver al directorio</RouterLink>
     </div>
 
     <template v-else>
 
       <!-- ══ HERO DE LA TIENDA ═══════════════════════════════════ -->
-      <section class="relative border-b border-[#1a1a1a] overflow-hidden">
+      <section class="relative border-b border-border-subtle overflow-hidden">
 
         <!-- Banner — altura fija estándar para cualquier imagen -->
-        <div class="relative h-44 bg-[#0c0c0c] overflow-hidden">
+        <div class="relative h-44 bg-surface-sunken overflow-hidden">
           <img
             v-if="!storeLoading && bannerUrl(store)"
             :src="bannerUrl(store)"
@@ -403,14 +403,14 @@ async function quickToggleWishlist(event, product) {
           <div
             v-else
             class="absolute inset-0"
-            style="background:linear-gradient(135deg,#111111 0%,#14110d 100%);"
+            style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
           />
           <!-- Gradiente inferior -->
-          <div class="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#090909] to-transparent pointer-events-none" />
+          <div class="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--surface-base)] to-transparent pointer-events-none" />
           <!-- Grid decorativo -->
           <div
             class="absolute inset-0 pointer-events-none opacity-[0.04]"
-            style="background-image:linear-gradient(#c9a96e 1px,transparent 1px),linear-gradient(90deg,#c9a96e 1px,transparent 1px);background-size:72px 72px;"
+            style="background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:72px 72px;"
           />
         </div>
 
@@ -419,7 +419,7 @@ async function quickToggleWishlist(event, product) {
           <div class="flex items-end gap-5">
 
             <!-- Logo -->
-            <div class="w-20 h-20 shrink-0 border-2 border-[#1e1e1e] bg-[#0f0f0f] overflow-hidden shadow-lg">
+            <div class="w-20 h-20 shrink-0 border-2 border-border-subtle bg-surface-raised overflow-hidden shadow-lg">
               <template v-if="storeLoading">
                 <div class="skeleton w-full h-full" />
               </template>
@@ -429,8 +429,8 @@ async function quickToggleWishlist(event, product) {
                 :alt="store?.name"
                 class="w-full h-full object-cover"
               />
-              <div v-else class="w-full h-full flex items-center justify-center bg-[#111]">
-                <span class="font-display text-2xl font-light text-[#2a2520]">
+              <div v-else class="w-full h-full flex items-center justify-center bg-surface-raised">
+                <span class="font-display text-2xl font-light text-text-disabled">
                   {{ initials(store?.name) }}
                 </span>
               </div>
@@ -455,23 +455,23 @@ async function quickToggleWishlist(event, product) {
                   </span>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3 text-[11px] text-[#4a4845]">
+                <div class="flex flex-wrap items-center gap-3 text-[11px] text-text-disabled">
                   <!-- Rating -->
                   <span class="flex items-center gap-1">
                     <div class="flex items-center gap-0.5">
                       <template v-for="n in ratingStars(store?.rating).full" :key="`f${n}`">
-                        <svg class="w-3 h-3 text-[#c9a96e]" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-3 h-3 text-accent" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                         </svg>
                       </template>
                       <template v-for="n in ratingStars(store?.rating).empty" :key="`e${n}`">
-                        <svg class="w-3 h-3 text-[#1e1b16]" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-3 h-3 text-text-disabled" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                         </svg>
                       </template>
                     </div>
                     <span class="tabular-nums">{{ Number(store?.rating || 0).toFixed(1) }}</span>
-                    <span class="text-[#333330]">({{ store?.reviews_count || 0 }} reseñas)</span>
+                    <span class="text-text-disabled">({{ store?.reviews_count || 0 }} reseñas)</span>
                   </span>
 
                   <!-- Ubicación -->
@@ -494,8 +494,8 @@ async function quickToggleWishlist(event, product) {
               :class="[
                 'flex items-center gap-2 px-4 h-9 text-[11px] tracking-[0.14em] uppercase font-medium border transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed',
                 isFollowing(store?.id)
-                  ? 'bg-[#c9a96e18] border-[#c9a96e66] text-[#c9a96e] hover:bg-[#c9a96e08] hover:border-[#c9a96e33]'
-                  : 'bg-[#c9a96e] border-[#c9a96e] text-[#0a0a0a] hover:bg-[#d4b87a] hover:border-[#d4b87a]',
+                  ? 'bg-[var(--accent)18] border-[var(--accent)66] text-accent hover:bg-[var(--accent)08] hover:border-[var(--accent)33]'
+                  : 'bg-accent border-accent text-accent-on hover:bg-[var(--accent-hover)] hover:border-[var(--accent-hover)]',
               ]"
             >
               <svg
@@ -514,7 +514,7 @@ async function quickToggleWishlist(event, product) {
             <!-- Breadcrumb -->
             <RouterLink
               to="/stores"
-              class="hidden md:flex items-center gap-1.5 text-[10px] tracking-[0.15em] uppercase text-[#444440] hover:text-[#c9a96e] transition-colors pb-1 shrink-0"
+              class="hidden md:flex items-center gap-1.5 text-[10px] tracking-[0.15em] uppercase text-text-disabled hover:text-accent transition-colors pb-1 shrink-0"
             >
               <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
@@ -526,14 +526,14 @@ async function quickToggleWishlist(event, product) {
           <!-- Descripción -->
           <p
             v-if="!storeLoading && store?.description"
-            class="mt-4 text-[12px] text-[#5a5750] leading-relaxed max-w-2xl"
+            class="mt-4 text-[12px] text-text-muted leading-relaxed max-w-2xl"
             v-html="store.description"
           />
         </div>
       </section>
 
       <!-- ══ TABS ════════════════════════════════════════════════ -->
-      <section class="w-full border-b border-[#161616] bg-[#0b0b0b]">
+      <section class="w-full border-b border-border-subtle bg-surface-base">
         <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div class="flex items-center gap-0">
             <button
@@ -541,8 +541,8 @@ async function quickToggleWishlist(event, product) {
               :class="[
                 'px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase border-b-2 transition-colors duration-200',
                 tab === 'products'
-                  ? 'border-[#c9a96e] text-[#c9a96e]'
-                  : 'border-transparent text-[#4a4845] hover:text-[#c9a96e88]',
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-text-disabled hover:text-[var(--accent)88]',
               ]"
             >
               <span class="flex items-center gap-2">
@@ -557,8 +557,8 @@ async function quickToggleWishlist(event, product) {
               :class="[
                 'px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase border-b-2 transition-colors duration-200',
                 tab === 'auctions'
-                  ? 'border-[#c9a96e] text-[#c9a96e]'
-                  : 'border-transparent text-[#4a4845] hover:text-[#c9a96e88]',
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-text-disabled hover:text-[var(--accent)88]',
               ]"
             >
               <span class="flex items-center gap-2">
@@ -573,8 +573,8 @@ async function quickToggleWishlist(event, product) {
               :class="[
                 'px-5 py-3.5 text-[11px] tracking-[0.16em] uppercase border-b-2 transition-colors duration-200',
                 tab === 'reviews'
-                  ? 'border-[#c9a96e] text-[#c9a96e]'
-                  : 'border-transparent text-[#4a4845] hover:text-[#c9a96e88]',
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-text-disabled hover:text-[var(--accent)88]',
               ]"
             >
               <span class="flex items-center gap-2">
@@ -582,7 +582,7 @@ async function quickToggleWishlist(event, product) {
                   <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 Reseñas
-                <span v-if="store?.reviews_count > 0" class="px-1.5 py-0.5 text-[8px] bg-[#c9a96e15] text-[#c9a96e] border border-[#c9a96e22]">
+                <span v-if="store?.reviews_count > 0" class="px-1.5 py-0.5 text-[8px] bg-[var(--accent)15] text-accent border border-[var(--accent)22]">
                   {{ store.reviews_count }}
                 </span>
               </span>
@@ -592,7 +592,7 @@ async function quickToggleWishlist(event, product) {
       </section>
 
       <!-- ══ BARRA DE FILTROS (Productos) ═══════════════════════ -->
-      <section v-if="tab === 'products'" class="w-full border-b border-[#1a1a1a] bg-[#0c0c0c] sticky top-[57px] z-40">
+      <section v-if="tab === 'products'" class="w-full border-b border-border-subtle bg-surface-sunken sticky top-[57px] z-40">
         <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-3">
           <div class="flex flex-wrap items-center gap-2.5">
 
@@ -604,7 +604,7 @@ async function quickToggleWishlist(event, product) {
                 placeholder="Buscar producto..."
                 class="input-dark pr-9 text-sm h-9 w-full"
               />
-              <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#444440] pointer-events-none"
+              <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-disabled pointer-events-none"
                 fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="m21 21-4.35-4.35" stroke-linecap="round"/>
@@ -667,13 +667,13 @@ async function quickToggleWishlist(event, product) {
             <button
               v-if="hasActiveFilters"
               @click="clearFilters"
-              class="h-9 px-3 text-[10px] tracking-[0.15em] uppercase text-[#666259] border border-[#252520] hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors whitespace-nowrap"
+              class="h-9 px-3 text-[10px] tracking-[0.15em] uppercase text-text-muted border border-[var(--text-disabled)] hover:border-[var(--accent)44] hover:text-accent transition-colors whitespace-nowrap"
             >
               Limpiar
             </button>
 
             <!-- Contador -->
-            <span class="ml-auto text-[10px] tracking-[0.18em] uppercase text-[#383835] hidden sm:block whitespace-nowrap">
+            <span class="ml-auto text-[10px] tracking-[0.18em] uppercase text-text-disabled hidden sm:block whitespace-nowrap">
               {{ totalItems }} producto{{ totalItems !== 1 ? 's' : '' }}
             </span>
           </div>
@@ -703,12 +703,12 @@ async function quickToggleWishlist(event, product) {
           </div>
 
           <!-- Sin resultados -->
-          <div v-else-if="!products.length" class="flex flex-col items-center py-24 border border-[#141414]">
-            <svg class="w-10 h-10 text-[#252520] mb-5" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+          <div v-else-if="!products.length" class="flex flex-col items-center py-24 border border-[var(--surface-overlay)]">
+            <svg class="w-10 h-10 text-text-disabled mb-5" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
               <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <p class="font-display text-2xl font-light text-[#444440] mb-2">Sin productos</p>
-            <p class="text-[#333330] text-xs tracking-widest uppercase mb-6">
+            <p class="font-display text-2xl font-light text-text-disabled mb-2">Sin productos</p>
+            <p class="text-text-disabled text-xs tracking-widest uppercase mb-6">
               {{ filters.search || filters.categoryId || filters.condition ? 'Intenta con otros filtros' : 'Esta tienda aún no tiene productos activos' }}
             </p>
             <button v-if="hasActiveFilters" @click="clearFilters" class="btn-outline text-xs">
@@ -725,19 +725,19 @@ async function quickToggleWishlist(event, product) {
               class="card-dark group flex flex-col overflow-hidden"
             >
               <!-- Imagen -->
-              <div class="relative aspect-square bg-[#0f0f0f] overflow-hidden">
+              <div class="relative aspect-square bg-surface-raised overflow-hidden">
                 <img
                   v-if="productImageUrl(product)"
                   :src="productImageUrl(product)"
                   :alt="product.name"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  class="w-full h-full object-cover"
                 />
                 <div
                   v-else
                   class="w-full h-full flex items-center justify-center"
-                  style="background:linear-gradient(135deg,#111111 0%,#14110d 100%);"
+                  style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
                 >
-                  <svg class="w-10 h-10 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                  <svg class="w-10 h-10 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                     <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </div>
@@ -759,8 +759,8 @@ async function quickToggleWishlist(event, product) {
                   @click="quickToggleWishlist($event, product)"
                   class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-black/60 border transition-all duration-200 opacity-0 group-hover:opacity-100"
                   :class="isInWishlist(product.id)
-                    ? 'border-[#c9a96e55] text-[#c9a96e]'
-                    : 'border-[#333] text-[#555] hover:border-[#c9a96e44] hover:text-[#c9a96e88]'"
+                    ? 'border-[var(--accent)55] text-accent'
+                    : 'border-border-default text-text-muted hover:border-[var(--accent)44] hover:text-[var(--accent)88]'"
                   :aria-label="isInWishlist(product.id) ? 'Quitar de wishlist' : 'Añadir a wishlist'"
                 >
                   <svg class="w-3 h-3" :fill="isInWishlist(product.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -786,23 +786,23 @@ async function quickToggleWishlist(event, product) {
               <!-- Cuerpo -->
               <div class="p-3 flex flex-col gap-1.5 flex-1">
                 <!-- Categoría -->
-                <p v-if="product.expand?.category?.name" class="text-[10px] tracking-[0.12em] uppercase text-[#c9a96e]/60">
+                <p v-if="product.expand?.category?.name" class="text-[10px] tracking-[0.12em] uppercase text-accent/60">
                   {{ product.expand.category.name }}
                 </p>
 
                 <!-- Nombre -->
-                <h3 class="text-[12px] font-medium text-[#d8d4ce] leading-snug line-clamp-2 group-hover:text-[#c9a96e] transition-colors duration-200">
+                <h3 class="text-[12px] font-medium text-text-secondary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-200">
                   {{ product.name }}
                 </h3>
 
                 <!-- Precio -->
                 <div class="mt-auto pt-2 flex items-baseline gap-2">
-                  <span class="text-sm font-semibold text-[#c9a96e] tabular-nums">
+                  <span class="text-sm font-semibold text-accent tabular-nums">
                     ${{ formatPrice(product.price, product.discount_percent, product.discount_amount).final.toLocaleString('es-CL') }}
                   </span>
                   <span
                     v-if="formatPrice(product.price, product.discount_percent, product.discount_amount).hasDiscount"
-                    class="text-[10px] text-[#444440] line-through tabular-nums"
+                    class="text-[10px] text-text-disabled line-through tabular-nums"
                   >
                     ${{ Number(product.price || 0).toLocaleString('es-CL') }}
                   </span>
@@ -821,7 +821,7 @@ async function quickToggleWishlist(event, product) {
                     'mt-1 w-full h-7 text-[9px] tracking-[0.12em] uppercase flex items-center justify-center gap-1.5 border transition-all duration-200',
                     cartAdded[product.id]
                       ? 'bg-emerald-900/30 border-emerald-700/40 text-emerald-400'
-                      : 'border-[#1e1e1e] text-[#555550] hover:border-[#c9a96e44] hover:text-[#c9a96e] hover:bg-[#c9a96e08]',
+                      : 'border-border-subtle text-text-muted hover:border-[var(--accent)44] hover:text-accent hover:bg-[var(--accent)08]',
                   ]"
                 >
                   <svg v-if="cartAdded[product.id]" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -845,7 +845,7 @@ async function quickToggleWishlist(event, product) {
             </button>
 
             <button v-if="pageWindow[0] > 1" @click="goPage(1)" class="page-btn">1</button>
-            <span v-if="pageWindow[0] > 2" class="text-[#2a2a28] text-xs px-1 select-none">…</span>
+            <span v-if="pageWindow[0] > 2" class="text-text-disabled text-xs px-1 select-none">…</span>
 
             <button
               v-for="p in pageWindow"
@@ -854,7 +854,7 @@ async function quickToggleWishlist(event, product) {
               :class="['page-btn', p === filters.page && 'page-btn--active']"
             >{{ p }}</button>
 
-            <span v-if="pageWindow[pageWindow.length - 1] < totalPages - 1" class="text-[#2a2a28] text-xs px-1 select-none">…</span>
+            <span v-if="pageWindow[pageWindow.length - 1] < totalPages - 1" class="text-text-disabled text-xs px-1 select-none">…</span>
             <button v-if="pageWindow[pageWindow.length - 1] < totalPages" @click="goPage(totalPages)" class="page-btn">{{ totalPages }}</button>
 
             <button @click="goPage(filters.page + 1)" :disabled="filters.page === totalPages" class="page-btn" aria-label="Siguiente">
@@ -871,7 +871,7 @@ async function quickToggleWishlist(event, product) {
       <section v-if="tab === 'auctions'" class="w-full">
 
         <!-- Filtro de subastas -->
-        <div class="border-b border-[#1a1a1a] bg-[#0c0c0c] sticky top-[57px] z-40">
+        <div class="border-b border-border-subtle bg-surface-sunken sticky top-[57px] z-40">
           <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-3">
             <div class="flex flex-wrap items-center gap-2.5">
               <div class="relative">
@@ -886,7 +886,7 @@ async function quickToggleWishlist(event, product) {
                   <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
-              <span class="ml-auto text-[10px] tracking-[0.18em] uppercase text-[#383835] hidden sm:block whitespace-nowrap">
+              <span class="ml-auto text-[10px] tracking-[0.18em] uppercase text-text-disabled hidden sm:block whitespace-nowrap">
                 {{ auctionTotal }} subasta{{ auctionTotal !== 1 ? 's' : '' }}
               </span>
             </div>
@@ -917,12 +917,12 @@ async function quickToggleWishlist(event, product) {
           </div>
 
           <!-- Sin subastas -->
-          <div v-else-if="!auctions.length" class="flex flex-col items-center py-24 border border-[#141414]">
-            <svg class="w-10 h-10 text-[#252520] mb-5" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+          <div v-else-if="!auctions.length" class="flex flex-col items-center py-24 border border-[var(--surface-overlay)]">
+            <svg class="w-10 h-10 text-text-disabled mb-5" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
               <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <p class="font-display text-2xl font-light text-[#444440] mb-2">Sin subastas activas</p>
-            <p class="text-[#333330] text-xs tracking-widest uppercase">Esta tienda no tiene subastas en curso</p>
+            <p class="font-display text-2xl font-light text-text-disabled mb-2">Sin subastas activas</p>
+            <p class="text-text-disabled text-xs tracking-widest uppercase">Esta tienda no tiene subastas en curso</p>
           </div>
 
           <!-- Grid subastas -->
@@ -933,19 +933,19 @@ async function quickToggleWishlist(event, product) {
               class="card-dark group flex flex-col overflow-hidden"
             >
               <!-- Imagen -->
-              <div class="relative h-44 bg-[#0f0f0f] overflow-hidden shrink-0">
+              <div class="relative h-44 bg-surface-raised overflow-hidden shrink-0">
                 <img
                   v-if="auctionImageUrl(auction)"
                   :src="auctionImageUrl(auction)"
                   :alt="auction.title"
-                  class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                  class="w-full h-full object-cover object-top"
                 />
                 <div
                   v-else
                   class="w-full h-full flex items-center justify-center"
-                  style="background:linear-gradient(135deg,#111111 0%,#14110d 100%);"
+                  style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
                 >
-                  <svg class="w-10 h-10 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                  <svg class="w-10 h-10 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                     <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </div>
@@ -966,12 +966,12 @@ async function quickToggleWishlist(event, product) {
                       </template>
                     </span>
                   </div>
-                  <span v-else class="text-[11px] uppercase tracking-wider text-[#555550]">Finalizada</span>
+                  <span v-else class="text-[11px] uppercase tracking-wider text-text-muted">Finalizada</span>
                 </div>
 
                 <!-- Pujas -->
                 <div v-if="auction.bids_count > 0" class="absolute top-3 left-3">
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] tracking-wide uppercase bg-black/70 border border-[#222] text-[#c9a96e]">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] tracking-wide uppercase bg-black/70 border border-border-default text-accent">
                     {{ auction.bids_count }} puja{{ auction.bids_count !== 1 ? 's' : '' }}
                   </span>
                 </div>
@@ -979,21 +979,21 @@ async function quickToggleWishlist(event, product) {
 
               <!-- Cuerpo -->
               <div class="p-4 flex flex-col gap-2 flex-1">
-                <h3 class="text-sm font-medium text-[#e8e4de] leading-snug line-clamp-2 group-hover:text-[#c9a96e] transition-colors duration-200">
+                <h3 class="text-sm font-medium text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-200">
                   {{ auction.title }}
                 </h3>
-                <div class="mt-auto pt-3 border-t border-[#141414] flex items-end justify-between gap-2">
+                <div class="mt-auto pt-3 border-t border-[var(--surface-overlay)] flex items-end justify-between gap-2">
                   <div>
-                    <p class="text-[9px] tracking-widest uppercase text-[#444440] mb-0.5">
+                    <p class="text-[9px] tracking-widest uppercase text-text-disabled mb-0.5">
                       {{ auction.bids_count > 0 ? 'Oferta actual' : 'Precio base' }}
                     </p>
-                    <p class="text-xl font-semibold text-[#c9a96e] tabular-nums">
+                    <p class="text-xl font-semibold text-accent tabular-nums">
                       ${{ Number(auction.current_price || auction.start_price || 0).toLocaleString('es-CL') }}
                     </p>
                   </div>
                   <div v-if="auction.buy_now_price" class="text-right">
-                    <p class="text-[9px] tracking-widest uppercase text-[#444440] mb-0.5">Cómpralo ya</p>
-                    <p class="text-sm text-[#8a8580] tabular-nums">${{ Number(auction.buy_now_price).toLocaleString('es-CL') }}</p>
+                    <p class="text-[9px] tracking-widest uppercase text-text-disabled mb-0.5">Cómpralo ya</p>
+                    <p class="text-sm text-text-muted tabular-nums">${{ Number(auction.buy_now_price).toLocaleString('es-CL') }}</p>
                   </div>
                 </div>
               </div>
@@ -1024,23 +1024,23 @@ async function quickToggleWishlist(event, product) {
         <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8">
 
           <!-- Resumen rating -->
-          <div v-if="store?.reviews_count > 0" class="flex items-center gap-4 mb-8 p-5 border border-[#1a1a1a] bg-[#0c0c0c]">
+          <div v-if="store?.reviews_count > 0" class="flex items-center gap-4 mb-8 p-5 border border-border-subtle bg-surface-sunken">
             <div class="text-center shrink-0">
-              <p class="font-display text-4xl font-light text-[#c9a96e]">{{ Number(store.rating || 0).toFixed(1) }}</p>
+              <p class="font-display text-4xl font-light text-accent">{{ Number(store.rating || 0).toFixed(1) }}</p>
               <div class="flex items-center justify-center gap-0.5 mt-1 mb-1">
-                <svg v-for="i in 5" :key="i" class="w-3.5 h-3.5" :class="i <= Math.round(store.rating) ? 'text-[#c9a96e]' : 'text-[#2a2520]'" fill="currentColor" viewBox="0 0 24 24">
+                <svg v-for="i in 5" :key="i" class="w-3.5 h-3.5" :class="i <= Math.round(store.rating) ? 'text-accent' : 'text-text-disabled'" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                 </svg>
               </div>
-              <p class="text-[10px] text-[#555550]">{{ store.reviews_count }} reseñas</p>
+              <p class="text-[10px] text-text-muted">{{ store.reviews_count }} reseñas</p>
             </div>
-            <div class="w-px h-12 bg-[#1e1e1e] shrink-0" />
-            <p class="text-[12px] text-[#7a7570]">Calificación promedio basada en todas las reseñas de productos de esta tienda.</p>
+            <div class="w-px h-12 bg-[var(--border-subtle)] shrink-0" />
+            <p class="text-[12px] text-text-muted">Calificación promedio basada en todas las reseñas de productos de esta tienda.</p>
           </div>
 
           <!-- Loading -->
           <div v-if="storeReviewsLoad" class="flex flex-col gap-4">
-            <div v-for="i in 3" :key="i" class="border border-[#1a1a1a] bg-[#0c0c0c] p-5 flex flex-col gap-2">
+            <div v-for="i in 3" :key="i" class="border border-border-subtle bg-surface-sunken p-5 flex flex-col gap-2">
               <div class="skeleton h-3 w-32" />
               <div class="skeleton h-3 w-full" />
               <div class="skeleton h-3 w-3/4" />
@@ -1049,19 +1049,19 @@ async function quickToggleWishlist(event, product) {
 
           <!-- Error -->
           <div v-else-if="storeReviewsErr" class="flex flex-col items-center py-16 gap-3">
-            <p class="text-[#555550] text-sm">{{ storeReviewsErr }}</p>
-            <button @click="loadStoreReviews(1)" class="h-8 px-4 text-[10px] tracking-[0.15em] uppercase border border-[#1e1e1e] text-[#555] hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors">
+            <p class="text-text-muted text-sm">{{ storeReviewsErr }}</p>
+            <button @click="loadStoreReviews(1)" class="h-8 px-4 text-[10px] tracking-[0.15em] uppercase border border-border-subtle text-text-muted hover:border-[var(--accent)44] hover:text-accent transition-colors">
               Reintentar
             </button>
           </div>
 
           <!-- Sin reseñas -->
           <div v-else-if="storeReviews.length === 0" class="flex flex-col items-center py-20 gap-3">
-            <svg class="w-12 h-12 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+            <svg class="w-12 h-12 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
               <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <p class="font-display text-lg font-light text-[#2a2520]">Sin reseñas aún</p>
-            <p class="text-[10px] tracking-widest uppercase text-[#252520]">Esta tienda todavía no tiene reseñas</p>
+            <p class="font-display text-lg font-light text-text-disabled">Sin reseñas aún</p>
+            <p class="text-[10px] tracking-widest uppercase text-text-disabled">Esta tienda todavía no tiene reseñas</p>
           </div>
 
           <!-- Lista de reseñas -->
@@ -1069,18 +1069,18 @@ async function quickToggleWishlist(event, product) {
             <div
               v-for="rev in storeReviews"
               :key="rev.id"
-              class="border border-[#1a1a1a] bg-[#0c0c0c] p-5"
+              class="border border-border-subtle bg-surface-sunken p-5"
             >
               <div class="flex items-start justify-between gap-3 mb-3">
                 <div class="flex items-center gap-3">
                   <!-- Avatar -->
-                  <div class="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#222] flex items-center justify-center shrink-0">
-                    <span class="text-[11px] text-[#555550] font-medium uppercase">{{ reviewerName(rev).charAt(0) }}</span>
+                  <div class="w-8 h-8 rounded-full bg-surface-overlay border border-border-default flex items-center justify-center shrink-0">
+                    <span class="text-[11px] text-text-muted font-medium uppercase">{{ reviewerName(rev).charAt(0) }}</span>
                   </div>
                   <div>
-                    <p class="text-[12px] text-[#888880]">{{ reviewerName(rev) }}</p>
+                    <p class="text-[12px] text-text-muted">{{ reviewerName(rev) }}</p>
                     <div class="flex items-center gap-0.5 mt-0.5">
-                      <svg v-for="i in 5" :key="i" class="w-3 h-3" :class="i <= rev.rating ? 'text-[#c9a96e]' : 'text-[#2a2520]'" fill="currentColor" viewBox="0 0 24 24">
+                      <svg v-for="i in 5" :key="i" class="w-3 h-3" :class="i <= rev.rating ? 'text-accent' : 'text-text-disabled'" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                       </svg>
                     </div>
@@ -1091,7 +1091,7 @@ async function quickToggleWishlist(event, product) {
                   <RouterLink
                     v-if="rev.expand?.product"
                     :to="`/products/${rev.expand.product.id}`"
-                    class="text-[10px] text-[#555550] hover:text-[#c9a96e] transition-colors truncate max-w-[140px] border-b border-dashed border-[#2a2a2a] hover:border-[#c9a96e44]"
+                    class="text-[10px] text-text-muted hover:text-accent transition-colors truncate max-w-[140px] border-b border-dashed border-border-default hover:border-[var(--accent)44]"
                   >
                     {{ rev.expand.product.name }}
                   </RouterLink>
@@ -1099,11 +1099,11 @@ async function quickToggleWishlist(event, product) {
                     <svg class="w-2 h-2" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Verificada
                   </span>
-                  <span class="text-[9px] text-[#3a3835]">{{ fmtDateReview(rev.created) }}</span>
+                  <span class="text-[9px] text-text-disabled">{{ fmtDateReview(rev.created) }}</span>
                 </div>
               </div>
-              <p v-if="rev.title" class="text-[13px] text-[#c8c4be] font-medium mb-1.5">{{ rev.title }}</p>
-              <p v-if="rev.comment" class="text-[12px] text-[#7a7570] leading-relaxed">{{ rev.comment }}</p>
+              <p v-if="rev.title" class="text-[13px] text-text-secondary font-medium mb-1.5">{{ rev.title }}</p>
+              <p v-if="rev.comment" class="text-[12px] text-text-muted leading-relaxed">{{ rev.comment }}</p>
             </div>
 
             <!-- Paginación reseñas -->
@@ -1128,7 +1128,7 @@ async function quickToggleWishlist(event, product) {
 
 <style scoped>
 .store-shell {
-  background: linear-gradient(180deg, #090909 0%, #0a0a0a 100%);
+  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 100%);
   flex: 1;
   width: 100%;
   overflow-x: hidden;
@@ -1137,9 +1137,9 @@ async function quickToggleWishlist(event, product) {
 .filter-select {
   appearance: none;
   -webkit-appearance: none;
-  background-color: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  color: #f0ede8;
+  background-color: var(--surface-base);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   padding: 0 2.25rem 0 0.75rem;
   height: 2.25rem;
@@ -1149,8 +1149,8 @@ async function quickToggleWishlist(event, product) {
   white-space: nowrap;
   min-width: 11rem;
 }
-.filter-select:focus { border-color: #c9a96e; }
-.filter-select option { background-color: #111111; color: #f0ede8; }
+.filter-select:focus { border-color: var(--accent); }
+.filter-select option { background-color: var(--surface-raised); color: var(--text-primary); }
 
 .select-chevron {
   position: absolute;
@@ -1159,7 +1159,7 @@ async function quickToggleWishlist(event, product) {
   transform: translateY(-50%);
   width: 0.875rem;
   height: 0.875rem;
-  color: #444440;
+  color: var(--text-disabled);
   pointer-events: none;
 }
 
@@ -1172,13 +1172,13 @@ async function quickToggleWishlist(event, product) {
   padding: 0 0.4rem;
   font-size: 0.7rem;
   letter-spacing: 0.06em;
-  color: #555550;
-  border: 1px solid #1e1e1e;
-  background: #101010;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
-.page-btn:hover:not(:disabled) { border-color: #c9a96e44; color: #c9a96e; }
+.page-btn:hover:not(:disabled) { border-color: var(--accent)44; color: var(--accent); }
 .page-btn:disabled { opacity: 0.25; cursor: not-allowed; }
-.page-btn--active { border-color: #c9a96e !important; color: #c9a96e !important; background: #14110d; }
+.page-btn--active { border-color: var(--accent) !important; color: var(--accent) !important; background: var(--accent-soft); }
 </style>

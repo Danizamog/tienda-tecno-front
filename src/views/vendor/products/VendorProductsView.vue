@@ -369,7 +369,7 @@ const STATUS_COLORS = {
   sold:        'text-blue-400 border-blue-900/50 bg-blue-950/40',
   out_of_stock:'text-orange-400 border-orange-900/50 bg-orange-950/40',
   reserved:    'text-purple-400 border-purple-900/50 bg-purple-950/40',
-  archived:    'text-[#555] border-[#333] bg-[#111]',
+  archived:    'text-text-muted border-border-default bg-surface-raised',
 }
 
 function money(v) {
@@ -383,8 +383,8 @@ function money(v) {
     <!-- Encabezado -->
     <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
       <div class="flex-1">
-        <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-0.5">Vendedor</p>
-        <h1 class="text-xl lg:text-2xl font-light tracking-wide text-[#e8e5e0]">Productos</h1>
+        <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-0.5">Vendedor</p>
+        <h1 class="text-xl lg:text-2xl font-light tracking-wide text-text-primary">Productos</h1>
       </div>
       <button class="btn-primary shrink-0" @click="openCreate">
         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -406,30 +406,30 @@ function money(v) {
         <option value="">Todos los estados</option>
         <option v-for="(label, val) in STATUS_LABELS" :key="val" :value="val">{{ label }}</option>
       </select>
-      <span class="text-[11px] text-[#555] self-center">{{ totalItems }} productos</span>
+      <span class="text-[11px] text-text-muted self-center">{{ totalItems }} productos</span>
     </div>
 
     <!-- Error -->
     <div v-if="error" class="mb-4 px-4 py-3 bg-red-950/40 border border-red-900/50 text-red-400 text-sm rounded-sm">{{ error }}</div>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex items-center justify-center py-20 text-[#555] text-sm">Cargando...</div>
+    <div v-if="loading" class="flex items-center justify-center py-20 text-text-muted text-sm">Cargando...</div>
 
     <!-- Vacío -->
     <div v-else-if="!products.length" class="panel flex items-center justify-center py-20">
       <div class="text-center">
-        <svg class="w-10 h-10 text-[#2a2a2a] mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+        <svg class="w-10 h-10 text-text-disabled mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
           <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
         </svg>
-        <p class="text-[#555] text-sm">No hay productos. ¡Crea el primero!</p>
+        <p class="text-text-muted text-sm">No hay productos. ¡Crea el primero!</p>
       </div>
     </div>
 
     <!-- Tabla/Grid de productos -->
-    <div v-else class="overflow-x-auto rounded-sm border border-[#181818]">
+    <div v-else class="overflow-x-auto rounded-sm border border-[var(--surface-overlay)]">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-[#181818] bg-[#0c0c0c]">
+          <tr class="border-b border-[var(--surface-overlay)] bg-surface-sunken">
             <th class="th">Producto</th>
             <th class="th hidden sm:table-cell">Precio</th>
             <th class="th hidden md:table-cell">Stock</th>
@@ -442,13 +442,13 @@ function money(v) {
           <tr
             v-for="product in products"
             :key="product.id"
-            class="border-b border-[#111] bg-[#080808] hover:bg-[#0c0c0c] transition-colors cursor-pointer"
+            class="border-b border-border-subtle bg-surface-base hover:bg-surface-sunken transition-colors cursor-pointer"
             @click="openEdit(product)"
           >
             <!-- Nombre + imagen -->
             <td class="td">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-sm border border-[#1a1a1a] bg-[#111] overflow-hidden shrink-0">
+                <div class="w-10 h-10 rounded-sm border border-border-subtle bg-surface-raised overflow-hidden shrink-0">
                   <img
                     v-if="firstImage(product)"
                     :src="imgUrl(product, firstImage(product))"
@@ -456,22 +456,22 @@ function money(v) {
                     class="w-full h-full object-cover"
                   />
                   <div v-else class="w-full h-full flex items-center justify-center">
-                    <svg class="w-4 h-4 text-[#333]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <svg class="w-4 h-4 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-[#e8e5e0] text-[13px] truncate max-w-40">{{ product.name }}</p>
-                  <p v-if="product.discount_percent" class="text-[10px] text-[#8ab4a0]">-{{ product.discount_percent }}%</p>
+                  <p class="text-text-primary text-[13px] truncate max-w-40">{{ product.name }}</p>
+                  <p v-if="product.discount_percent" class="text-[10px] text-vendor">-{{ product.discount_percent }}%</p>
                 </div>
               </div>
             </td>
             <!-- Precio -->
-            <td class="td hidden sm:table-cell text-[#c9a96e]">Bs {{ money(product.price) }}</td>
+            <td class="td hidden sm:table-cell text-accent">Bs {{ money(product.price) }}</td>
             <!-- Stock -->
             <td class="td hidden md:table-cell">
-              <span :class="product.stock === 0 ? 'text-red-400' : 'text-[#d8d5cf]'">{{ product.stock }}</span>
+              <span :class="product.stock === 0 ? 'text-red-400' : 'text-text-secondary'">{{ product.stock }}</span>
             </td>
             <!-- Estado -->
             <td class="td hidden sm:table-cell">
@@ -480,7 +480,7 @@ function money(v) {
               </span>
             </td>
             <!-- Condición -->
-            <td class="td hidden lg:table-cell text-[#666] capitalize">{{ product.condition }}</td>
+            <td class="td hidden lg:table-cell text-text-muted capitalize">{{ product.condition }}</td>
             <!-- Acciones -->
             <td class="td text-right" @click.stop>
               <div class="flex items-center justify-end gap-1 flex-wrap">
@@ -510,7 +510,7 @@ function money(v) {
     <!-- Paginación -->
     <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-5">
       <button class="page-btn" :disabled="page <= 1" @click="page--">←</button>
-      <span class="text-[11px] text-[#555]">{{ page }} / {{ totalPages }}</span>
+      <span class="text-[11px] text-text-muted">{{ page }} / {{ totalPages }}</span>
       <button class="page-btn" :disabled="page >= totalPages" @click="page++">→</button>
     </div>
 
@@ -520,7 +520,7 @@ function money(v) {
         <div class="modal-box w-full max-w-2xl my-auto">
 
           <div class="flex items-center justify-between mb-5">
-            <h2 class="text-[15px] font-medium text-[#e8e5e0]">
+            <h2 class="text-[15px] font-medium text-text-primary">
               {{ modalMode === 'create' ? 'Nuevo producto' : 'Editar producto' }}
             </h2>
             <button class="icon-btn" @click="showModal = false">
@@ -590,14 +590,14 @@ function money(v) {
 
             <!-- Destacado -->
             <div class="flex items-center gap-3">
-              <input id="featured" v-model="form.featured" type="checkbox" class="w-4 h-4 accent-[#8ab4a0]" />
+              <input id="featured" v-model="form.featured" type="checkbox" class="w-4 h-4 accent-[var(--vendor)]" />
               <label for="featured" class="form-label mb-0 cursor-pointer">Producto destacado</label>
             </div>
 
             <template v-if="modalMode === 'edit'">
               <div class="sm:col-span-2 discount-panel">
                 <div class="flex items-center justify-between mb-3">
-                  <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Descuento</p>
+                  <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Descuento</p>
                   <div class="flex items-center gap-1.5">
                     <button type="button" class="mini-chip" @click="form.discount_percent = '10'">10%</button>
                     <button type="button" class="mini-chip" @click="form.discount_percent = '15'">15%</button>
@@ -638,8 +638,8 @@ function money(v) {
                 <div v-else class="discount-panel discount-panel--create">
                   <button type="button" class="discount-panel-head" @click="toggleCreateDiscountPanel">
                     <div>
-                      <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Descuento</p>
-                      <p class="text-[11px] text-[#666] mt-1">Opcional al crear</p>
+                      <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Descuento</p>
+                      <p class="text-[11px] text-text-muted mt-1">Opcional al crear</p>
                     </div>
                     <span class="discount-panel-pill">
                       {{ hasCreateDiscountValues() ? 'Bloqueado' : (createDiscountOpen ? 'Ocultar' : 'Mostrar') }}
@@ -681,7 +681,7 @@ function money(v) {
                 <div
                   v-for="(img, idx) in existingImages"
                   :key="img"
-                  class="relative w-16 h-16 rounded-sm border border-[#222] overflow-hidden group"
+                  class="relative w-16 h-16 rounded-sm border border-border-default overflow-hidden group"
                 >
                   <img :src="imgUrl({ id: editingId }, img)" class="w-full h-full object-cover" />
                   <button
@@ -701,20 +701,20 @@ function money(v) {
             <div class="sm:col-span-2">
               <label class="form-label">
                 {{ modalMode === 'edit' ? 'Añadir imágenes' : 'Imágenes' }}
-                <span class="text-[#555]"> (máx. {{ Math.max(0, 8 - existingImages.length - newImages.length) }} más)</span>
+                <span class="text-text-muted"> (máx. {{ Math.max(0, 8 - existingImages.length - newImages.length) }} más)</span>
               </label>
               <input
                 type="file"
                 multiple
                 accept="image/jpeg,image/png,image/webp"
-                class="input-field w-full text-[#888] file:mr-3 file:py-1 file:px-3 file:rounded-sm file:border-0 file:bg-[#161616] file:text-[#999] file:text-xs"
+                class="input-field w-full text-text-muted file:mr-3 file:py-1 file:px-3 file:rounded-sm file:border-0 file:bg-surface-overlay file:text-text-muted file:text-xs"
                 @change="onFileChange"
               />
               <div v-if="newImagePreviews.length" class="flex flex-wrap gap-2 mt-2">
                 <div
                   v-for="(url, idx) in newImagePreviews"
                   :key="url"
-                  class="relative w-24 h-24 rounded-sm border border-[#222] overflow-hidden group"
+                  class="relative w-24 h-24 rounded-sm border border-border-default overflow-hidden group"
                 >
                   <img :src="url" class="w-full h-full object-cover" />
                   <button
@@ -731,7 +731,7 @@ function money(v) {
           </div>
 
           <!-- Botones -->
-          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#181818]">
+          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[var(--surface-overlay)]">
             <button class="btn-ghost" :disabled="saving" @click="showModal = false">Cancelar</button>
             <button class="btn-primary" :disabled="saving" @click="save">
               {{ saving ? 'Guardando...' : (modalMode === 'create' ? 'Crear producto' : 'Guardar cambios') }}
@@ -746,7 +746,7 @@ function money(v) {
       <div v-if="showRestockModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
         <div class="modal-box w-full max-w-sm">
           <div class="flex items-center justify-between mb-5">
-            <h2 class="text-[15px] font-medium text-[#e8e5e0]">Reponer stock</h2>
+            <h2 class="text-[15px] font-medium text-text-primary">Reponer stock</h2>
             <button class="icon-btn" :disabled="restockSaving" @click="closeRestockModal">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -754,8 +754,8 @@ function money(v) {
             </button>
           </div>
 
-          <p class="text-[13px] text-[#aaa] mb-1 truncate">{{ restockProduct?.name }}</p>
-          <p class="text-[11px] text-[#555] mb-4">Ingresa la nueva cantidad disponible para volver a activarlo.</p>
+          <p class="text-[13px] text-text-secondary mb-1 truncate">{{ restockProduct?.name }}</p>
+          <p class="text-[11px] text-text-muted mb-4">Ingresa la nueva cantidad disponible para volver a activarlo.</p>
 
           <div v-if="restockError" class="mb-4 px-3 py-2 bg-red-950/40 border border-red-900/50 text-red-400 text-xs rounded-sm">{{ restockError }}</div>
 
@@ -764,7 +764,7 @@ function money(v) {
             <input v-model="restockQuantity" type="number" min="1" step="1" class="input-field w-full" placeholder="1" />
           </div>
 
-          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#181818]">
+          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[var(--surface-overlay)]">
             <button class="btn-ghost" :disabled="restockSaving" @click="closeRestockModal">Cancelar</button>
             <button class="btn-primary" :disabled="restockSaving" @click="confirmRestock">
               {{ restockSaving ? 'Reponiendo...' : 'Confirmar' }}
@@ -778,8 +778,8 @@ function money(v) {
     <Transition name="modal">
       <div v-if="confirmId" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
         <div class="modal-box w-full max-w-sm text-center">
-          <p class="text-[#e8e5e0] text-[14px] mb-2">¿Eliminar este producto?</p>
-          <p class="text-[#666] text-xs mb-6">Esta acción no se puede deshacer.</p>
+          <p class="text-text-primary text-[14px] mb-2">¿Eliminar este producto?</p>
+          <p class="text-text-muted text-xs mb-6">Esta acción no se puede deshacer.</p>
           <div class="flex gap-3 justify-center">
             <button class="btn-ghost" :disabled="deleting" @click="confirmId = null">Cancelar</button>
             <button class="btn-danger" :disabled="deleting" @click="doDelete">
@@ -794,40 +794,40 @@ function money(v) {
 </template>
 
 <style scoped>
-.panel { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 1rem; }
-.th { padding: 0.65rem 0.9rem; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: #3a3a38; text-align: left; }
+.panel { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 1rem; }
+.th { padding: 0.65rem 0.9rem; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--border-strong); text-align: left; }
 .td { padding: 0.7rem 0.9rem; }
 .status-badge { font-size: 0.625rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 2px; border-width: 1px; border-style: solid; }
-.icon-btn { padding: 0.3rem; border-radius: 2px; color: #555; transition: color 0.15s, background 0.15s; }
-.icon-btn:hover { color: #d8d5cf; background: #111; }
-.action-btn { padding: 0.25rem 0.6rem; font-size: 0.68rem; letter-spacing: 0.08em; border-radius: 2px; border: 1px solid #222; color: #666; background: transparent; transition: all 0.15s; white-space: nowrap; }
-.action-btn:hover:not(:disabled) { border-color: #333; color: #aaa; background: #111; }
+.icon-btn { padding: 0.3rem; border-radius: 2px; color: var(--text-muted); transition: color 0.15s, background 0.15s; }
+.icon-btn:hover { color: var(--text-secondary); background: var(--surface-raised); }
+.action-btn { padding: 0.25rem 0.6rem; font-size: 0.68rem; letter-spacing: 0.08em; border-radius: 2px; border: 1px solid var(--border-default); color: var(--text-muted); background: transparent; transition: all 0.15s; white-space: nowrap; }
+.action-btn:hover:not(:disabled) { border-color: var(--text-disabled); color: var(--text-secondary); background: var(--surface-raised); }
 .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .action-btn-fixed { width: 78px; text-align: center; }
-.discount-panel { border: 1px solid #1e2e28; background: #0d110f; border-radius: 3px; overflow: hidden; }
+.discount-panel { border: 1px solid var(--vendor-soft); background: var(--vendor-soft); border-radius: 3px; overflow: hidden; }
 .discount-panel--create { padding: 0; }
 .discount-panel-head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.8rem; text-align: left; }
-.discount-panel-body { padding: 0.8rem; border-top: 1px solid #1e2e28; }
-.discount-panel-pill { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #8ab4a0; border: 1px solid #1e2e28; background: #0a0f0c; border-radius: 999px; padding: 0.22rem 0.55rem; white-space: nowrap; }
-.discount-show-btn { width: 100%; padding: 0.85rem 1rem; border: 1px dashed #1e2e28; border-radius: 3px; background: #0d110f; color: #8ab4a0; text-align: left; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
-.mini-chip { border: 1px solid #2a2a2a; background: #111; color: #777; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; padding: 0.18rem 0.5rem; transition: all 0.15s; }
-.mini-chip:hover { border-color: #8ab4a044; color: #8ab4a0; }
-.input-field { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 2px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: #d8d5cf; outline: none; transition: border-color 0.15s; }
-.input-field:focus { border-color: #8ab4a044; }
-.form-label { display: block; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #555; margin-bottom: 0.4rem; }
-.btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #8ab4a022; border: 1px solid #8ab4a044; border-radius: 2px; color: #8ab4a0; font-size: 0.75rem; letter-spacing: 0.08em; transition: all 0.15s; }
-.btn-primary:hover:not(:disabled) { background: #8ab4a033; border-color: #8ab4a066; }
+.discount-panel-body { padding: 0.8rem; border-top: 1px solid var(--vendor-soft); }
+.discount-panel-pill { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--vendor); border: 1px solid var(--vendor-soft); background: var(--vendor-soft); border-radius: 999px; padding: 0.22rem 0.55rem; white-space: nowrap; }
+.discount-show-btn { width: 100%; padding: 0.85rem 1rem; border: 1px dashed var(--vendor-soft); border-radius: 3px; background: var(--vendor-soft); color: var(--vendor); text-align: left; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.mini-chip { border: 1px solid var(--border-default); background: var(--surface-raised); color: var(--text-muted); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; padding: 0.18rem 0.5rem; transition: all 0.15s; }
+.mini-chip:hover { border-color: var(--vendor)44; color: var(--vendor); }
+.input-field { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 2px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: var(--text-secondary); outline: none; transition: border-color 0.15s; }
+.input-field:focus { border-color: var(--vendor)44; }
+.form-label { display: block; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+.btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--vendor)22; border: 1px solid var(--vendor)44; border-radius: 2px; color: var(--vendor); font-size: 0.75rem; letter-spacing: 0.08em; transition: all 0.15s; }
+.btn-primary:hover:not(:disabled) { background: var(--vendor)33; border-color: var(--vendor)66; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-ghost { padding: 0.5rem 1rem; background: transparent; border: 1px solid #222; border-radius: 2px; color: #666; font-size: 0.75rem; transition: all 0.15s; }
-.btn-ghost:hover:not(:disabled) { border-color: #333; color: #aaa; }
+.btn-ghost { padding: 0.5rem 1rem; background: transparent; border: 1px solid var(--border-default); border-radius: 2px; color: var(--text-muted); font-size: 0.75rem; transition: all 0.15s; }
+.btn-ghost:hover:not(:disabled) { border-color: var(--text-disabled); color: var(--text-secondary); }
 .btn-ghost:disabled { opacity: 0.5; }
-.btn-danger { padding: 0.5rem 1rem; background: #7f1d1d33; border: 1px solid #991b1b55; border-radius: 2px; color: #f87171; font-size: 0.75rem; transition: all 0.15s; }
-.btn-danger:hover:not(:disabled) { background: #7f1d1d55; }
+.btn-danger { padding: 0.5rem 1rem; background: var(--danger-soft)33; border: 1px solid var(--danger)55; border-radius: 2px; color: var(--danger); font-size: 0.75rem; transition: all 0.15s; }
+.btn-danger:hover:not(:disabled) { background: var(--danger-soft)55; }
 .btn-danger:disabled { opacity: 0.5; }
-.page-btn { padding: 0.3rem 0.7rem; background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 2px; color: #666; font-size: 0.75rem; transition: all 0.15s; }
-.page-btn:hover:not(:disabled) { color: #aaa; border-color: #333; }
+.page-btn { padding: 0.3rem 0.7rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 2px; color: var(--text-muted); font-size: 0.75rem; transition: all 0.15s; }
+.page-btn:hover:not(:disabled) { color: var(--text-secondary); border-color: var(--text-disabled); }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.modal-box { background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 4px; padding: 1.5rem; }
+.modal-box { background: var(--surface-base); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1.5rem; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 </style>

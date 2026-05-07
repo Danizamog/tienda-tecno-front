@@ -419,26 +419,26 @@ onMounted(loadAddresses)
 <template>
   <AppNavbar />
 
-  <main class="min-h-screen bg-[#0b0b0b] text-[#ebe7df] pt-8 pb-16">
+  <main class="min-h-screen bg-surface-base text-[#ebe7df] pt-8 pb-16">
     <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
       <!-- Header -->
-      <header class="mb-6 border-b border-[#1a1a1a] pb-4">
-        <p class="text-[10px] tracking-[0.25em] uppercase text-[#c9a96e]">Perfil</p>
+      <header class="mb-6 border-b border-border-subtle pb-4">
+        <p class="text-[10px] tracking-[0.25em] uppercase text-accent">Perfil</p>
         <h1 class="text-2xl sm:text-3xl font-light mt-2">Mi cuenta</h1>
       </header>
 
       <!-- Tabs -->
-      <div class="flex gap-1 mb-8 border-b border-[#1a1a1a]">
+      <div class="flex gap-1 mb-8 border-b border-border-subtle">
         <button
           @click="activeTab = 'addresses'"
-          :class="['px-5 py-2.5 text-[11px] tracking-[0.15em] uppercase transition-colors border-b-2 -mb-px', activeTab === 'addresses' ? 'border-[#c9a96e] text-[#c9a96e]' : 'border-transparent text-[#6b6660] hover:text-[#a09a92]']"
+          :class="['px-5 py-2.5 text-[11px] tracking-[0.15em] uppercase transition-colors border-b-2 -mb-px', activeTab === 'addresses' ? 'border-accent text-accent' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]']"
         >
           Direcciones
         </button>
         <button
           @click="activeTab = 'reviews'; loadReviewsTab()"
-          :class="['px-5 py-2.5 text-[11px] tracking-[0.15em] uppercase transition-colors border-b-2 -mb-px', activeTab === 'reviews' ? 'border-[#c9a96e] text-[#c9a96e]' : 'border-transparent text-[#6b6660] hover:text-[#a09a92]']"
+          :class="['px-5 py-2.5 text-[11px] tracking-[0.15em] uppercase transition-colors border-b-2 -mb-px', activeTab === 'reviews' ? 'border-accent text-accent' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]']"
         >
           Resenas
         </button>
@@ -447,8 +447,8 @@ onMounted(loadAddresses)
       <!-- ── TAB: DIRECCIONES ─────────────────────────────────────────────────── -->
       <template v-if="activeTab === 'addresses'">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <article class="border border-[#1c1c1c] bg-[#0f0f0f] p-4 sm:p-5">
-            <h2 class="text-sm tracking-[0.16em] uppercase text-[#c9a96e] mb-4">Agregar direccion</h2>
+          <article class="border border-border-subtle bg-surface-raised p-4 sm:p-5">
+            <h2 class="text-sm tracking-[0.16em] uppercase text-accent mb-4">Agregar direccion</h2>
 
             <div class="space-y-3">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -467,9 +467,9 @@ onMounted(loadAddresses)
               <input v-model="form.state" type="text" placeholder="Estado/Provincia" class="field" />
               <input v-model="form.country" type="text" placeholder="Pais" class="field" />
               <GoogleMapPicker v-model="form.address" height-class="h-72" />
-              <p class="text-[11px] text-[#8f8a82]">Selecciona el punto de entrega directamente en el mapa.</p>
+              <p class="text-[11px] text-text-muted">Selecciona el punto de entrega directamente en el mapa.</p>
               <label class="inline-flex items-center gap-2 text-xs text-[#a8a39b]">
-                <input v-model="form.is_default" type="checkbox" class="accent-[#c9a96e]" />
+                <input v-model="form.is_default" type="checkbox" class="accent-[var(--accent)]" />
                 Guardar como direccion predeterminada
               </label>
               <button :disabled="saving" class="btn" @click="saveAddress">
@@ -478,17 +478,17 @@ onMounted(loadAddresses)
             </div>
           </article>
 
-          <article class="border border-[#1c1c1c] bg-[#0f0f0f] p-4 sm:p-5">
-            <h2 class="text-sm tracking-[0.16em] uppercase text-[#c9a96e] mb-4">Mis direcciones</h2>
+          <article class="border border-border-subtle bg-surface-raised p-4 sm:p-5">
+            <h2 class="text-sm tracking-[0.16em] uppercase text-accent mb-4">Mis direcciones</h2>
 
-            <p v-if="loading" class="text-sm text-[#8f8a82]">Cargando...</p>
+            <p v-if="loading" class="text-sm text-text-muted">Cargando...</p>
 
-            <div v-else-if="addresses.length === 0" class="text-sm text-[#8f8a82]">
+            <div v-else-if="addresses.length === 0" class="text-sm text-text-muted">
               Aun no tienes direcciones guardadas.
             </div>
 
             <div v-else class="space-y-3">
-              <div v-for="address in addresses" :key="address.id" class="border border-[#232323] p-3 bg-[#0b0b0b]">
+              <div v-for="address in addresses" :key="address.id" class="border border-[#232323] p-3 bg-surface-base">
                 <template v-if="editingId === address.id">
                   <div class="space-y-2">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -521,7 +521,7 @@ onMounted(loadAddresses)
                   <div>
                     <p class="text-sm text-[#efe9dc]">
                       {{ address.label || 'Direccion' }}
-                      <span v-if="address.is_default" class="ml-2 text-[10px] text-[#c9a96e]">Predeterminada</span>
+                      <span v-if="address.is_default" class="ml-2 text-[10px] text-accent">Predeterminada</span>
                     </p>
                     <p class="text-xs text-[#b9b3a9] mt-1">{{ address.recipient_name }}</p>
                     <p class="text-xs text-[#9a958d] mt-1">
@@ -553,19 +553,19 @@ onMounted(loadAddresses)
         <div class="flex gap-6 mb-6">
           <button
             @click="reviewSection = 'pending'"
-            :class="['text-[11px] tracking-[0.15em] uppercase pb-1 border-b transition-colors', reviewSection === 'pending' ? 'border-[#c9a96e] text-[#c9a96e]' : 'border-transparent text-[#555550] hover:text-[#888]']"
+            :class="['text-[11px] tracking-[0.15em] uppercase pb-1 border-b transition-colors', reviewSection === 'pending' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text-muted']"
           >
             Pendientes de resenar
-            <span v-if="pendingItems.length" class="ml-1.5 text-[9px] bg-[#c9a96e20] border border-[#c9a96e44] text-[#c9a96e] px-1.5 py-0.5">
+            <span v-if="pendingItems.length" class="ml-1.5 text-[9px] bg-[var(--accent)20] border border-[var(--accent)44] text-accent px-1.5 py-0.5">
               {{ pendingItems.length }}
             </span>
           </button>
           <button
             @click="reviewSection = 'written'"
-            :class="['text-[11px] tracking-[0.15em] uppercase pb-1 border-b transition-colors', reviewSection === 'written' ? 'border-[#c9a96e] text-[#c9a96e]' : 'border-transparent text-[#555550] hover:text-[#888]']"
+            :class="['text-[11px] tracking-[0.15em] uppercase pb-1 border-b transition-colors', reviewSection === 'written' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text-muted']"
           >
             Mis resenas
-            <span v-if="myReviewsTotal" class="ml-1.5 text-[9px] bg-[#1a1a1a] border border-[#222] text-[#888] px-1.5 py-0.5">
+            <span v-if="myReviewsTotal" class="ml-1.5 text-[9px] bg-surface-overlay border border-border-default text-text-muted px-1.5 py-0.5">
               {{ myReviewsTotal }}
             </span>
           </button>
@@ -573,26 +573,26 @@ onMounted(loadAddresses)
 
         <!-- ── Pendientes ─────────────────────────────────────────────────── -->
         <div v-if="reviewSection === 'pending'">
-          <p v-if="pendingLoading" class="text-sm text-[#555550]">Cargando pedidos entregados...</p>
+          <p v-if="pendingLoading" class="text-sm text-text-muted">Cargando pedidos entregados...</p>
 
           <p v-else-if="pendingError" class="text-sm text-red-400">{{ pendingError }}</p>
 
           <div v-else-if="pendingItems.length === 0" class="flex flex-col items-center py-16 gap-3 text-center">
-            <svg class="w-12 h-12 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+            <svg class="w-12 h-12 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <p class="text-[#3a3835] text-sm">Sin productos pendientes de resenar</p>
-            <p class="text-[10px] tracking-widest uppercase text-[#252520]">Todos tus productos entregados ya tienen resena</p>
+            <p class="text-text-disabled text-sm">Sin productos pendientes de resenar</p>
+            <p class="text-[10px] tracking-widest uppercase text-text-disabled">Todos tus productos entregados ya tienen resena</p>
           </div>
 
           <div v-else class="flex flex-col gap-3">
             <div
               v-for="pending in pendingItems"
               :key="pending.key"
-              class="flex items-center gap-4 border border-[#1a1a1a] bg-[#0c0c0c] p-4"
+              class="flex items-center gap-4 border border-border-subtle bg-surface-sunken p-4"
             >
               <!-- Imagen -->
-              <div class="w-14 h-14 shrink-0 bg-[#0f0f0f] border border-[#1a1a1a] overflow-hidden">
+              <div class="w-14 h-14 shrink-0 bg-surface-raised border border-border-subtle overflow-hidden">
                 <img
                   v-if="pending.item.expand?.product?.images?.length"
                   :src="productImgUrl(pending.productId, Array.isArray(pending.item.expand.product.images) ? pending.item.expand.product.images[0] : pending.item.expand.product.images)"
@@ -600,7 +600,7 @@ onMounted(loadAddresses)
                   class="w-full h-full object-cover"
                 />
                 <div v-else class="w-full h-full flex items-center justify-center">
-                  <svg class="w-5 h-5 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                  <svg class="w-5 h-5 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                     <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </div>
@@ -608,11 +608,11 @@ onMounted(loadAddresses)
 
               <!-- Info -->
               <div class="flex-1 min-w-0">
-                <p class="text-sm text-[#d8d4ce] truncate">{{ pending.item.expand?.product?.name || 'Producto' }}</p>
-                <p class="text-[10px] text-[#555550] mt-0.5">
+                <p class="text-sm text-text-secondary truncate">{{ pending.item.expand?.product?.name || 'Producto' }}</p>
+                <p class="text-[10px] text-text-muted mt-0.5">
                   Pedido #{{ pending.order.id?.slice(0, 8) }} · {{ fmtDate(pending.order.created) }}
                 </p>
-                <p class="text-[10px] text-[#3a3835] mt-0.5">
+                <p class="text-[10px] text-text-disabled mt-0.5">
                   {{ pending.order.expand?.store?.name || pending.order.store }}
                 </p>
               </div>
@@ -620,7 +620,7 @@ onMounted(loadAddresses)
               <!-- Accion -->
               <button
                 @click="openReviewModal(pending.order, pending.item, pending.productId, pending.key)"
-                class="shrink-0 inline-flex items-center gap-1.5 px-3 h-8 text-[10px] tracking-[0.12em] uppercase border border-[#c9a96e44] text-[#c9a96e] hover:bg-[#c9a96e15] transition-colors"
+                class="shrink-0 inline-flex items-center gap-1.5 px-3 h-8 text-[10px] tracking-[0.12em] uppercase border border-[var(--accent)44] text-accent hover:bg-[var(--accent)15] transition-colors"
               >
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -633,26 +633,26 @@ onMounted(loadAddresses)
 
         <!-- ── Mis resenas ─────────────────────────────────────────────────── -->
         <div v-if="reviewSection === 'written'">
-          <p v-if="reviewsLoading" class="text-sm text-[#555550]">Cargando tus resenas...</p>
+          <p v-if="reviewsLoading" class="text-sm text-text-muted">Cargando tus resenas...</p>
 
           <p v-else-if="reviewsError" class="text-sm text-red-400">{{ reviewsError }}</p>
 
           <div v-else-if="myReviews.length === 0" class="flex flex-col items-center py-16 gap-3 text-center">
-            <svg class="w-12 h-12 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+            <svg class="w-12 h-12 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
               <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <p class="text-[#3a3835] text-sm">Aun no has escrito ninguna resena</p>
+            <p class="text-text-disabled text-sm">Aun no has escrito ninguna resena</p>
           </div>
 
           <div v-else class="flex flex-col gap-3">
             <div
               v-for="review in myReviews"
               :key="review.id"
-              class="border border-[#1a1a1a] bg-[#0c0c0c] p-4"
+              class="border border-border-subtle bg-surface-sunken p-4"
             >
               <div class="flex items-start gap-4">
                 <!-- Imagen producto -->
-                <div class="w-12 h-12 shrink-0 bg-[#0f0f0f] border border-[#1a1a1a] overflow-hidden">
+                <div class="w-12 h-12 shrink-0 bg-surface-raised border border-border-subtle overflow-hidden">
                   <img
                     v-if="review.expand?.product?.images?.length"
                     :src="productImgUrl(review.product, Array.isArray(review.expand.product.images) ? review.expand.product.images[0] : review.expand.product.images)"
@@ -660,7 +660,7 @@ onMounted(loadAddresses)
                     class="w-full h-full object-cover"
                   />
                   <div v-else class="w-full h-full flex items-center justify-center">
-                    <svg class="w-4 h-4 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                       <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
@@ -669,8 +669,8 @@ onMounted(loadAddresses)
                 <!-- Contenido -->
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-3 flex-wrap">
-                    <p class="text-sm text-[#d8d4ce] truncate">{{ review.expand?.product?.name || 'Producto' }}</p>
-                    <span class="text-[10px] text-[#3a3835]">{{ fmtDate(review.created) }}</span>
+                    <p class="text-sm text-text-secondary truncate">{{ review.expand?.product?.name || 'Producto' }}</p>
+                    <span class="text-[10px] text-text-disabled">{{ fmtDate(review.created) }}</span>
                   </div>
 
                   <!-- Estrellas -->
@@ -679,22 +679,22 @@ onMounted(loadAddresses)
                       v-for="s in 5"
                       :key="s"
                       class="w-3.5 h-3.5"
-                      :class="s <= review.rating ? 'text-[#c9a96e]' : 'text-[#1e1b16]'"
+                      :class="s <= review.rating ? 'text-accent' : 'text-text-disabled'"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
                       <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                     </svg>
-                    <span class="ml-1.5 text-[10px] text-[#888880]">{{ starLabel(review.rating) }}</span>
+                    <span class="ml-1.5 text-[10px] text-text-muted">{{ starLabel(review.rating) }}</span>
                     <span v-if="review.verified_purchase" class="ml-2 text-[9px] text-teal-500/60 border border-teal-800/20 bg-teal-900/10 px-1.5 py-0.5">
                       Compra verificada
                     </span>
                   </div>
 
-                  <p v-if="review.title" class="text-xs text-[#c8c4be] font-medium mt-2">{{ review.title }}</p>
-                  <p v-if="review.comment" class="text-[11px] text-[#888880] mt-1 leading-relaxed">{{ review.comment }}</p>
+                  <p v-if="review.title" class="text-xs text-text-secondary font-medium mt-2">{{ review.title }}</p>
+                  <p v-if="review.comment" class="text-[11px] text-text-muted mt-1 leading-relaxed">{{ review.comment }}</p>
 
-                  <p v-if="review.expand?.store?.name" class="text-[10px] text-[#3a3835] mt-2">
+                  <p v-if="review.expand?.store?.name" class="text-[10px] text-text-disabled mt-2">
                     Tienda: {{ review.expand.store.name }}
                   </p>
                 </div>
@@ -702,7 +702,7 @@ onMounted(loadAddresses)
                 <!-- Eliminar -->
                 <button
                   @click="handleDeleteReview(review.id)"
-                  class="shrink-0 p-1.5 text-[#333330] hover:text-red-400 transition-colors"
+                  class="shrink-0 p-1.5 text-text-disabled hover:text-red-400 transition-colors"
                   title="Eliminar resena"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -728,14 +728,14 @@ onMounted(loadAddresses)
       >
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="closeReviewModal" />
 
-        <div class="relative w-full max-w-md bg-[#0d0d0d] border border-[#1e1e1e] overflow-hidden">
+        <div class="relative w-full max-w-md bg-surface-sunken border border-border-subtle overflow-hidden">
           <!-- Header modal -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-[#141414]">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--surface-overlay)]">
             <div>
-              <h2 class="text-sm font-medium text-[#d8d4ce]">Escribir resena</h2>
-              <p class="text-[10px] text-[#555550] mt-0.5 truncate max-w-70">{{ reviewModal.productName }}</p>
+              <h2 class="text-sm font-medium text-text-secondary">Escribir resena</h2>
+              <p class="text-[10px] text-text-muted mt-0.5 truncate max-w-70">{{ reviewModal.productName }}</p>
             </div>
-            <button @click="closeReviewModal" class="text-[#333330] hover:text-[#c9a96e] transition-colors p-1">
+            <button @click="closeReviewModal" class="text-text-disabled hover:text-accent transition-colors p-1">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -749,15 +749,15 @@ onMounted(loadAddresses)
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <p class="text-sm text-[#d8d4ce] font-medium">Resena enviada!</p>
-            <p class="text-[11px] text-[#555550]">Gracias por tu opinion</p>
+            <p class="text-sm text-text-secondary font-medium">Resena enviada!</p>
+            <p class="text-[11px] text-text-muted">Gracias por tu opinion</p>
           </div>
 
           <!-- Formulario -->
           <div v-else class="px-6 py-5 flex flex-col gap-5">
             <!-- Estrellas -->
             <div>
-              <p class="text-[10px] tracking-[0.15em] uppercase text-[#555550] mb-2">Puntuacion</p>
+              <p class="text-[10px] tracking-[0.15em] uppercase text-text-muted mb-2">Puntuacion</p>
               <div class="flex items-center gap-1">
                 <button
                   v-for="star in 5"
@@ -767,14 +767,14 @@ onMounted(loadAddresses)
                 >
                   <svg
                     class="w-7 h-7 transition-colors"
-                    :class="star <= reviewModal.rating ? 'text-[#c9a96e]' : 'text-[#2a2520]'"
+                    :class="star <= reviewModal.rating ? 'text-accent' : 'text-text-disabled'"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
                   </svg>
                 </button>
-                <span class="ml-2 text-[11px] text-[#555550]">
+                <span class="ml-2 text-[11px] text-text-muted">
                   {{ starLabel(reviewModal.rating) }}
                 </span>
               </div>
@@ -782,28 +782,28 @@ onMounted(loadAddresses)
 
             <!-- Titulo -->
             <div>
-              <label class="block text-[10px] tracking-[0.15em] uppercase text-[#555550] mb-1.5">
-                Titulo <span class="text-[#333330]">(opcional)</span>
+              <label class="block text-[10px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
+                Titulo <span class="text-text-disabled">(opcional)</span>
               </label>
               <input
                 v-model="reviewModal.title"
                 type="text"
                 maxlength="100"
                 placeholder="Resume tu experiencia"
-                class="w-full h-9 px-3 bg-[#0a0a0a] border border-[#1e1e1e] text-[13px] text-[#c8c4be] placeholder-[#2a2520] focus:outline-none focus:border-[#c9a96e44] transition-colors"
+                class="w-full h-9 px-3 bg-surface-base border border-border-subtle text-[13px] text-text-secondary placeholder-[var(--text-disabled)] focus:outline-none focus:border-[var(--accent)44] transition-colors"
               />
             </div>
 
             <!-- Comentario -->
             <div>
-              <label class="block text-[10px] tracking-[0.15em] uppercase text-[#555550] mb-1.5">
-                Comentario <span class="text-[#333330]">(opcional)</span>
+              <label class="block text-[10px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
+                Comentario <span class="text-text-disabled">(opcional)</span>
               </label>
               <textarea
                 v-model="reviewModal.comment"
                 rows="4"
                 placeholder="Comparte los detalles de tu experiencia con este producto..."
-                class="w-full px-3 py-2.5 bg-[#0a0a0a] border border-[#1e1e1e] text-[13px] text-[#c8c4be] placeholder-[#2a2520] focus:outline-none focus:border-[#c9a96e44] transition-colors resize-none"
+                class="w-full px-3 py-2.5 bg-surface-base border border-border-subtle text-[13px] text-text-secondary placeholder-[var(--text-disabled)] focus:outline-none focus:border-[var(--accent)44] transition-colors resize-none"
               />
             </div>
 
@@ -814,14 +814,14 @@ onMounted(loadAddresses)
             <div class="flex gap-3 pt-1">
               <button
                 @click="closeReviewModal"
-                class="flex-1 h-10 text-[10px] tracking-[0.15em] uppercase border border-[#1e1e1e] text-[#555] hover:border-[#333] hover:text-[#888] transition-colors"
+                class="flex-1 h-10 text-[10px] tracking-[0.15em] uppercase border border-border-subtle text-text-muted hover:border-border-default hover:text-text-muted transition-colors"
               >
                 Cancelar
               </button>
               <button
                 @click="submitReview"
                 :disabled="reviewModal.loading || !reviewModal.rating"
-                class="flex-1 h-10 text-[10px] tracking-[0.15em] uppercase bg-[#c9a96e15] border border-[#c9a96e44] text-[#c9a96e] hover:bg-[#c9a96e25] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                class="flex-1 h-10 text-[10px] tracking-[0.15em] uppercase bg-[var(--accent)15] border border-[var(--accent)44] text-accent hover:bg-[var(--accent)25] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {{ reviewModal.loading ? 'Enviando...' : 'Publicar resena' }}
               </button>
@@ -838,9 +838,9 @@ onMounted(loadAddresses)
 <style scoped>
 .field {
   width: 100%;
-  background: #0b0b0b;
-  border: 1px solid #1f1f1f;
-  color: #d8d4ce;
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
   font-size: 12px;
   padding: 0 10px;
   height: 34px;
@@ -848,14 +848,14 @@ onMounted(loadAddresses)
 
 .field:focus {
   outline: none;
-  border-color: #c9a96e66;
+  border-color: var(--accent)66;
 }
 
 .btn {
   width: 100%;
   height: 36px;
-  border: 1px solid #c9a96e66;
-  background: #c9a96e1f;
+  border: 1px solid var(--accent)66;
+  background: var(--accent)1f;
   color: #d8be8c;
   font-size: 11px;
   letter-spacing: 0.14em;
@@ -869,7 +869,7 @@ onMounted(loadAddresses)
 
 .mini-btn {
   border: 1px solid #2b2b2b;
-  background: #111;
+  background: var(--surface-raised);
   color: #c4bcae;
   font-size: 10px;
   letter-spacing: 0.1em;

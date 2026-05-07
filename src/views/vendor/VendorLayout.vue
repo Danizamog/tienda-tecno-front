@@ -102,7 +102,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
           class="panel-topbar__menu md:hidden"
           title="Cambiar tienda"
         >
-          <svg class="w-4 h-4 text-[#8ab4a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg class="w-4 h-4 text-[var(--vendor)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
           </svg>
         </RouterLink>
@@ -112,7 +112,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
           class="panel-topbar__menu"
           @click="sidebarOpen = !sidebarOpen"
         >
-          <svg class="w-4 h-4 text-[#d8d5cf]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg class="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path v-if="!sidebarOpen" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             <path v-else stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -192,8 +192,8 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   background:
     radial-gradient(circle at top left, rgba(138, 180, 160, 0.08), transparent 28%),
     radial-gradient(circle at top right, rgba(138, 180, 160, 0.05), transparent 22%),
-    linear-gradient(180deg, #090909 0%, #080808 48%, #0a0a0a 100%);
-  color: #e8e5e0;
+    linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 48%, var(--surface-base) 100%);
+  color: var(--text-primary);
 }
 
 .panel-topbar {
@@ -206,8 +206,8 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   gap: 1rem;
   height: 76px;
   padding: 0 1rem;
-  border-bottom: 1px solid #171717;
-  background: rgba(8, 8, 8, 0.92);
+  border-bottom: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--surface-base) 92%, transparent);
   backdrop-filter: blur(18px);
 }
 
@@ -223,9 +223,9 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   align-items: center;
   padding: 0.3rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid #20322c;
-  background: #0d110f;
-  color: #8ab4a0;
+  border: 1px solid var(--vendor-border);
+  background: var(--vendor-soft);
+  color: var(--vendor);
   font-size: 0.64rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -236,14 +236,14 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #66645c;
+  color: var(--text-muted);
 }
 
 .panel-topbar__subtitle {
   margin-top: 0.12rem;
   font-size: 1rem;
   font-weight: 500;
-  color: #f0ede8;
+  color: var(--text-primary);
 }
 
 .panel-topbar__actions {
@@ -263,30 +263,30 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 
 .panel-topbar__action {
   padding: 0.58rem 0.95rem;
-  border: 1px solid #242424;
-  background: #0f0f0f;
-  color: #d8d5cf;
+  border: 1px solid var(--border-default);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
   font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .panel-topbar__action:hover {
-  border-color: #8ab4a044;
-  background: #0f1714;
-  color: #f0ede8;
+  border-color: var(--vendor)44;
+  background: var(--vendor-soft);
+  color: var(--text-primary);
 }
 
 .panel-topbar__menu {
   width: 2.6rem;
   height: 2.6rem;
-  border: 1px solid #242424;
-  background: #111111;
+  border: 1px solid var(--border-default);
+  background: var(--surface-raised);
 }
 
 .panel-topbar__menu:hover {
-  border-color: #8ab4a044;
-  background: #0f1714;
+  border-color: var(--vendor)44;
+  background: var(--vendor-soft);
 }
 
 @media (min-width: 1024px) {
@@ -311,59 +311,59 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   gap: 0.9rem;
   padding: 1rem;
   overflow-y: auto;
-  border-right: 1px solid #171717;
-  background: linear-gradient(180deg, rgba(10, 10, 10, 0.98) 0%, rgba(8, 8, 8, 0.99) 100%);
-  box-shadow: 18px 0 40px rgba(0, 0, 0, 0.18);
+  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-base) 100%);
+  box-shadow: 18px 0 40px color-mix(in srgb, var(--surface-base) 60%, transparent);
   transition: transform 0.25s ease-in-out;
 }
 
 .sidebar-brand {
   padding: 0.85rem 0.9rem 0.95rem;
-  border: 1px solid #1a1a1a;
+  border: 1px solid var(--border-subtle);
   border-radius: 18px;
-  background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%);
+  background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-base) 100%);
 }
 
 .sidebar-brand__eyebrow {
   font-size: 0.64rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #55524d;
+  color: var(--text-disabled);
 }
 
 .sidebar-brand__title {
   margin-top: 0.2rem;
   font-size: 1.15rem;
   font-weight: 600;
-  color: #f0ede8;
+  color: var(--text-primary);
 }
 
 .sidebar-brand__text {
   margin-top: 0.35rem;
   font-size: 0.76rem;
   line-height: 1.45;
-  color: #7a7770;
+  color: var(--text-muted);
 }
 
 .store-card {
   padding: 0.95rem;
-  border: 1px solid #20322c;
+  border: 1px solid var(--vendor-border);
   border-radius: 18px;
-  background: linear-gradient(180deg, #0d110f 0%, #0a0d0c 100%);
+  background: linear-gradient(180deg, var(--vendor-soft) 0%, var(--vendor-soft) 100%);
 }
 
 .store-card__label {
   font-size: 0.62rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #54766b;
+  color: var(--text-muted);
 }
 
 .store-card__name {
   margin-top: 0.35rem;
   font-size: 0.95rem;
   font-weight: 500;
-  color: #f0ede8;
+  color: var(--text-primary);
   line-height: 1.35;
 }
 
@@ -374,10 +374,10 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   width: 100%;
   margin-top: 0.75rem;
   padding: 0.62rem 0.85rem;
-  border: 1px solid #264037;
+  border: 1px solid var(--vendor-border);
   border-radius: 999px;
-  background: #0f1714;
-  color: #8ab4a0;
+  background: var(--vendor-soft);
+  color: var(--vendor);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -385,9 +385,9 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 }
 
 .store-card__action:hover {
-  border-color: #8ab4a044;
-  background: #14211d;
-  color: #d6efe5;
+  border-color: var(--vendor)44;
+  background: var(--vendor-soft);
+  color: var(--text-primary);
 }
 
 .back-link {
@@ -396,17 +396,17 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   gap: 0.85rem;
   width: 100%;
   padding: 0.95rem;
-  border: 1px solid #20322c;
+  border: 1px solid var(--vendor-border);
   border-radius: 18px;
-  background: linear-gradient(180deg, #111111 0%, #0d0d0d 100%);
-  color: #d8d5cf;
+  background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-sunken) 100%);
+  color: var(--text-secondary);
   transition: all 0.18s ease;
 }
 
 .back-link:hover {
-  border-color: #8ab4a044;
-  background: linear-gradient(180deg, #0f1714 0%, #111111 100%);
-  color: #f0ede8;
+  border-color: var(--vendor)44;
+  background: linear-gradient(180deg, var(--vendor-soft) 0%, var(--surface-raised) 100%);
+  color: var(--text-primary);
 }
 
 .back-link__icon {
@@ -416,9 +416,9 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 999px;
-  background: #0d110f;
-  border: 1px solid #20322c;
-  color: #8ab4a0;
+  background: var(--vendor-soft);
+  border: 1px solid var(--vendor-border);
+  color: var(--vendor);
   flex-shrink: 0;
 }
 
@@ -436,7 +436,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 .back-link__copy small {
   margin-top: 0.15rem;
   font-size: 0.7rem;
-  color: #7a7770;
+  color: var(--text-muted);
 }
 
 .sidebar-nav {
@@ -457,7 +457,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   font-size: 0.62rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #4c4b45;
+  color: var(--text-disabled);
 }
 
 .sidebar-link {
@@ -469,21 +469,21 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   border-radius: 14px;
   font-size: 0.82rem;
   letter-spacing: 0.03em;
-  color: #7f7d76;
+  color: var(--text-muted);
   transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
 .sidebar-link:hover {
-  color: #f0ede8;
-  background: #111111;
-  border-color: #222222;
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border-color: var(--border-default);
   transform: translateX(2px);
 }
 
 .sidebar-link-active {
-  color: #8ab4a0 !important;
-  background: #0f1714 !important;
-  border-color: #20322c !important;
+  color: var(--vendor) !important;
+  background: var(--vendor-soft) !important;
+  border-color: var(--vendor-border) !important;
 }
 
 .sidebar-footer {
@@ -491,22 +491,22 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
   align-items: center;
   gap: 0.55rem;
   padding: 0.85rem 0.9rem;
-  border: 1px solid #1a1a1a;
+  border: 1px solid var(--border-subtle);
   border-radius: 16px;
-  background: #0d0d0d;
-  color: #6f6d66;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
   font-size: 0.72rem;
 }
 
 .sidebar-footer--vendor {
-  border-color: #20322c;
+  border-color: var(--vendor-border);
 }
 
 .sidebar-footer__dot {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 999px;
-  background: #8ab4a0;
+  background: var(--vendor);
   box-shadow: 0 0 0 5px rgba(138, 180, 160, 0.08);
 }
 
@@ -528,7 +528,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
     top: 76px;
     left: 0.5rem;
     bottom: 0.5rem;
-    border: 1px solid #1a1a1a;
+    border: 1px solid var(--border-subtle);
     border-radius: 22px;
   }
 

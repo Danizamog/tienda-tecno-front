@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import MediaGallery from '@/components/ui/MediaGallery.vue'
 import { useAuctions } from '@/composables/useAuctions'
 import { useAuthSession } from '@/composables/useAuthSession'
 
@@ -45,7 +46,6 @@ const buyNowOpen      = ref(false)
 const confirmBuyOpen  = ref(false)    // confirmación cuando puja >= buy_now_price
 const pendingBuyAmount = ref(0)       // monto que tipeó el usuario antes de confirmar
 const buyingNow    = ref(false)
-const selectedImage = ref(0)
 const outbidNotice  = ref(false)
 const endedNotice   = ref(false)
 
@@ -64,7 +64,6 @@ async function load() {
     auction.value = await getAuction(route.params.id)
     const bidsData = await listBids(route.params.id, { perPage: 50 })
     bids.value = bidsData?.items || []
-    selectedImage.value = 0
   } catch (e) {
     error.value = e.message || 'No se pudo cargar la subasta'
   } finally {
@@ -80,6 +79,7 @@ function translateError(err) {
     auction_not_started:      'La subasta aún no ha comenzado',
     auction_ended:            'La subasta ya finalizó',
     cannot_bid_own_auction:   'No puedes pujar en tu propia subasta',
+    already_top_bidder:       'Ya tienes la puja más alta — espera a que alguien la supere',
     invalid_amount:           'Monto inválido',
     auto_bid_max_below_amount:'El tope automático debe ser mayor a la puja',
     buy_now_not_available:    'Esta subasta no tiene compra inmediata',
@@ -95,6 +95,21 @@ function translateError(err) {
 }
 
 // ── Realtime ──────────────────────────────────────────────────────────────────
+async function refreshBids({ flashTopId = null } = {}) {
+  try {
+    const fresh = await listBids(route.params.id, { perPage: 50 })
+    bids.value = fresh?.items || []
+    const flashId = flashTopId || bids.value[0]?.id
+    if (flashId) {
+      highlightBid.value = flashId
+      clearTimeout(flashTimeout)
+      flashTimeout = setTimeout(() => { highlightBid.value = null }, 2500)
+    }
+  } catch (err) {
+    console.error('[auction] refreshBids failed:', err)
+  }
+}
+
 function onAuctionEvent(e) {
   if (!e?.record || e.record.id !== route.params.id) return
   if (e.action === 'delete') {
@@ -104,8 +119,32 @@ function onAuctionEvent(e) {
   }
   const prev = auction.value || {}
   const wasActive = prev.status === 'active'
+  const prevBidsCount = Number(prev.bids_count || 0)
+  const newBidsCount = Number(e.record.bids_count || 0)
+  const prevPrice = Number(prev.current_price || 0)
+  const newPrice = Number(e.record.current_price || 0)
   // Conservar expand (store, winner) porque el evento PB no lo trae
   auction.value = { ...prev, ...e.record, expand: prev.expand }
+
+  // Refrescar pujas si llegó una nueva (defensa por si la suscripción a
+  // auction_bids no entrega eventos por reglas de PB en esa colección)
+  if (newBidsCount > prevBidsCount || newPrice > prevPrice) {
+    const myUserId = session.value?.userId
+    const wasMyTop = bids.value[0]?.bidder === myUserId
+    refreshBids().then(() => {
+      const top = bids.value[0]
+      const isFromAnother = top && top.bidder !== myUserId
+      if (wasMyTop && isFromAnother) {
+        outbidNotice.value = true
+        clearTimeout(outbidTimeout)
+        outbidTimeout = setTimeout(() => { outbidNotice.value = false }, 5000)
+      }
+      const typed = Number(bidAmount.value)
+      if (Number.isFinite(typed) && typed > 0 && typed < minBid.value && isFromAnother) {
+        bidWarning.value = `Otra puja llegó. El mínimo ahora es Bs ${money(minBid.value)}`
+      }
+    })
+  }
 
   // Si terminó por buy-now o cierre externo, notificar
   if (wasActive && e.record.status === 'ended') {
@@ -121,34 +160,9 @@ async function onBidEvent(e) {
   // Evitar duplicados si el propio usuario ya lo añadió localmente
   if (bids.value.some((b) => b.id === e.record.id)) return
 
-  const myUserId = session.value?.userId
-  const wasMyTop = bids.value[0]?.bidder === myUserId
-  const isFromAnother = e.record.bidder !== myUserId
-
-  // Re-fetch para obtener el expand del bidder
-  try {
-    const fresh = await listBids(route.params.id, { perPage: 50 })
-    bids.value = fresh?.items || []
-  } catch {
-    bids.value = [e.record, ...bids.value]
-  }
-
-  highlightBid.value = e.record.id
-  clearTimeout(flashTimeout)
-  flashTimeout = setTimeout(() => { highlightBid.value = null }, 2500)
-
-  // Notificación "te superaron": sólo si yo lideraba y alguien más pujó más alto
-  if (wasMyTop && isFromAnother && e.record.amount > 0) {
-    outbidNotice.value = true
-    clearTimeout(outbidTimeout)
-    outbidTimeout = setTimeout(() => { outbidNotice.value = false }, 5000)
-  }
-
-  // Si el usuario tiene un monto tecleado que quedó obsoleto, avisar
-  const typed = Number(bidAmount.value)
-  if (Number.isFinite(typed) && typed > 0 && typed < minBid.value && isFromAnother) {
-    bidWarning.value = `Otra puja llegó. El mínimo ahora es Bs ${money(minBid.value)}`
-  }
+  // Re-fetch para obtener el expand del bidder (no usamos e.record como
+  // fallback porque viene sin expand y mostraría "Anónimo")
+  await refreshBids({ flashTopId: e.record.id })
 }
 
 onMounted(async () => {
@@ -188,9 +202,11 @@ const minBid       = computed(() => bidCount.value > 0 ? currentPrice.value + in
 const topBidder = computed(() => bids.value[0]?.expand?.bidder || null)
 const isTopBidder = computed(() => topBidder.value?.id === session.value?.userId)
 const isOwner = computed(() => {
-  const owners = auction.value?.expand?.store?.owner
-  const owner = Array.isArray(owners) ? owners[0] : owners
-  return owner && owner === session.value?.userId
+  const userId = session.value?.userId
+  if (!userId) return false
+  const raw = auction.value?.expand?.store?.owner
+  const owners = Array.isArray(raw) ? raw : (raw ? [raw] : [])
+  return owners.includes(userId)
 })
 
 const timeLeft = computed(() => {
@@ -208,16 +224,17 @@ const timeLeft = computed(() => {
 })
 
 const urgencyClass = computed(() => {
-  if (timeLeft.value.expired) return 'text-[#555550]'
+  if (timeLeft.value.expired) return 'text-text-muted'
   const diff = new Date(auction.value.end_date).getTime() - now.value
   if (diff < 3600000)  return 'text-red-400'
   if (diff < 86400000) return 'text-amber-400'
-  return 'text-[#c9a96e]'
+  return 'text-accent'
 })
 
 const canBid = computed(() => (
   isAuthenticated.value &&
   !isOwner.value &&
+  !isTopBidder.value &&
   auction.value?.status === 'active' &&
   !timeLeft.value.expired
 ))
@@ -479,7 +496,7 @@ function goLogin() {
 <template>
   <AppNavbar />
 
-  <main class="detail-shell text-[#f0ede8]">
+  <main class="detail-shell text-text-primary">
 
     <!-- Loading -->
     <section v-if="loading" class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-14">
@@ -501,8 +518,8 @@ function goLogin() {
 
     <!-- Error -->
     <section v-else-if="error" class="max-w-3xl mx-auto px-6 py-24 text-center">
-      <p class="font-display text-2xl font-light text-[#c9a96e] mb-2">No se pudo cargar</p>
-      <p class="text-[#666259] text-sm mb-6">{{ error }}</p>
+      <p class="font-display text-2xl font-light text-accent mb-2">No se pudo cargar</p>
+      <p class="text-text-muted text-sm mb-6">{{ error }}</p>
       <RouterLink to="/auctions" class="btn-outline text-xs">Volver a subastas</RouterLink>
     </section>
 
@@ -510,60 +527,40 @@ function goLogin() {
     <section v-else-if="auction" class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-10">
 
       <!-- Breadcrumb -->
-      <nav class="flex items-center gap-2 text-[10px] tracking-[0.18em] uppercase text-[#444440] mb-6">
-        <RouterLink to="/" class="hover:text-[#c9a96e] transition-colors">Inicio</RouterLink>
+      <nav class="flex items-center gap-2 text-[10px] tracking-[0.18em] uppercase text-text-disabled mb-6">
+        <RouterLink to="/" class="hover:text-accent transition-colors">Inicio</RouterLink>
         <span>/</span>
-        <RouterLink to="/auctions" class="hover:text-[#c9a96e] transition-colors">Subastas</RouterLink>
+        <RouterLink to="/auctions" class="hover:text-accent transition-colors">Subastas</RouterLink>
         <span>/</span>
-        <span class="text-[#7a7770] truncate max-w-[220px]">{{ auction.title }}</span>
+        <span class="text-text-muted truncate max-w-[220px]">{{ auction.title }}</span>
       </nav>
 
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
 
         <!-- ═══ Galería (3 cols) ════════════════════════════════════════════ -->
         <div class="lg:col-span-3">
-          <div class="bg-[#0d0d0d] border border-[#161616] aspect-[4/3] overflow-hidden relative">
-            <img
-              v-if="hasImages"
-              :src="images[selectedImage]"
-              :alt="auction.title"
-              class="w-full h-full object-contain"
-            />
-            <div v-else class="w-full h-full flex items-center justify-center">
-              <svg class="w-16 h-16 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-                <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-
-            <!-- Status badge -->
-            <span class="absolute top-4 left-4 status-badge"
-              :class="{
-                'text-emerald-400 border-emerald-900/50 bg-emerald-950/60': auction.status === 'active',
-                'text-blue-400 border-blue-900/50 bg-blue-950/60': auction.status === 'ended',
-                'text-yellow-400 border-yellow-900/50 bg-yellow-950/60': auction.status === 'draft',
-                'text-red-400 border-red-900/50 bg-red-950/60': auction.status === 'cancelled',
-              }">
-              {{ statusLabel }}
-            </span>
-          </div>
-
-          <!-- Thumbnails -->
-          <div v-if="images.length > 1" class="flex gap-2 mt-3 overflow-x-auto">
-            <button
-              v-for="(img, idx) in images"
-              :key="img"
-              @click="selectedImage = idx"
-              class="shrink-0 w-20 h-20 border transition-colors"
-              :class="selectedImage === idx ? 'border-[#c9a96e]' : 'border-[#161616] hover:border-[#3a3a38]'"
-            >
-              <img :src="img" class="w-full h-full object-cover" />
-            </button>
-          </div>
+          <MediaGallery
+            :images="images"
+            :alt="auction.title"
+            aspect="4/3"
+          >
+            <template #overlay>
+              <span class="absolute top-4 left-4 status-badge z-10"
+                :class="{
+                  'text-emerald-400 border-emerald-900/50 bg-emerald-950/60': auction.status === 'active',
+                  'text-blue-400 border-blue-900/50 bg-blue-950/60': auction.status === 'ended',
+                  'text-yellow-400 border-yellow-900/50 bg-yellow-950/60': auction.status === 'draft',
+                  'text-red-400 border-red-900/50 bg-red-950/60': auction.status === 'cancelled',
+                }">
+                {{ statusLabel }}
+              </span>
+            </template>
+          </MediaGallery>
 
           <!-- Descripción -->
-          <div v-if="auction.description" class="mt-8 pt-6 border-t border-[#161616]">
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-3">Descripción</p>
-            <div class="prose prose-invert max-w-none text-sm text-[#a0998d] leading-relaxed" v-html="auction.description" />
+          <div v-if="auction.description" class="mt-8 pt-6 border-t border-border-subtle">
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-3">Descripción</p>
+            <div class="prose prose-invert max-w-none text-sm text-text-muted leading-relaxed" v-html="auction.description" />
           </div>
         </div>
 
@@ -576,18 +573,18 @@ function goLogin() {
             :to="`/stores/${auction.expand.store.slug || auction.expand.store.id}`"
             class="inline-flex items-center gap-2 mb-4 group"
           >
-            <div class="w-7 h-7 border border-[#222] bg-[#111] overflow-hidden">
+            <div class="w-7 h-7 border border-border-default bg-surface-raised overflow-hidden">
               <img
                 v-if="storeLogoUrl(auction.expand.store)"
                 :src="storeLogoUrl(auction.expand.store)"
                 :alt="auction.expand.store.name"
                 class="w-full h-full object-cover"
               />
-              <span v-else class="w-full h-full flex items-center justify-center text-[10px] text-[#2a2520]">
+              <span v-else class="w-full h-full flex items-center justify-center text-[10px] text-text-disabled">
                 {{ (auction.expand.store.name || 'T')[0] }}
               </span>
             </div>
-            <span class="text-[10px] tracking-[0.18em] uppercase text-[#7a7770] group-hover:text-[#c9a96e] transition-colors">
+            <span class="text-[10px] tracking-[0.18em] uppercase text-text-muted group-hover:text-accent transition-colors">
               {{ auction.expand.store.name }}
             </span>
           </RouterLink>
@@ -598,8 +595,8 @@ function goLogin() {
           </h1>
 
           <!-- Countdown -->
-          <div class="mb-6 p-4 border border-[#161616] bg-[#0b0b0b]">
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-2">
+          <div class="mb-6 p-4 border border-border-subtle bg-surface-base">
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-2">
               {{ timeLeft.expired ? 'Subasta finalizada' : 'Termina en' }}
             </p>
             <div v-if="!timeLeft.expired" class="flex items-center gap-2 font-mono text-2xl font-semibold tabular-nums" :class="urgencyClass">
@@ -611,87 +608,92 @@ function goLogin() {
               </template>
               <template v-else>
                 <span>{{ pad(timeLeft.hours) }}</span>
-                <span class="text-[#3a3a38]">:</span>
+                <span class="text-text-disabled">:</span>
                 <span>{{ pad(timeLeft.minutes) }}</span>
-                <span class="text-[#3a3a38]">:</span>
+                <span class="text-text-disabled">:</span>
                 <span>{{ pad(timeLeft.seconds) }}</span>
               </template>
             </div>
-            <p v-else class="text-[13px] text-[#555]">Cerró el {{ fmtDateTime(auction.end_date) }}</p>
+            <p v-else class="text-[13px] text-text-muted">Cerró el {{ fmtDateTime(auction.end_date) }}</p>
           </div>
 
           <!-- Precio actual -->
           <div class="mb-5">
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1">
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-1">
               {{ bidCount > 0 ? 'Oferta actual' : 'Precio inicial' }}
             </p>
             <div class="flex items-baseline gap-3">
-              <p class="font-display text-4xl font-light text-[#c9a96e] tabular-nums">
+              <p class="font-display text-4xl font-light text-accent tabular-nums">
                 Bs {{ money(currentPrice) }}
               </p>
-              <span class="text-[11px] text-[#555]">{{ bidCount }} puja{{ bidCount !== 1 ? 's' : '' }}</span>
+              <span class="text-[11px] text-text-muted">{{ bidCount }} puja{{ bidCount !== 1 ? 's' : '' }}</span>
             </div>
-            <p v-if="bidCount > 0 && auction.start_price" class="text-[10px] text-[#3a3a38] mt-0.5 tabular-nums">
+            <p v-if="bidCount > 0 && auction.start_price" class="text-[10px] text-text-disabled mt-0.5 tabular-nums">
               Desde Bs {{ money(auction.start_price) }}
             </p>
           </div>
 
           <!-- Top bidder -->
           <div v-if="topBidder" class="mb-5 p-3 border flex items-center gap-3"
-            :class="isTopBidder ? 'border-[#c9a96e44] bg-[#14110d]' : 'border-[#1a1a1a] bg-[#0b0b0b]'">
-            <div class="w-8 h-8 rounded-full border border-[#2a2a28] bg-[#111] flex items-center justify-center text-xs font-medium text-[#c9a96e] shrink-0">
+            :class="isTopBidder ? 'border-[var(--accent)44] bg-[var(--accent-soft)]' : 'border-border-subtle bg-surface-base'">
+            <div class="w-8 h-8 rounded-full border border-border-default bg-surface-raised flex items-center justify-center text-xs font-medium text-accent shrink-0">
               {{ (topBidder.name || topBidder.email || '?')[0].toUpperCase() }}
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-[11px] text-[#888] truncate">
+              <p class="text-[11px] text-text-muted truncate">
                 {{ isTopBidder ? '¡Estás ganando!' : `Lidera ${topBidder.name || topBidder.email || 'un usuario'}` }}
               </p>
-              <p class="text-[9px] tracking-[0.14em] uppercase text-[#3a3a38]">Última puja</p>
+              <p class="text-[9px] tracking-[0.14em] uppercase text-text-disabled">Última puja</p>
             </div>
           </div>
 
           <!-- Bid form / Ended / Login prompt -->
-          <div v-if="auction.status === 'ended' || timeLeft.expired" class="border border-[#1a1a1a] bg-[#0b0b0b] overflow-hidden">
+          <div v-if="auction.status === 'ended' || timeLeft.expired" class="border border-border-subtle bg-surface-base overflow-hidden">
             <div class="p-5">
-              <p class="text-[11px] tracking-[0.18em] uppercase text-[#555] mb-2">Subasta cerrada</p>
+              <p class="text-[11px] tracking-[0.18em] uppercase text-text-muted mb-2">Subasta cerrada</p>
               <div v-if="auction.expand?.winner" class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full border border-[#8ab4a033] bg-[#111] flex items-center justify-center text-[#8ab4a0] text-sm font-medium shrink-0">
+                <div class="w-8 h-8 rounded-full border border-[var(--vendor)33] bg-surface-raised flex items-center justify-center text-[var(--vendor)] text-sm font-medium shrink-0">
                   {{ (auction.expand.winner.name || auction.expand.winner.email || '?')[0].toUpperCase() }}
                 </div>
                 <div>
-                  <p class="text-[13px] text-[#d8d5cf]">
+                  <p class="text-[13px] text-text-secondary">
                     {{ auction.winner === session.value?.userId ? '¡Ganaste!' : `Ganó ${auction.expand.winner.name || 'Usuario'}` }}
                   </p>
-                  <p class="text-[11px] text-[#c9a96e]">Bs {{ money(currentPrice) }}</p>
+                  <p class="text-[11px] text-accent">Bs {{ money(currentPrice) }}</p>
                 </div>
               </div>
-              <p v-else class="text-[12px] text-[#666]">Sin ganador</p>
+              <p v-else class="text-[12px] text-text-muted">Sin ganador</p>
             </div>
             <!-- Banner de pago para el ganador -->
             <div
               v-if="isAuthenticated && auction.winner === session.value?.userId"
-              class="border-t border-[#c9a96e33] bg-[#14110d] p-4 flex items-center justify-between gap-3"
+              class="border-t border-[var(--accent)33] bg-[var(--accent-soft)] p-4 flex items-center justify-between gap-3"
             >
               <div>
-                <p class="text-[12px] text-[#c9a96e] font-medium">¡Debes completar tu pago!</p>
-                <p class="text-[10px] text-[#888] mt-0.5">Tienes 2 días para subir tu comprobante</p>
+                <p class="text-[12px] text-accent font-medium">¡Debes completar tu pago!</p>
+                <p class="text-[10px] text-text-muted mt-0.5">Tienes 2 días para subir tu comprobante</p>
               </div>
               <button
                 @click="openPayModal"
-                class="px-4 py-2 bg-[#c9a96e] text-[#0a0a0a] text-[10px] tracking-[0.14em] uppercase font-semibold rounded-sm hover:bg-[#d4b97e] transition-colors whitespace-nowrap shrink-0"
+                class="px-4 py-2 bg-accent text-accent-on text-[10px] tracking-[0.14em] uppercase font-semibold rounded-sm hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap shrink-0"
               >
                 Pagar ahora
               </button>
             </div>
           </div>
 
-          <div v-else-if="!isAuthenticated" class="p-5 border border-[#1a1a1a] bg-[#0b0b0b] text-center">
-            <p class="text-[12px] text-[#888] mb-3">Inicia sesión para participar en la subasta</p>
+          <div v-else-if="!isAuthenticated" class="p-5 border border-border-subtle bg-surface-base text-center">
+            <p class="text-[12px] text-text-muted mb-3">Inicia sesión para participar en la subasta</p>
             <button @click="goLogin" class="btn-primary w-full">Iniciar sesión</button>
           </div>
 
-          <div v-else-if="isOwner" class="p-5 border border-[#1a1a1a] bg-[#0b0b0b] text-center">
-            <p class="text-[12px] text-[#888]">No puedes pujar en tu propia subasta</p>
+          <div v-else-if="isOwner" class="p-5 border border-border-subtle bg-surface-base text-center">
+            <p class="text-[12px] text-text-muted">No puedes pujar en tu propia subasta</p>
+          </div>
+
+          <div v-else-if="isTopBidder && auction?.status === 'active' && !timeLeft.expired" class="p-5 border border-emerald-900/50 bg-emerald-950/30 text-center">
+            <p class="text-[12px] text-emerald-300 font-medium mb-1">Vas ganando esta subasta</p>
+            <p class="text-[11px] text-text-muted">Espera a que alguien supere tu puja para volver a pujar</p>
           </div>
 
           <div v-else-if="canBid">
@@ -733,7 +735,7 @@ function goLogin() {
             <!-- Bid input -->
             <div class="flex gap-2 mb-2">
               <div class="relative flex-1">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#555] text-sm font-medium">Bs</span>
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-medium">Bs</span>
                 <input
                   v-model="bidAmount"
                   type="text"
@@ -758,13 +760,13 @@ function goLogin() {
             </div>
 
             <!-- Hint dinámico -->
-            <p v-if="reachesBuyNow" class="text-[10px] text-[#c9a96e] mb-3">
+            <p v-if="reachesBuyNow" class="text-[10px] text-accent mb-3">
               Esta puja alcanza el precio de compra. Se topará a Bs {{ money(buyNowPrice) }} y ganarás la subasta.
             </p>
             <p v-else-if="isValidAmount && !meetsMinBid" class="text-[10px] text-red-400 mb-3">
               Mínimo: Bs {{ money(minBid) }} · El monto debe ser ≥ Bs {{ money(minBid) }}
             </p>
-            <p v-else class="text-[10px] text-[#555] mb-3">
+            <p v-else class="text-[10px] text-text-muted mb-3">
               Mínimo: Bs {{ money(minBid) }} · Incremento: Bs {{ money(increment) }}
             </p>
 
@@ -772,10 +774,10 @@ function goLogin() {
             <button
               v-if="hasBuyNow"
               @click="buyNowOpen = true"
-              class="w-full p-3 border border-[#c9a96e44] bg-[#14110d] hover:bg-[#1a1510] transition-colors text-left group"
+              class="w-full p-3 border border-[var(--accent)44] bg-[var(--accent-soft)] hover:bg-[var(--accent-soft)] transition-colors text-left group"
             >
-              <p class="text-[9px] tracking-[0.2em] uppercase text-[#c9a96e] mb-0.5">Cómpralo ya</p>
-              <p class="font-display text-xl font-light text-[#f0ede8] group-hover:text-[#c9a96e] transition-colors tabular-nums">
+              <p class="text-[9px] tracking-[0.2em] uppercase text-accent mb-0.5">Cómpralo ya</p>
+              <p class="font-display text-xl font-light text-text-primary group-hover:text-accent transition-colors tabular-nums">
                 Bs {{ money(buyNowPrice) }}
               </p>
             </button>
@@ -787,14 +789,14 @@ function goLogin() {
           </div>
 
           <!-- Historial de pujas -->
-          <div class="mt-8 pt-6 border-t border-[#161616]">
+          <div class="mt-8 pt-6 border-t border-border-subtle">
             <div class="flex items-center justify-between mb-4">
-              <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">
+              <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">
                 Historial de pujas
               </p>
-              <span class="text-[10px] text-[#555]">{{ bids.length }}</span>
+              <span class="text-[10px] text-text-muted">{{ bids.length }}</span>
             </div>
-            <div v-if="!bids.length" class="text-center py-8 text-[#444440] text-[11px]">
+            <div v-if="!bids.length" class="text-center py-8 text-text-disabled text-[11px]">
               Sé el primero en pujar
             </div>
             <div v-else class="flex flex-col gap-1.5 max-h-96 overflow-y-auto pr-1">
@@ -807,16 +809,16 @@ function goLogin() {
                   isMyBid(bid) && 'bid-row--mine',
                 ]"
               >
-                <div class="w-7 h-7 rounded-full border border-[#2a2a28] bg-[#0f0f0f] flex items-center justify-center text-[10px] text-[#c9a96e] shrink-0">
+                <div class="w-7 h-7 rounded-full border border-border-default bg-surface-raised flex items-center justify-center text-[10px] text-accent shrink-0">
                   {{ bidderInitial(bid) }}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-[12px] text-[#c4bdb0] truncate">
+                  <p class="text-[12px] text-text-secondary truncate">
                     {{ isMyBid(bid) ? 'Tú' : bidderName(bid) }}
                   </p>
-                  <p class="text-[9px] text-[#555]">{{ fmtDateTime(bid.created) }}</p>
+                  <p class="text-[9px] text-text-muted">{{ fmtDateTime(bid.created) }}</p>
                 </div>
-                <p class="text-[13px] font-medium text-[#c9a96e] tabular-nums">
+                <p class="text-[13px] font-medium text-accent tabular-nums">
                   Bs {{ money(bid.amount) }}
                 </p>
               </div>
@@ -831,14 +833,14 @@ function goLogin() {
     <Transition name="modal">
       <div v-if="buyNowOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
         <div class="modal-box w-full max-w-sm">
-          <h3 class="font-display text-xl font-light text-[#e8e4de] mb-2">Confirmar compra</h3>
-          <p class="text-[12px] text-[#888] mb-5">
+          <h3 class="font-display text-xl font-light text-text-primary mb-2">Confirmar compra</h3>
+          <p class="text-[12px] text-text-muted mb-5">
             Estás a punto de comprar esta subasta al precio de compra inmediata. Esto finalizará la subasta y la ganarás.
           </p>
 
-          <div class="p-4 bg-[#0f0f0f] border border-[#1a1a1a] mb-5">
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1">Total</p>
-            <p class="font-display text-3xl font-light text-[#c9a96e] tabular-nums">
+          <div class="p-4 bg-surface-raised border border-border-subtle mb-5">
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-1">Total</p>
+            <p class="font-display text-3xl font-light text-accent tabular-nums">
               Bs {{ money(buyNowPrice) }}
             </p>
           </div>
@@ -857,21 +859,21 @@ function goLogin() {
     <Transition name="modal">
       <div v-if="confirmBuyOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
         <div class="modal-box w-full max-w-sm">
-          <h3 class="font-display text-xl font-light text-[#e8e4de] mb-2">Ganar la subasta</h3>
-          <p class="text-[12px] text-[#888] mb-4">
-            Tu puja de <span class="text-[#c9a96e] font-medium">Bs {{ money(pendingBuyAmount) }}</span>
+          <h3 class="font-display text-xl font-light text-text-primary mb-2">Ganar la subasta</h3>
+          <p class="text-[12px] text-text-muted mb-4">
+            Tu puja de <span class="text-accent font-medium">Bs {{ money(pendingBuyAmount) }}</span>
             alcanza o supera el precio de compra inmediata.
           </p>
-          <div class="p-4 bg-[#0f0f0f] border border-[#c9a96e44] mb-5">
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1">Pagarás exactamente</p>
-            <p class="font-display text-3xl font-light text-[#c9a96e] tabular-nums mb-1">
+          <div class="p-4 bg-surface-raised border border-[var(--accent)44] mb-5">
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-1">Pagarás exactamente</p>
+            <p class="font-display text-3xl font-light text-accent tabular-nums mb-1">
               Bs {{ money(buyNowPrice) }}
             </p>
             <p v-if="pendingBuyAmount > buyNowPrice" class="text-[10px] text-emerald-400">
               Ahorras Bs {{ money(pendingBuyAmount - buyNowPrice) }} (tope aplicado)
             </p>
           </div>
-          <p class="text-[11px] text-[#888] mb-5">La subasta finalizará inmediatamente y serás el ganador.</p>
+          <p class="text-[11px] text-text-muted mb-5">La subasta finalizará inmediatamente y serás el ganador.</p>
           <div class="flex gap-2">
             <button @click="confirmBuyOpen = false; pendingBuyAmount = 0" :disabled="bidLoading" class="btn-ghost flex-1">Cancelar</button>
             <button @click="confirmReachBuyNow" :disabled="bidLoading" class="btn-primary-gold flex-1">
@@ -913,26 +915,26 @@ function goLogin() {
       class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
       @click.self="showPayModal = false"
     >
-      <div class="bg-[#0e0e0e] border border-[#1f1f1f] rounded-sm w-full max-w-md max-h-[92vh] overflow-y-auto">
+      <div class="bg-[#0e0e0e] border border-border-subtle rounded-sm w-full max-w-md max-h-[92vh] overflow-y-auto">
 
         <!-- Cabecera -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-[#1a1a1a]">
-          <h2 class="text-[13px] tracking-[0.18em] uppercase text-[#e8e5e0]">Completar pago</h2>
-          <button @click="showPayModal = false" class="text-[#555] hover:text-[#c9a96e] transition-colors text-2xl leading-none">&times;</button>
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+          <h2 class="text-[13px] tracking-[0.18em] uppercase text-text-primary">Completar pago</h2>
+          <button @click="showPayModal = false" class="text-text-muted hover:text-accent transition-colors text-2xl leading-none">&times;</button>
         </div>
 
         <!-- Cargando -->
-        <div v-if="loadingPayData" class="py-12 text-center text-[#555] text-sm">Cargando…</div>
+        <div v-if="loadingPayData" class="py-12 text-center text-text-muted text-sm">Cargando…</div>
 
         <div v-else class="p-6 flex flex-col gap-5">
 
           <!-- Monto -->
-          <div class="bg-[#141414] border border-[#1f1f1f] rounded-sm p-4 text-center">
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#555] mb-1">Total a pagar</p>
-            <p class="text-3xl font-light text-[#c9a96e] tabular-nums">
+          <div class="bg-surface-overlay border border-border-subtle rounded-sm p-4 text-center">
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-muted mb-1">Total a pagar</p>
+            <p class="text-3xl font-light text-accent tabular-nums">
               Bs {{ money(payOrder?.total ?? auction?.current_price ?? 0) }}
             </p>
-            <p class="text-[11px] text-[#555] mt-1">{{ auction?.title }}</p>
+            <p class="text-[11px] text-text-muted mt-1">{{ auction?.title }}</p>
           </div>
 
           <!-- Plazo -->
@@ -953,11 +955,11 @@ function goLogin() {
           <!-- QR de la tienda -->
           <template v-if="payOrder && payCanUpload()">
             <div v-if="payStoreQr" class="flex flex-col items-center gap-3">
-              <p class="text-[10px] tracking-[0.18em] uppercase text-[#666]">Escanea para pagar</p>
+              <p class="text-[10px] tracking-[0.18em] uppercase text-text-muted">Escanea para pagar</p>
               <img :src="payStoreQr" class="w-52 h-52 object-contain bg-white p-2 rounded-sm" alt="QR pago" />
-              <p v-if="payStoreInstr" class="text-[12px] text-[#888] text-center leading-relaxed">{{ payStoreInstr }}</p>
+              <p v-if="payStoreInstr" class="text-[12px] text-text-muted text-center leading-relaxed">{{ payStoreInstr }}</p>
             </div>
-            <div v-else class="text-[12px] text-[#555] text-center py-2">
+            <div v-else class="text-[12px] text-text-muted text-center py-2">
               La tienda no tiene QR configurado. Contáctalos directamente.
             </div>
 
@@ -971,18 +973,18 @@ function goLogin() {
 
             <!-- Upload comprobante -->
             <div v-else>
-              <p class="text-[10px] tracking-[0.18em] uppercase text-[#666] mb-3">Sube tu comprobante de pago</p>
-              <label class="block cursor-pointer border border-dashed border-[#2a2a2a] rounded-sm p-5 text-center hover:border-[#c9a96e44] transition-colors">
+              <p class="text-[10px] tracking-[0.18em] uppercase text-text-muted mb-3">Sube tu comprobante de pago</p>
+              <label class="block cursor-pointer border border-dashed border-border-default rounded-sm p-5 text-center hover:border-[var(--accent)44] transition-colors">
                 <input type="file" accept="image/*,.pdf" class="hidden" @change="onPayProofChange" />
                 <div v-if="payProofPrev">
                   <img :src="payProofPrev" class="w-full max-h-36 object-contain mb-2 rounded-sm" />
-                  <span class="text-[11px] text-[#666]">Cambiar imagen</span>
+                  <span class="text-[11px] text-text-muted">Cambiar imagen</span>
                 </div>
                 <div v-else class="flex flex-col items-center gap-2">
-                  <svg class="w-8 h-8 text-[#2a2a2a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <svg class="w-8 h-8 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
-                  <span class="text-[12px] text-[#555]">Seleccionar imagen o PDF</span>
+                  <span class="text-[12px] text-text-muted">Seleccionar imagen o PDF</span>
                 </div>
               </label>
 
@@ -992,7 +994,7 @@ function goLogin() {
                 v-if="payProofFile"
                 :disabled="payUploading"
                 @click="uploadPayProof"
-                class="mt-3 w-full py-3 bg-[#c9a96e] text-[#0a0a0a] text-[11px] tracking-[0.16em] uppercase font-bold rounded-sm hover:bg-[#d4b97e] disabled:opacity-50 transition-colors"
+                class="mt-3 w-full py-3 bg-accent text-accent-on text-[11px] tracking-[0.16em] uppercase font-bold rounded-sm hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
               >
                 {{ payUploading ? 'Enviando…' : 'Enviar comprobante' }}
               </button>
@@ -1013,13 +1015,13 @@ function goLogin() {
 
 <style scoped>
 .detail-shell {
-  background: linear-gradient(180deg, #0a0a0a 0%, #090909 40%, #0a0a0a 100%);
+  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 40%, var(--surface-base) 100%);
   flex: 1;
   width: 100%;
   min-height: 100vh;
 }
 .skeleton {
-  background: linear-gradient(90deg, #0d0d0d 0%, #141414 50%, #0d0d0d 100%);
+  background: linear-gradient(90deg, var(--surface-sunken) 0%, var(--surface-overlay) 50%, var(--surface-sunken) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -1031,74 +1033,74 @@ function goLogin() {
 }
 .bid-input {
   width: 100%; height: 2.75rem;
-  background: #0a0a0a; border: 1px solid #2a2a28;
-  color: #f0ede8; font-size: 0.95rem; font-weight: 500;
+  background: var(--surface-base); border: 1px solid var(--border-default);
+  color: var(--text-primary); font-size: 0.95rem; font-weight: 500;
   padding: 0 0.9rem 0 2.15rem; outline: none; transition: border-color 0.15s;
 }
-.bid-input:focus { border-color: #c9a96e; }
-.bid-input--error { border-color: #7f1d1d; }
-.bid-input--error:focus { border-color: #dc2626; }
-.bid-input--winning { border-color: #c9a96e; box-shadow: 0 0 0 1px #c9a96e33; }
+.bid-input:focus { border-color: var(--accent); }
+.bid-input--error { border-color: var(--danger-soft); }
+.bid-input--error:focus { border-color: var(--danger); }
+.bid-input--winning { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent)33; }
 .quick-bid-btn {
   flex: 1; padding: 0.45rem 0.5rem;
-  border: 1px solid #1e1e1e; background: #0d0d0d;
-  color: #888; font-size: 0.68rem; letter-spacing: 0.06em;
+  border: 1px solid var(--border-subtle); background: var(--surface-sunken);
+  color: var(--text-muted); font-size: 0.68rem; letter-spacing: 0.06em;
   transition: all 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.quick-bid-btn:hover { border-color: #c9a96e44; color: #c9a96e; }
-.quick-bid-btn--gold { border-color: #c9a96e44; color: #c9a96e; background: #14110d; }
-.quick-bid-btn--gold:hover { border-color: #c9a96e; background: #1a1510; }
+.quick-bid-btn:hover { border-color: var(--accent)44; color: var(--accent); }
+.quick-bid-btn--gold { border-color: var(--accent)44; color: var(--accent); background: var(--accent-soft); }
+.quick-bid-btn--gold:hover { border-color: var(--accent); background: var(--accent-soft); }
 .btn-primary-gold {
   padding: 0 1.4rem; height: 2.75rem;
-  background: #c9a96e; color: #0a0a0a;
+  background: var(--accent); color: var(--surface-base);
   font-weight: 500; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
   transition: background 0.15s, transform 0.1s;
 }
-.btn-primary-gold:hover:not(:disabled) { background: #d4b67a; }
+.btn-primary-gold:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-primary-gold:active:not(:disabled) { transform: translateY(1px); }
 .btn-primary-gold:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary {
-  padding: 0.6rem 1.1rem; background: #c9a96e; color: #0a0a0a;
+  padding: 0.6rem 1.1rem; background: var(--accent); color: var(--surface-base);
   font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
   transition: background 0.15s;
 }
-.btn-primary:hover { background: #d4b67a; }
+.btn-primary:hover { background: var(--accent-hover); }
 .btn-ghost {
   padding: 0.6rem 1rem; background: transparent;
-  border: 1px solid #2a2a28; color: #888;
+  border: 1px solid var(--border-default); color: var(--text-muted);
   font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
   transition: all 0.15s;
 }
-.btn-ghost:hover:not(:disabled) { border-color: #3a3a38; color: #d8d5cf; }
+.btn-ghost:hover:not(:disabled) { border-color: var(--border-strong); color: var(--text-secondary); }
 .btn-outline {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0.5rem 1rem; background: transparent;
-  border: 1px solid #2a2a28; color: #7a7770;
+  border: 1px solid var(--border-default); color: var(--text-muted);
   font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
   transition: all 0.15s;
 }
-.btn-outline:hover { border-color: #c9a96e44; color: #c9a96e; }
+.btn-outline:hover { border-color: var(--accent)44; color: var(--accent); }
 .bid-row {
   display: flex; align-items: center; gap: 0.7rem;
   padding: 0.5rem 0.7rem;
-  background: #0d0d0d; border: 1px solid #161616;
+  background: var(--surface-sunken); border: 1px solid var(--surface-overlay);
   transition: background 0.4s, border-color 0.4s;
 }
 .bid-row--flash {
-  background: #1a1510;
-  border-color: #c9a96e;
+  background: var(--accent-soft);
+  border-color: var(--accent);
   animation: flash 1.5s ease-out;
 }
 .bid-row--mine {
-  border-color: #8ab4a033;
-  background: #0d110f;
+  border-color: var(--vendor)33;
+  background: var(--vendor-soft);
 }
 @keyframes flash {
-  0%   { background: #2a2010; border-color: #d4b67a; }
-  100% { background: #1a1510; border-color: #c9a96e; }
+  0%   { background: var(--accent-soft); border-color: var(--accent-hover); }
+  100% { background: var(--accent-soft); border-color: var(--accent); }
 }
 .modal-box {
-  background: #0a0a0a; border: 1px solid #2a2a28; padding: 1.75rem;
+  background: var(--surface-base); border: 1px solid var(--border-default); padding: 1.75rem;
 }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }

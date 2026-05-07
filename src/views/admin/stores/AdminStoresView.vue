@@ -342,8 +342,8 @@ const pages = computed(() => {
     <!-- Encabezado -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-1">Administración</p>
-        <h1 class="text-2xl font-light tracking-wide text-[#e8e5e0]">Tiendas</h1>
+        <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-1">Administración</p>
+        <h1 class="text-2xl font-light tracking-wide text-text-primary">Tiendas</h1>
       </div>
       <button class="btn-gold" @click="showCreate = true">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -356,7 +356,7 @@ const pages = computed(() => {
     <!-- Filtros -->
     <div class="flex flex-wrap gap-3 mb-6">
       <div class="relative flex-1" style="min-width: 200px;">
-        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
@@ -415,9 +415,9 @@ const pages = computed(() => {
     </div>
 
     <!-- Tabla -->
-    <div class="border border-[#181818] rounded-sm overflow-x-auto">
+    <div class="border border-[var(--surface-overlay)] rounded-sm overflow-x-auto">
       <!-- Loading skeleton -->
-      <div v-if="loading" class="flex items-center justify-center py-20 bg-[#0a0a0a]">
+      <div v-if="loading" class="flex items-center justify-center py-20 bg-surface-base">
         <div class="flex gap-1.5">
           <span class="dot-pulse"></span>
           <span class="dot-pulse delay-150"></span>
@@ -428,7 +428,7 @@ const pages = computed(() => {
       <template v-else>
         <table class="w-full text-sm">
           <thead>
-            <tr class="border-b border-[#181818] bg-[#0c0c0c]">
+            <tr class="border-b border-[var(--surface-overlay)] bg-surface-sunken">
               <th class="th">Tienda</th>
               <th class="th hidden md:table-cell">Propietario</th>
               <th class="th">Estado</th>
@@ -440,24 +440,24 @@ const pages = computed(() => {
           </thead>
           <tbody>
             <tr v-if="stores.length === 0">
-              <td colspan="7" class="px-4 py-12 text-center text-[#444] text-sm">
+              <td colspan="7" class="px-4 py-12 text-center text-text-disabled text-sm">
                 No se encontraron tiendas con los filtros actuales.
               </td>
             </tr>
             <tr
               v-for="store in stores"
               :key="store.id"
-              class="border-b border-[#111] hover:bg-[#0d0d0d] transition-colors cursor-pointer"
+              class="border-b border-border-subtle hover:bg-surface-sunken transition-colors cursor-pointer"
               @click="router.push(`/admin/stores/${store.id}`)"
             >
               <!-- Nombre + slug -->
               <td class="td">
-                <p class="text-[#d8d5cf] font-medium leading-tight">{{ store.name }}</p>
-                <p class="text-[10px] text-[#444] mt-0.5">{{ store.slug }}</p>
+                <p class="text-text-secondary font-medium leading-tight">{{ store.name }}</p>
+                <p class="text-[10px] text-text-disabled mt-0.5">{{ store.slug }}</p>
               </td>
 
               <!-- Propietario -->
-              <td class="td hidden md:table-cell text-[#888880]">
+              <td class="td hidden md:table-cell text-text-muted">
                 {{ ownerName(store) }}
               </td>
 
@@ -484,16 +484,16 @@ const pages = computed(() => {
 
               <!-- Rating -->
               <td class="td hidden lg:table-cell">
-                <div class="flex items-center gap-1 text-[#c9a96e]">
+                <div class="flex items-center gap-1 text-accent">
                   <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
-                  <span class="text-[#888] text-xs">{{ (store.rating || 0).toFixed(1) }}</span>
+                  <span class="text-text-muted text-xs">{{ (store.rating || 0).toFixed(1) }}</span>
                 </div>
               </td>
 
               <!-- Fecha -->
-              <td class="td hidden xl:table-cell text-[#555550] text-xs">
+              <td class="td hidden xl:table-cell text-text-muted text-xs">
                 {{ fmtDate(store.created) }}
               </td>
 
@@ -533,8 +533,8 @@ const pages = computed(() => {
         </table>
 
         <!-- Paginación -->
-        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-[#181818] bg-[#0c0c0c]">
-          <p class="text-xs text-[#444]">
+        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-[var(--surface-overlay)] bg-surface-sunken">
+          <p class="text-xs text-text-disabled">
             Página {{ filters.page }} de {{ totalPages }} · {{ totalItems }} tiendas
           </p>
           <div class="flex gap-1">
@@ -557,11 +557,11 @@ const pages = computed(() => {
   <Transition name="modal">
     <div v-if="showCreate" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showCreate = false"></div>
-      <div class="relative w-full max-w-lg bg-[#0c0c0c] border border-[#222] rounded-sm shadow-2xl overflow-hidden">
+      <div class="relative w-full max-w-lg bg-surface-sunken border border-border-default rounded-sm shadow-2xl overflow-hidden">
 
-        <div class="px-6 py-4 border-b border-[#181818] flex items-center justify-between">
-          <h2 class="text-[15px] font-medium text-[#e8e5e0]">Nueva tienda</h2>
-          <button class="text-[#555] hover:text-[#999] transition-colors" @click="showCreate = false">
+        <div class="px-6 py-4 border-b border-[var(--surface-overlay)] flex items-center justify-between">
+          <h2 class="text-[15px] font-medium text-text-primary">Nueva tienda</h2>
+          <button class="text-text-muted hover:text-text-muted transition-colors" @click="showCreate = false">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -576,8 +576,8 @@ const pages = computed(() => {
             </div>
             <div class="col-span-2">
               <label class="form-label">Slug *</label>
-              <input v-model="form.slug" type="text" class="admin-input w-full font-mono text-[#c9a96e]" placeholder="atelier-norte" required />
-              <p class="mt-1 text-[10px] text-[#555]">URL amigable sin espacios ni caracteres especiales.</p>
+              <input v-model="form.slug" type="text" class="admin-input w-full font-mono text-accent" placeholder="atelier-norte" required />
+              <p class="mt-1 text-[10px] text-text-muted">URL amigable sin espacios ni caracteres especiales.</p>
             </div>
 
             <!-- Propietarios (búsqueda múltiple) -->
@@ -589,11 +589,11 @@ const pages = computed(() => {
                 <div
                   v-for="o in selectedOwners"
                   :key="o.id"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#1a1508] border border-[#c9a96e55] rounded-full"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[var(--accent-soft)] border border-[var(--accent)55] rounded-full"
                 >
-                  <span class="text-[11px] text-[#c9a96e] font-medium">{{ o.name || o.email }}</span>
-                  <span class="text-[10px] text-[#c9a96e55]">{{ o.name ? o.email : '' }}</span>
-                  <button type="button" class="text-[#c9a96e55] hover:text-[#c9a96e] text-xs leading-none ml-0.5 transition-colors" @click="removeSelectedOwner(o.id)">✕</button>
+                  <span class="text-[11px] text-accent font-medium">{{ o.name || o.email }}</span>
+                  <span class="text-[10px] text-[var(--accent)55]">{{ o.name ? o.email : '' }}</span>
+                  <button type="button" class="text-[var(--accent)55] hover:text-accent text-xs leading-none ml-0.5 transition-colors" @click="removeSelectedOwner(o.id)">✕</button>
                 </div>
               </div>
 
@@ -606,27 +606,27 @@ const pages = computed(() => {
               />
 
               <!-- Mensaje de ayuda -->
-              <p v-if="userSearch" class="text-[10px] text-[#fbbf24] mt-1">
+              <p v-if="userSearch" class="text-[10px] text-warning mt-1">
                 {{ userSearchLoading ? 'Buscando...' : 'Selecciona de la lista para añadir' }}
               </p>
 
               <!-- Resultados -->
-              <div v-if="userResults.length" class="absolute left-0 right-0 top-full mt-1 bg-[#111] border border-[#c9a96e77] rounded-sm z-10 overflow-hidden max-h-48 overflow-y-auto shadow-lg">
+              <div v-if="userResults.length" class="absolute left-0 right-0 top-full mt-1 bg-surface-raised border border-[var(--accent)77] rounded-sm z-10 overflow-hidden max-h-48 overflow-y-auto shadow-lg">
                 <button
                   v-for="u in userResults"
                   :key="u.id"
                   type="button"
-                  class="w-full text-left px-3 py-2.5 text-sm text-[#aaa] hover:bg-[#1a1508] hover:text-[#c9a96e] transition-colors border-b border-[#0f0f0f] last:border-b-0 flex items-center gap-3 group"
+                  class="w-full text-left px-3 py-2.5 text-sm text-text-secondary hover:bg-[var(--accent-soft)] hover:text-accent transition-colors border-b border-[var(--surface-raised)] last:border-b-0 flex items-center gap-3 group"
                   @click="selectUser(u)"
                 >
-                  <div class="w-7 h-7 rounded-full bg-[#1a1508] border border-[#c9a96e44] flex items-center justify-center text-[#c9a96e] text-xs font-medium group-hover:border-[#c9a96e]">
+                  <div class="w-7 h-7 rounded-full bg-[var(--accent-soft)] border border-[var(--accent)44] flex items-center justify-center text-accent text-xs font-medium group-hover:border-accent">
                     {{ (u.name || u.email)[0].toUpperCase() }}
                   </div>
                   <div class="min-w-0 flex-1">
                     <p class="font-medium truncate">{{ u.name || '—' }}</p>
-                    <p class="text-[11px] text-[#555] truncate">{{ u.email }}</p>
+                    <p class="text-[11px] text-text-muted truncate">{{ u.email }}</p>
                   </div>
-                  <svg class="w-4 h-4 text-[#c9a96e77] group-hover:text-[#c9a96e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="w-4 h-4 text-[var(--accent)77] group-hover:text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
@@ -662,19 +662,19 @@ const pages = computed(() => {
             <div class="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="form-label">Logo (opcional) · Recomendado 300x300 px</label>
-                <div v-if="createLogoPreview" class="mb-2 w-full h-32 bg-black rounded-sm border border-[#222] flex items-center justify-center overflow-hidden">
+                <div v-if="createLogoPreview" class="mb-2 w-full h-32 bg-black rounded-sm border border-border-default flex items-center justify-center overflow-hidden">
                   <img :src="createLogoPreview" :alt="createLogoFile?.name" class="max-w-full max-h-full object-contain" />
                 </div>
                 <input ref="createLogoInput" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" class="admin-input w-full" @change="onCreateLogoSelected" />
-                <p v-if="createLogoFile" class="text-[10px] text-[#c9a96e77] mt-2 truncate">✓ {{ createLogoFile.name }}</p>
+                <p v-if="createLogoFile" class="text-[10px] text-[var(--accent)77] mt-2 truncate">✓ {{ createLogoFile.name }}</p>
               </div>
               <div>
                 <label class="form-label">Banner (opcional) · Recomendado 1200x400 px</label>
-                <div v-if="createBannerPreview" class="mb-2 w-full h-32 bg-black rounded-sm border border-[#222] flex items-center justify-center overflow-hidden">
+                <div v-if="createBannerPreview" class="mb-2 w-full h-32 bg-black rounded-sm border border-border-default flex items-center justify-center overflow-hidden">
                   <img :src="createBannerPreview" :alt="createBannerFile?.name" class="max-w-full max-h-full object-cover" />
                 </div>
                 <input ref="createBannerInput" type="file" accept="image/jpeg,image/png,image/webp" class="admin-input w-full" @change="onCreateBannerSelected" />
-                <p v-if="createBannerFile" class="text-[10px] text-[#c9a96e77] mt-2 truncate">✓ {{ createBannerFile.name }}</p>
+                <p v-if="createBannerFile" class="text-[10px] text-[var(--accent)77] mt-2 truncate">✓ {{ createBannerFile.name }}</p>
               </div>
             </div>
           </div>
@@ -696,14 +696,14 @@ const pages = computed(() => {
   <Transition name="modal">
     <div v-if="showOwners" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showOwners = false"></div>
-      <div class="relative w-full max-w-md bg-[#0c0c0c] border border-[#222] rounded-sm shadow-2xl overflow-hidden">
+      <div class="relative w-full max-w-md bg-surface-sunken border border-border-default rounded-sm shadow-2xl overflow-hidden">
 
-        <div class="px-6 py-4 border-b border-[#181818] flex items-center justify-between">
+        <div class="px-6 py-4 border-b border-[var(--surface-overlay)] flex items-center justify-between">
           <div>
-            <h2 class="text-[15px] font-medium text-[#e8e5e0]">Propietarios</h2>
-            <p class="text-[11px] text-[#555] mt-0.5">{{ ownersStore?.name }}</p>
+            <h2 class="text-[15px] font-medium text-text-primary">Propietarios</h2>
+            <p class="text-[11px] text-text-muted mt-0.5">{{ ownersStore?.name }}</p>
           </div>
-          <button class="text-[#555] hover:text-[#999] transition-colors" @click="showOwners = false">
+          <button class="text-text-muted hover:text-text-muted transition-colors" @click="showOwners = false">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -715,20 +715,20 @@ const pages = computed(() => {
           <!-- Lista de propietarios actuales -->
           <div>
             <p class="form-label mb-2">Propietarios actuales</p>
-            <div v-if="currentOwners.length === 0" class="text-[#444] text-xs italic py-2">Sin propietarios asignados.</div>
+            <div v-if="currentOwners.length === 0" class="text-text-disabled text-xs italic py-2">Sin propietarios asignados.</div>
             <div v-else class="flex flex-col gap-1.5">
               <div
                 v-for="o in currentOwners"
                 :key="o.id"
-                class="flex items-center justify-between px-3 py-2 bg-[#111] border border-[#1e1e1e] rounded-sm"
+                class="flex items-center justify-between px-3 py-2 bg-surface-raised border border-border-subtle rounded-sm"
               >
                 <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="w-7 h-7 rounded-full bg-[#1a1508] border border-[#c9a96e44] flex items-center justify-center text-[#c9a96e] text-xs font-medium shrink-0">
+                  <div class="w-7 h-7 rounded-full bg-[var(--accent-soft)] border border-[var(--accent)44] flex items-center justify-center text-accent text-xs font-medium shrink-0">
                     {{ (o.name || o.email)[0].toUpperCase() }}
                   </div>
                   <div class="min-w-0">
-                    <p class="text-[12px] text-[#d0cdc8] font-medium truncate">{{ o.name || '—' }}</p>
-                    <p class="text-[10px] text-[#555] truncate">{{ o.email }}</p>
+                    <p class="text-[12px] text-text-secondary font-medium truncate">{{ o.name || '—' }}</p>
+                    <p class="text-[10px] text-text-muted truncate">{{ o.email }}</p>
                   </div>
                 </div>
                 <button
@@ -752,24 +752,24 @@ const pages = computed(() => {
               class="admin-input w-full"
               placeholder="Buscar por nombre o correo…"
             />
-            <p v-if="ownersSearch && ownersSearchLoading" class="text-[10px] text-[#555] mt-1">Buscando...</p>
+            <p v-if="ownersSearch && ownersSearchLoading" class="text-[10px] text-text-muted mt-1">Buscando...</p>
 
-            <div v-if="ownersResults.length" class="absolute left-0 right-0 top-full mt-1 bg-[#111] border border-[#c9a96e77] rounded-sm z-10 overflow-hidden max-h-44 overflow-y-auto shadow-lg">
+            <div v-if="ownersResults.length" class="absolute left-0 right-0 top-full mt-1 bg-surface-raised border border-[var(--accent)77] rounded-sm z-10 overflow-hidden max-h-44 overflow-y-auto shadow-lg">
               <button
                 v-for="u in ownersResults"
                 :key="u.id"
                 type="button"
-                class="w-full text-left px-3 py-2.5 text-sm text-[#aaa] hover:bg-[#1a1508] hover:text-[#c9a96e] transition-colors border-b border-[#0f0f0f] last:border-b-0 flex items-center gap-3 group"
+                class="w-full text-left px-3 py-2.5 text-sm text-text-secondary hover:bg-[var(--accent-soft)] hover:text-accent transition-colors border-b border-[var(--surface-raised)] last:border-b-0 flex items-center gap-3 group"
                 @click="addOwnerToStore(u)"
               >
-                <div class="w-7 h-7 rounded-full bg-[#1a1508] border border-[#c9a96e44] flex items-center justify-center text-[#c9a96e] text-xs font-medium group-hover:border-[#c9a96e]">
+                <div class="w-7 h-7 rounded-full bg-[var(--accent-soft)] border border-[var(--accent)44] flex items-center justify-center text-accent text-xs font-medium group-hover:border-accent">
                   {{ (u.name || u.email)[0].toUpperCase() }}
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="font-medium truncate">{{ u.name || '—' }}</p>
-                  <p class="text-[11px] text-[#555] truncate">{{ u.email }}</p>
+                  <p class="text-[11px] text-text-muted truncate">{{ u.email }}</p>
                 </div>
-                <svg class="w-4 h-4 text-[#c9a96e77] group-hover:text-[#c9a96e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-4 h-4 text-[var(--accent)77] group-hover:text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
               </button>
@@ -790,10 +790,10 @@ const pages = computed(() => {
   <Transition name="modal">
     <div v-if="confirmDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="confirmDelete = null"></div>
-      <div class="relative w-full max-w-sm bg-[#0c0c0c] border border-[#222] rounded-sm p-6 shadow-2xl">
-        <p class="text-[#e8e5e0] font-medium mb-2">¿Eliminar tienda?</p>
-        <p class="text-sm text-[#666] mb-6">
-          Se eliminará <span class="text-[#c9a96e]">{{ confirmDelete.name }}</span> de forma permanente.
+      <div class="relative w-full max-w-sm bg-surface-sunken border border-border-default rounded-sm p-6 shadow-2xl">
+        <p class="text-text-primary font-medium mb-2">¿Eliminar tienda?</p>
+        <p class="text-sm text-text-muted mb-6">
+          Se eliminará <span class="text-accent">{{ confirmDelete.name }}</span> de forma permanente.
         </p>
         <div class="flex justify-end gap-3">
           <button class="btn-ghost" @click="confirmDelete = null">Cancelar</button>
@@ -808,56 +808,56 @@ const pages = computed(() => {
 
 <style scoped>
 /* Tabla */
-.th { padding: 0.65rem 1rem; text-align: left; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: #3a3a38; font-weight: 500; }
+.th { padding: 0.65rem 1rem; text-align: left; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--border-strong); font-weight: 500; }
 .td { padding: 0.75rem 1rem; vertical-align: middle; }
 
 /* Badges de estado */
 .badge { display: inline-flex; align-items: center; padding: 0.2rem 0.55rem; border-radius: 3px; font-size: 0.68rem; letter-spacing: 0.06em; font-weight: 500; }
-.badge-active    { background: #052e16; color: #4ade80; }
-.badge-suspended { background: #2d0707; color: #f87171; }
-.badge-pending   { background: #2d1f00; color: #fbbf24; }
+.badge-active    { background: var(--success-soft); color: var(--success); }
+.badge-suspended { background: var(--danger-soft); color: var(--danger); }
+.badge-pending   { background: var(--warning-soft); color: var(--warning); }
 
 /* Botón verificar */
 .verify-btn { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.7rem; transition: all 0.18s; border: 1px solid transparent; }
-.verify-btn-on  { color: #c9a96e; border-color: #c9a96e33; background: #1a1508; }
-.verify-btn-off { color: #444; border-color: #222; }
+.verify-btn-on  { color: var(--accent); border-color: var(--accent)33; background: var(--accent-soft); }
+.verify-btn-off { color: var(--text-disabled); border-color: var(--border-default); }
 .verify-btn:hover { opacity: 0.8; }
 
 /* Botones de acción en fila */
-.action-btn { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 3px; color: #555550; border: 1px solid #1a1a1a; transition: all 0.18s; }
-.action-btn:hover { background: #151515; color: #c9a96e; border-color: #2a2a2a; }
+.action-btn { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 3px; color: var(--text-muted); border: 1px solid var(--border-subtle); transition: all 0.18s; }
+.action-btn:hover { background: var(--surface-overlay); color: var(--accent); border-color: var(--border-default); }
 
 /* Stats */
-.stat-card  { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 0.85rem 1rem; }
-.stat-label { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: #3a3a38; margin-bottom: 0.3rem; }
-.stat-value { font-size: 1.4rem; font-weight: 300; color: #e8e5e0; line-height: 1; }
+.stat-card  { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 0.85rem 1rem; }
+.stat-label { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--border-strong); margin-bottom: 0.3rem; }
+.stat-value { font-size: 1.4rem; font-weight: 300; color: var(--text-primary); line-height: 1; }
 
 /* Inputs */
-.admin-input { background: #0f0f0f; border: 1px solid #1f1f1f; border-radius: 3px; padding: 0.45rem 0.75rem; font-size: 0.8rem; color: #d0cdc8; outline: none; transition: border-color 0.18s; }
-.admin-input:focus { border-color: #c9a96e55; }
-.admin-input::placeholder { color: #3a3a38; }
+.admin-input { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; padding: 0.45rem 0.75rem; font-size: 0.8rem; color: var(--text-secondary); outline: none; transition: border-color 0.18s; }
+.admin-input:focus { border-color: var(--accent)55; }
+.admin-input::placeholder { color: var(--border-strong); }
 
 /* Form labels */
-.form-label { display: block; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: #444; margin-bottom: 0.35rem; }
+.form-label { display: block; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-disabled); margin-bottom: 0.35rem; }
 
 /* Botones */
-.btn-gold   { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 1rem; background: #c9a96e; color: #0a0a0a; font-size: 0.78rem; font-weight: 600; border-radius: 3px; letter-spacing: 0.04em; transition: all 0.2s; }
-.btn-gold:hover { background: #d4b87a; }
+.btn-gold   { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 1rem; background: var(--accent); color: var(--surface-base); font-size: 0.78rem; font-weight: 600; border-radius: 3px; letter-spacing: 0.04em; transition: all 0.2s; }
+.btn-gold:hover { background: var(--accent-hover); }
 .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-ghost  { display: inline-flex; align-items: center; padding: 0.45rem 0.9rem; background: transparent; color: #666; font-size: 0.78rem; border: 1px solid #222; border-radius: 3px; transition: all 0.18s; }
-.btn-ghost:hover { border-color: #333; color: #999; }
-.btn-danger { display: inline-flex; align-items: center; padding: 0.45rem 0.9rem; background: #7f1d1d; color: #fca5a5; font-size: 0.78rem; border-radius: 3px; transition: all 0.18s; }
-.btn-danger:hover { background: #991b1b; }
+.btn-ghost  { display: inline-flex; align-items: center; padding: 0.45rem 0.9rem; background: transparent; color: var(--text-muted); font-size: 0.78rem; border: 1px solid var(--border-default); border-radius: 3px; transition: all 0.18s; }
+.btn-ghost:hover { border-color: var(--text-disabled); color: var(--text-muted); }
+.btn-danger { display: inline-flex; align-items: center; padding: 0.45rem 0.9rem; background: var(--danger-soft); color: var(--danger); font-size: 0.78rem; border-radius: 3px; transition: all 0.18s; }
+.btn-danger:hover { background: var(--danger); }
 .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Paginación */
-.page-btn { min-width: 2rem; height: 2rem; padding: 0 0.4rem; border: 1px solid #1a1a1a; background: #0f0f0f; color: #555; font-size: 0.75rem; border-radius: 3px; transition: all 0.18s; }
-.page-btn:hover:not(:disabled) { border-color: #c9a96e44; color: #c9a96e; }
+.page-btn { min-width: 2rem; height: 2rem; padding: 0 0.4rem; border: 1px solid var(--border-subtle); background: var(--surface-raised); color: var(--text-muted); font-size: 0.75rem; border-radius: 3px; transition: all 0.18s; }
+.page-btn:hover:not(:disabled) { border-color: var(--accent)44; color: var(--accent); }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.page-btn-active { background: #1a1508; border-color: #c9a96e44; color: #c9a96e; }
+.page-btn-active { background: var(--accent-soft); border-color: var(--accent)44; color: var(--accent); }
 
 /* Loading dots */
-.dot-pulse { width: 6px; height: 6px; background: #c9a96e44; border-radius: 50%; animation: pulse 1s ease-in-out infinite; }
+.dot-pulse { width: 6px; height: 6px; background: var(--accent)44; border-radius: 50%; animation: pulse 1s ease-in-out infinite; }
 .delay-150 { animation-delay: 0.15s; }
 .delay-300 { animation-delay: 0.30s; }
 @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }

@@ -85,7 +85,7 @@ const chartData = computed(() => ({
     {
       label: 'Ingresos diarios',
       data: chartDaily.value.map((item) => item.amount),
-      borderColor: '#c9a96e',
+      borderColor: 'var(--accent)',
       backgroundColor: 'rgba(201, 169, 110, 0.18)',
       fill: true,
       tension: 0.35,
@@ -98,11 +98,11 @@ const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: { labels: { color: '#e8e5e0' } },
+    legend: { labels: { color: 'var(--text-primary)' } },
   },
   scales: {
-    x: { ticks: { color: '#666' }, grid: { color: 'rgba(255,255,255,0.04)' } },
-    y: { beginAtZero: true, ticks: { color: '#666' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+    x: { ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--chart-grid)' } },
+    y: { beginAtZero: true, ticks: { color: 'var(--text-muted)' }, grid: { color: 'var(--chart-grid)' } },
   },
 }
 
@@ -122,16 +122,16 @@ const metrics = computed(() => {
 <template>
   <div class="p-5 lg:p-8 min-h-screen">
     <div class="mb-6">
-      <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-0.5">Vendedor</p>
-      <h1 class="text-xl lg:text-2xl font-light tracking-wide text-[#e8e5e0]">Transacciones</h1>
-      <p class="text-sm text-[#666] mt-2">Resumen financiero de {{ selectedStore?.name || 'la tienda seleccionada' }}.</p>
+      <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-0.5">Vendedor</p>
+      <h1 class="text-xl lg:text-2xl font-light tracking-wide text-text-primary">Transacciones</h1>
+      <p class="text-sm text-text-muted mt-2">Resumen financiero de {{ selectedStore?.name || 'la tienda seleccionada' }}.</p>
     </div>
 
     <div v-if="error" class="mb-4 px-4 py-3 bg-red-950/40 border border-red-900/50 text-red-400 text-sm rounded-sm">
       {{ error }}
     </div>
 
-    <div v-if="loading" class="flex items-center justify-center py-24 text-[#666]">Cargando transacciones...</div>
+    <div v-if="loading" class="flex items-center justify-center py-24 text-text-muted">Cargando transacciones...</div>
 
     <template v-else>
       <section class="panel mb-6">
@@ -146,41 +146,41 @@ const metrics = computed(() => {
       <section class="panel mb-6">
         <div class="flex items-center justify-between gap-3 mb-4">
           <div>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Gráfico</p>
-            <h2 class="text-lg text-[#e8e5e0] mt-1">Ingresos diarios</h2>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Gráfico</p>
+            <h2 class="text-lg text-text-primary mt-1">Ingresos diarios</h2>
           </div>
-          <p class="text-xs text-[#666]">{{ chartDaily.length }} puntos</p>
+          <p class="text-xs text-text-muted">{{ chartDaily.length }} puntos</p>
         </div>
         <div v-if="chartDaily.length" class="h-72">
           <LineChart :data="chartData" :options="chartOptions" />
         </div>
-        <div v-else class="text-sm text-[#666] py-8 text-center">No hay datos de ingresos para mostrar.</div>
+        <div v-else class="text-sm text-text-muted py-8 text-center">No hay datos de ingresos para mostrar.</div>
       </section>
 
       <section class="panel">
         <div class="flex items-center justify-between gap-3 mb-4">
           <div>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Tabla</p>
-            <h2 class="text-lg text-[#e8e5e0] mt-1">Movimientos de la tienda</h2>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Tabla</p>
+            <h2 class="text-lg text-text-primary mt-1">Movimientos de la tienda</h2>
           </div>
-          <p class="text-xs text-[#666]">{{ transactions.length }} registros</p>
+          <p class="text-xs text-text-muted">{{ transactions.length }} registros</p>
         </div>
 
-        <div v-if="!transactions.length" class="text-sm text-[#666] py-10 text-center">Sin transacciones registradas.</div>
+        <div v-if="!transactions.length" class="text-sm text-text-muted py-10 text-center">Sin transacciones registradas.</div>
 
         <div v-else class="flex flex-col gap-2 max-h-128 overflow-auto pr-1">
           <article v-for="tx in transactions" :key="tx.id" class="tx-card">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <p class="text-sm text-[#e8e5e0] truncate">{{ typeLabel(tx.type) }}</p>
-                <p class="text-[10px] text-[#666] mt-0.5 truncate">{{ tx.notes || tx.id }}</p>
+                <p class="text-sm text-text-primary truncate">{{ typeLabel(tx.type) }}</p>
+                <p class="text-[10px] text-text-muted mt-0.5 truncate">{{ tx.notes || tx.id }}</p>
               </div>
               <div class="text-right shrink-0">
-                <p class="text-sm text-[#c9a96e]">{{ money(tx.amount) }}</p>
+                <p class="text-sm text-accent">{{ money(tx.amount) }}</p>
                 <span :class="['tx-badge', statusClass(tx.status)]">{{ tx.status }}</span>
               </div>
             </div>
-            <div class="mt-3 flex items-center justify-between text-[10px] text-[#666]">
+            <div class="mt-3 flex items-center justify-between text-[10px] text-text-muted">
               <span>{{ tx.currency || 'BS' }}</span>
               <span>{{ fmtDate(tx.created || tx.updated) }}</span>
             </div>
@@ -192,17 +192,17 @@ const metrics = computed(() => {
 </template>
 
 <style scoped>
-.panel { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 1rem 1.1rem; }
-.metric-card { padding: 0.8rem 0.9rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; display: flex; flex-direction: column; gap: 0.2rem; }
-.metric-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: #666; }
-.metric-value { font-size: 1rem; color: #e8e5e0; font-weight: 500; }
-.tx-card { padding: 0.85rem 0.95rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; }
+.panel { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 1rem 1.1rem; }
+.metric-card { padding: 0.8rem 0.9rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; display: flex; flex-direction: column; gap: 0.2rem; }
+.metric-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+.metric-value { font-size: 1rem; color: var(--text-primary); font-weight: 500; }
+.tx-card { padding: 0.85rem 0.95rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; }
 .tx-badge { display: inline-flex; padding: 0.18rem 0.5rem; border-radius: 999px; font-size: 0.65rem; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.25rem; }
-.tx-completed { background: #052e16; color: #4ade80; }
-.tx-pending { background: #2d1f00; color: #fbbf24; }
-.tx-reserved { background: #1f2937; color: #93c5fd; }
-.tx-approved { background: #0f172a; color: #60a5fa; }
-.tx-failed { background: #2d0707; color: #f87171; }
-.tx-cancelled { background: #111; color: #a3a3a3; }
-.tx-neutral { background: #111; color: #a3a3a3; }
+.tx-completed { background: var(--success-soft); color: var(--success); }
+.tx-pending { background: var(--warning-soft); color: var(--warning); }
+.tx-reserved { background: var(--info-soft); color: var(--info); }
+.tx-approved { background: var(--info-soft); color: var(--info); }
+.tx-failed { background: var(--danger-soft); color: var(--danger); }
+.tx-cancelled { background: var(--surface-raised); color: var(--text-secondary); }
+.tx-neutral { background: var(--surface-raised); color: var(--text-secondary); }
 </style>

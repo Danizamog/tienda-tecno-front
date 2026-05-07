@@ -203,35 +203,35 @@ const STATUS_COLORS = {
   <div class="p-5 lg:p-8 min-h-screen">
 
     <div class="mb-6">
-      <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-0.5">Vendedor</p>
-      <h1 class="text-xl lg:text-2xl font-light tracking-wide text-[#e8e5e0]">Pagos QR</h1>
+      <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-0.5">Vendedor</p>
+      <h1 class="text-xl lg:text-2xl font-light tracking-wide text-text-primary">Pagos QR</h1>
     </div>
 
     <!-- ══ Sección QR de la tienda ══════════════════════════════════════════ -->
     <div class="panel mb-6">
-      <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-4">QR de tu tienda</p>
+      <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-4">QR de tu tienda</p>
 
       <div class="flex flex-col lg:flex-row gap-6">
         <!-- QR actual -->
         <div class="flex flex-col items-center gap-3 shrink-0">
-          <p class="text-[10px] uppercase tracking-[0.16em] text-[#555]">QR actual</p>
-          <div class="w-36 h-36 border border-[#222] bg-[#0f0f0f] rounded-sm overflow-hidden flex items-center justify-center">
+          <p class="text-[10px] uppercase tracking-[0.16em] text-text-muted">QR actual</p>
+          <div class="w-36 h-36 border border-border-default bg-surface-raised rounded-sm overflow-hidden flex items-center justify-center">
             <img v-if="currentQrUrl" :src="currentQrUrl" alt="QR de pago" class="w-full h-full object-contain p-2" />
             <div v-else class="text-center px-3">
-              <svg class="w-8 h-8 text-[#2a2a2a] mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+              <svg class="w-8 h-8 text-text-disabled mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
               </svg>
-              <p class="text-[10px] text-[#3a3a38]">Sin QR</p>
+              <p class="text-[10px] text-text-disabled">Sin QR</p>
             </div>
           </div>
         </div>
 
         <!-- Subir nuevo QR -->
         <div class="flex-1">
-          <p class="text-[10px] uppercase tracking-[0.16em] text-[#555] mb-3">Actualizar QR de pago</p>
+          <p class="text-[10px] uppercase tracking-[0.16em] text-text-muted mb-3">Actualizar QR de pago</p>
 
           <!-- Preview del nuevo -->
-          <div v-if="qrPreview" class="mb-3 w-28 h-28 border border-[#8ab4a033] bg-[#0f0f0f] rounded-sm overflow-hidden">
+          <div v-if="qrPreview" class="mb-3 w-28 h-28 border border-[var(--vendor)33] bg-surface-raised rounded-sm overflow-hidden">
             <img :src="qrPreview" class="w-full h-full object-contain p-2" />
           </div>
 
@@ -241,7 +241,7 @@ const STATUS_COLORS = {
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
-                class="input-field w-full text-[#888] file:mr-3 file:py-1 file:px-3 file:rounded-sm file:border-0 file:bg-[#161616] file:text-[#999] file:text-xs"
+                class="input-field w-full text-text-muted file:mr-3 file:py-1 file:px-3 file:rounded-sm file:border-0 file:bg-surface-overlay file:text-text-muted file:text-xs"
                 @change="onQrFileChange"
               />
             </div>
@@ -268,16 +268,16 @@ const STATUS_COLORS = {
         </div>
 
         <!-- Instrucciones actuales -->
-        <div v-if="selectedStore?.payment_instructions && !instructions" class="lg:w-56 p-3 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm">
-          <p class="text-[9px] tracking-[0.16em] uppercase text-[#3a3a38] mb-1.5">Instrucciones actuales</p>
-          <p class="text-[11px] text-[#777] leading-relaxed">{{ selectedStore.payment_instructions }}</p>
+        <div v-if="selectedStore?.payment_instructions && !instructions" class="lg:w-56 p-3 bg-surface-raised border border-border-subtle rounded-sm">
+          <p class="text-[9px] tracking-[0.16em] uppercase text-text-disabled mb-1.5">Instrucciones actuales</p>
+          <p class="text-[11px] text-text-muted leading-relaxed">{{ selectedStore.payment_instructions }}</p>
         </div>
       </div>
     </div>
 
     <!-- ══ Configuración de envíos ═══════════════════════════════════════════ -->
     <div class="panel mb-6">
-      <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-4">Configuración de envíos</p>
+      <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-4">Configuración de envíos</p>
       <div class="flex flex-col sm:flex-row gap-4">
         <div class="flex-1">
           <label class="form-label">Costo de envío (Bs)</label>
@@ -289,7 +289,7 @@ const STATUS_COLORS = {
             placeholder="Ej: 30"
             class="input-field w-full"
           />
-          <p class="text-[10px] text-[#3a3a38] mt-1">Monto cobrado cuando el pedido no aplica envío gratis.</p>
+          <p class="text-[10px] text-text-disabled mt-1">Monto cobrado cuando el pedido no aplica envío gratis.</p>
         </div>
         <div class="flex-1">
           <label class="form-label">Envío gratis desde (Bs)</label>
@@ -301,16 +301,16 @@ const STATUS_COLORS = {
             placeholder="Ej: 200"
             class="input-field w-full"
           />
-          <p class="text-[10px] text-[#3a3a38] mt-1">Pedidos con subtotal igual o mayor a este monto tendrán envío gratis.</p>
+          <p class="text-[10px] text-text-disabled mt-1">Pedidos con subtotal igual o mayor a este monto tendrán envío gratis.</p>
         </div>
       </div>
 
       <!-- Preview de la lógica -->
-      <div class="mt-3 px-3 py-2 bg-[#0f0f0f] border border-[#1a1a1a] text-[11px] text-[#666660]">
+      <div class="mt-3 px-3 py-2 bg-surface-raised border border-border-subtle text-[11px] text-[#666660]">
         Pedidos menores a
-        <span class="text-[#c9a96e]">Bs {{ freeShippingInput || 200 }}</span>
+        <span class="text-accent">Bs {{ freeShippingInput || 200 }}</span>
         pagan
-        <span class="text-[#c9a96e]">Bs {{ shippingCostInput || 30 }}</span>
+        <span class="text-accent">Bs {{ shippingCostInput || 30 }}</span>
         de envío · Pedidos iguales o mayores tienen envío
         <span class="text-emerald-400">gratis</span>
       </div>
@@ -329,26 +329,26 @@ const STATUS_COLORS = {
     <!-- ══ Órdenes aceptadas con comprobantes ═══════════════════════════════ -->
     <div>
       <div class="flex items-center justify-between mb-4">
-        <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">
+        <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">
           Órdenes aceptadas
-          <span class="ml-2 text-[#555] normal-case">{{ totalItems }} órdenes</span>
+          <span class="ml-2 text-text-muted normal-case">{{ totalItems }} órdenes</span>
         </p>
       </div>
 
       <div v-if="error" class="mb-4 px-4 py-3 bg-red-950/40 border border-red-900/50 text-red-400 text-sm rounded-sm">{{ error }}</div>
-      <div v-if="loading" class="flex items-center justify-center py-12 text-[#555] text-sm">Cargando...</div>
+      <div v-if="loading" class="flex items-center justify-center py-12 text-text-muted text-sm">Cargando...</div>
 
       <div v-else-if="!orders.length" class="panel flex items-center justify-center py-16 text-center">
         <div>
-          <p class="text-[#555] text-sm">No hay órdenes aceptadas aún</p>
-          <p class="text-[#3a3a38] text-xs mt-1">Aquí aparecerán las órdenes aprobadas con sus comprobantes</p>
+          <p class="text-text-muted text-sm">No hay órdenes aceptadas aún</p>
+          <p class="text-text-disabled text-xs mt-1">Aquí aparecerán las órdenes aprobadas con sus comprobantes</p>
         </div>
       </div>
 
-      <div v-else class="overflow-x-auto rounded-sm border border-[#181818]">
+      <div v-else class="overflow-x-auto rounded-sm border border-[var(--surface-overlay)]">
         <table class="w-full text-sm">
           <thead>
-            <tr class="border-b border-[#181818] bg-[#0c0c0c]">
+            <tr class="border-b border-[var(--surface-overlay)] bg-surface-sunken">
               <th class="th">Comprador</th>
               <th class="th hidden sm:table-cell">Total</th>
               <th class="th hidden md:table-cell">Referencia</th>
@@ -358,30 +358,36 @@ const STATUS_COLORS = {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="order in orders" :key="order.id" class="border-b border-[#111] bg-[#080808] hover:bg-[#0c0c0c] transition-colors">
+            <tr
+              v-for="order in orders"
+              :key="order.id"
+              class="border-b border-border-subtle bg-surface-base hover:bg-surface-sunken transition-colors"
+              :class="order.payment_proof ? 'cursor-pointer' : ''"
+              @click="order.payment_proof && openProof(order)"
+            >
               <td class="td">
-                <p class="text-[13px] text-[#e8e5e0]">{{ order.expand?.buyer?.name || 'Comprador' }}</p>
-                <p class="text-[10px] text-[#555] truncate max-w-32">{{ order.expand?.buyer?.email }}</p>
+                <p class="text-[13px] text-text-primary">{{ order.expand?.buyer?.name || 'Comprador' }}</p>
+                <p class="text-[10px] text-text-muted truncate max-w-32">{{ order.expand?.buyer?.email }}</p>
               </td>
               <td class="td hidden sm:table-cell">
-                <p class="text-[#c9a96e]">Bs {{ money(order.total) }}</p>
-                <p v-if="order.shipping_cost > 0" class="text-[10px] text-[#555]">Envío: Bs {{ money(order.shipping_cost) }}</p>
+                <p class="text-accent">Bs {{ money(order.total) }}</p>
+                <p v-if="order.shipping_cost > 0" class="text-[10px] text-text-muted">Envío: Bs {{ money(order.shipping_cost) }}</p>
                 <p v-else class="text-[10px] text-emerald-600">Envío gratis</p>
               </td>
-              <td class="td hidden md:table-cell text-[11px] text-[#666]">{{ order.payment_reference || '—' }}</td>
+              <td class="td hidden md:table-cell text-[11px] text-text-muted">{{ order.payment_reference || '—' }}</td>
               <td class="td">
                 <span class="status-badge" :class="STATUS_COLORS[order.status]">{{ STATUS_LABELS[order.status] || order.status }}</span>
               </td>
-              <td class="td hidden lg:table-cell text-[11px] text-[#555]">{{ fmtDate(order.approved_at || order.created) }}</td>
-              <td class="td">
+              <td class="td hidden lg:table-cell text-[11px] text-text-muted">{{ fmtDate(order.approved_at || order.created) }}</td>
+              <td class="td" @click.stop>
                 <button
                   v-if="order.payment_proof"
-                  class="action-btn text-[#8ab4a0] border-[#1e2e28] hover:bg-[#0d110f]"
-                  @click="openProof(order)"
+                  class="action-btn text-vendor border-vendor-border hover:bg-vendor-soft"
+                  @click.stop="openProof(order)"
                 >
                   Ver
                 </button>
-                <span v-else class="text-[10px] text-[#3a3a38]">Sin comprobante</span>
+                <span v-else class="text-[10px] text-text-disabled">Sin comprobante</span>
               </td>
             </tr>
           </tbody>
@@ -392,7 +398,7 @@ const STATUS_COLORS = {
     <!-- Paginación -->
     <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-5">
       <button class="page-btn" :disabled="page <= 1" @click="page--">←</button>
-      <span class="text-[11px] text-[#555]">{{ page }} / {{ totalPages }}</span>
+      <span class="text-[11px] text-text-muted">{{ page }} / {{ totalPages }}</span>
       <button class="page-btn" :disabled="page >= totalPages" @click="page++">→</button>
     </div>
 
@@ -401,19 +407,19 @@ const STATUS_COLORS = {
       <div v-if="showProof && proofOrder" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4" @click.self="closeProof">
         <div class="modal-box w-full max-w-sm text-center">
           <div class="flex items-center justify-between mb-4">
-            <p class="text-[13px] font-medium text-[#e8e5e0]">Comprobante de pago</p>
+            <p class="text-[13px] font-medium text-text-primary">Comprobante de pago</p>
             <button class="icon-btn" @click="closeProof">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
-          <p class="text-[11px] text-[#666] mb-3">{{ proofOrder.expand?.buyer?.name }} · Bs {{ money(proofOrder.total) }}</p>
-          <div v-if="!proofBlobUrl" class="w-full h-40 flex items-center justify-center border border-[#222] rounded-sm mb-4 text-[#555] text-xs">Cargando comprobante...</div>
-          <img v-else :src="proofBlobUrl" alt="Comprobante" class="w-full rounded-sm border border-[#222] mb-4 object-contain max-h-80" />
+          <p class="text-[11px] text-text-muted mb-3">{{ proofOrder.expand?.buyer?.name }} · Bs {{ money(proofOrder.total) }}</p>
+          <div v-if="!proofBlobUrl" class="w-full h-40 flex items-center justify-center border border-border-default rounded-sm mb-4 text-text-muted text-xs">Cargando comprobante...</div>
+          <img v-else :src="proofBlobUrl" alt="Comprobante" class="w-full rounded-sm border border-border-default mb-4 object-contain max-h-80" />
           <a
             v-if="proofBlobUrl"
             :href="proofBlobUrl"
             :download="`comprobante-${proofOrder.id}.jpg`"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-[#0f0f0f] border border-[#1e2e28] rounded-sm text-[#8ab4a0] text-xs hover:bg-[#0d110f] transition-colors"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-surface-raised border border-vendor-border rounded-sm text-vendor text-xs hover:bg-vendor-soft transition-colors"
           >
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -428,24 +434,24 @@ const STATUS_COLORS = {
 </template>
 
 <style scoped>
-.panel { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 1.1rem; }
-.th { padding: 0.65rem 0.9rem; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: #3a3a38; text-align: left; }
+.panel { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 1.1rem; }
+.th { padding: 0.65rem 0.9rem; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--border-strong); text-align: left; }
 .td { padding: 0.7rem 0.9rem; }
 .status-badge { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.18rem 0.45rem; border-radius: 2px; border-width: 1px; border-style: solid; }
-.icon-btn { padding: 0.3rem; border-radius: 2px; color: #555; transition: color 0.15s, background 0.15s; }
-.icon-btn:hover { color: #d8d5cf; background: #111; }
-.action-btn { padding: 0.25rem 0.6rem; font-size: 0.68rem; border-radius: 2px; border: 1px solid #222; color: #666; background: transparent; transition: all 0.15s; }
-.action-btn:hover { border-color: #333; color: #aaa; background: #111; }
-.input-field { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 2px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: #d8d5cf; outline: none; transition: border-color 0.15s; }
-.input-field:focus { border-color: #8ab4a044; }
-.form-label { display: block; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #555; margin-bottom: 0.4rem; }
-.btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: #8ab4a022; border: 1px solid #8ab4a044; border-radius: 2px; color: #8ab4a0; font-size: 0.75rem; transition: all 0.15s; }
-.btn-primary:hover:not(:disabled) { background: #8ab4a033; border-color: #8ab4a066; }
+.icon-btn { padding: 0.3rem; border-radius: 2px; color: var(--text-muted); transition: color 0.15s, background 0.15s; }
+.icon-btn:hover { color: var(--text-secondary); background: var(--surface-raised); }
+.action-btn { padding: 0.25rem 0.6rem; font-size: 0.68rem; border-radius: 2px; border: 1px solid var(--border-default); color: var(--text-muted); background: transparent; transition: all 0.15s; }
+.action-btn:hover { border-color: var(--text-disabled); color: var(--text-secondary); background: var(--surface-raised); }
+.input-field { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 2px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: var(--text-secondary); outline: none; transition: border-color 0.15s; }
+.input-field:focus { border-color: var(--vendor)44; }
+.form-label { display: block; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+.btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--vendor)22; border: 1px solid var(--vendor)44; border-radius: 2px; color: var(--vendor); font-size: 0.75rem; transition: all 0.15s; }
+.btn-primary:hover:not(:disabled) { background: var(--vendor)33; border-color: var(--vendor)66; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.page-btn { padding: 0.3rem 0.7rem; background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 2px; color: #666; font-size: 0.75rem; transition: all 0.15s; }
-.page-btn:hover:not(:disabled) { color: #aaa; border-color: #333; }
+.page-btn { padding: 0.3rem 0.7rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 2px; color: var(--text-muted); font-size: 0.75rem; transition: all 0.15s; }
+.page-btn:hover:not(:disabled) { color: var(--text-secondary); border-color: var(--text-disabled); }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.modal-box { background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 4px; padding: 1.5rem; }
+.modal-box { background: var(--surface-base); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1.5rem; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 </style>

@@ -150,14 +150,14 @@ const quickLinks = [
       {{ errorLive }}
     </div>
 
-    <div v-if="loadingLive" class="flex items-center justify-center py-24 text-[#555] text-sm">Cargando dashboard...</div>
+    <div v-if="loadingLive" class="flex items-center justify-center py-24 text-text-muted text-sm">Cargando dashboard...</div>
 
     <template v-else>
       <!-- ── Encabezado ─────────────────────────────────────────────────── -->
       <div class="mb-7 flex flex-col sm:flex-row sm:items-center gap-4">
         <div class="flex-1 min-w-0">
-          <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-0.5">Panel de Vendedor</p>
-          <h1 class="text-xl lg:text-2xl font-light tracking-wide text-[#e8e5e0] truncate">{{ store?.name || 'Mi Tienda' }}</h1>
+          <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-0.5">Panel de Vendedor</p>
+          <h1 class="text-xl lg:text-2xl font-light tracking-wide text-text-primary truncate">{{ store?.name || 'Mi Tienda' }}</h1>
           <div class="flex items-center gap-3 mt-1.5 flex-wrap">
             <span
               class="text-[9px] tracking-[0.18em] uppercase px-1.5 py-0.5 rounded-sm border font-medium"
@@ -167,8 +167,8 @@ const quickLinks = [
                 'text-red-400 border-red-900/50 bg-red-950/40': store?.status === 'suspended',
               }"
             >{{ store?.status }}</span>
-            <span v-if="store?.verified" class="text-[9px] tracking-[0.18em] uppercase text-[#8ab4a0]">✓ verificada</span>
-            <span v-if="store?.location" class="text-[10px] text-[#555]">{{ store.location }}</span>
+            <span v-if="store?.verified" class="text-[9px] tracking-[0.18em] uppercase text-vendor">✓ verificada</span>
+            <span v-if="store?.location" class="text-[10px] text-text-muted">{{ store.location }}</span>
           </div>
         </div>
       </div>
@@ -187,9 +187,9 @@ const quickLinks = [
         <!-- Header con selector de período -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38]">Ventas históricas</p>
-            <h2 class="text-[15px] font-light text-[#e8e5e0] mt-0.5">Análisis del período</h2>
-            <p class="text-[11px] text-[#555] mt-1">Fuente: <code class="text-[#8ab4a066] text-[10px]">dashboard_metrics</code> — el dashboard-service corre 01:00 UTC, calcula el día anterior y hace upsert.</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled">Ventas históricas</p>
+            <h2 class="text-[15px] font-light text-text-primary mt-0.5">Análisis del período</h2>
+            <p class="text-[11px] text-text-muted mt-1">Fuente: <code class="text-[var(--vendor)66] text-[10px]">dashboard_metrics</code> — el dashboard-service corre 01:00 UTC, calcula el día anterior y hace upsert.</p>
           </div>
           <div class="flex items-center gap-1.5">
             <button
@@ -200,7 +200,7 @@ const quickLinks = [
               @click="selectedDays = opt.days"
             >{{ opt.label }}</button>
             <button
-              class="ml-2 px-2.5 py-1 text-[9px] tracking-[0.14em] uppercase border border-[#1e2e28] text-[#8ab4a066] hover:text-[#8ab4a0] hover:border-[#8ab4a044] rounded-sm transition-colors disabled:opacity-40"
+              class="ml-2 px-2.5 py-1 text-[9px] tracking-[0.14em] uppercase border border-vendor-border text-[var(--vendor)66] hover:text-vendor hover:border-[var(--vendor)44] rounded-sm transition-colors disabled:opacity-40"
               :disabled="syncingMetrics"
               @click="syncToday"
             >
@@ -211,7 +211,7 @@ const quickLinks = [
         </div>
 
         <!-- Tarjetas del período -->
-        <div v-if="loadingMetrics" class="flex items-center justify-center py-12 text-[#555] text-xs">
+        <div v-if="loadingMetrics" class="flex items-center justify-center py-12 text-text-muted text-xs">
           Cargando métricas...
         </div>
 
@@ -233,15 +233,15 @@ const quickLinks = [
 
           <!-- Gráfico de barras diario -->
           <div>
-            <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-3">Ventas diarias (Bs)</p>
+            <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-3">Ventas diarias (Bs)</p>
 
-            <div v-if="!chartItems.length" class="py-10 text-center text-[#555] text-xs">
+            <div v-if="!chartItems.length" class="py-10 text-center text-text-muted text-xs">
               Sin datos de métricas para este período. El cron job las genera automáticamente cada día.
             </div>
 
             <div v-else class="relative">
               <!-- Barras -->
-              <div class="flex items-end gap-px h-28 border-b border-[#1a1a1a] mb-1 overflow-x-auto scrollbar-none pb-0.5">
+              <div class="flex items-end gap-px h-28 border-b border-border-subtle mb-1 overflow-x-auto scrollbar-none pb-0.5">
                 <div
                   v-for="item in chartItems"
                   :key="item.id"
@@ -251,17 +251,17 @@ const quickLinks = [
                   <!-- Tooltip -->
                   <div class="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-10
                               hidden group-hover:flex flex-col items-center pointer-events-none">
-                    <div class="bg-[#111] border border-[#2a2a2a] rounded-sm px-2 py-1.5 text-center whitespace-nowrap">
-                      <p class="text-[9px] text-[#888] tracking-wider">{{ shortDate(item.metric_date) }}</p>
-                      <p class="text-[12px] text-[#8ab4a0] font-medium">Bs {{ money(item.sales_total) }}</p>
-                      <p class="text-[9px] text-[#666]">{{ item.transactions_count }} ventas</p>
+                    <div class="bg-surface-raised border border-border-default rounded-sm px-2 py-1.5 text-center whitespace-nowrap">
+                      <p class="text-[9px] text-text-muted tracking-wider">{{ shortDate(item.metric_date) }}</p>
+                      <p class="text-[12px] text-vendor font-medium">Bs {{ money(item.sales_total) }}</p>
+                      <p class="text-[9px] text-text-muted">{{ item.transactions_count }} ventas</p>
                     </div>
-                    <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[#2a2a2a]"></div>
+                    <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[var(--border-default)]"></div>
                   </div>
                   <!-- Barra -->
                   <div
                     class="w-full rounded-t-[1px] transition-all duration-200 group-hover:opacity-90"
-                    :class="Number(item.sales_total || 0) > 0 ? 'bg-linear-to-t from-[#4a7a65] to-[#8ab4a0]' : 'bg-[#181818]'"
+                    :class="Number(item.sales_total || 0) > 0 ? 'bg-linear-to-t from-[#4a7a65] to-[var(--vendor)]' : 'bg-surface-overlay'"
                     :style="{ height: `${barHeight(item)}%` }"
                   ></div>
                 </div>
@@ -276,13 +276,13 @@ const quickLinks = [
                 >
                   <span
                     v-if="idx === 0 || idx === Math.floor(chartItems.length / 2) || idx === chartItems.length - 1"
-                    class="text-[8px] text-[#444] block"
+                    class="text-[8px] text-text-disabled block"
                   >{{ shortDate(item.metric_date) }}</span>
                 </div>
               </div>
 
               <!-- Línea de máximo -->
-              <div class="mt-3 flex items-center justify-between text-[9px] text-[#444]">
+              <div class="mt-3 flex items-center justify-between text-[9px] text-text-disabled">
                 <span>0 Bs</span>
                 <span>máx. Bs {{ money(maxSales) }}</span>
               </div>
@@ -293,7 +293,7 @@ const quickLinks = [
 
       <!-- ── Accesos rápidos ────────────────────────────────────────────── -->
       <div class="mb-7">
-        <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-3">Accesos rápidos</p>
+        <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-3">Accesos rápidos</p>
         <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
           <RouterLink
             v-for="link in quickLinks"
@@ -302,15 +302,15 @@ const quickLinks = [
             class="quick-card group"
           >
             <div class="flex items-center gap-2.5 mb-2.5">
-              <div class="w-8 h-8 rounded-sm border border-[#1e2e28] bg-[#0d1511] flex items-center justify-center shrink-0 transition-colors group-hover:border-[#8ab4a044]">
-                <svg class="w-4 h-4 text-[#8ab4a066] transition-colors group-hover:text-[#8ab4a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <div class="w-8 h-8 rounded-sm border border-vendor-border bg-vendor-soft flex items-center justify-center shrink-0 transition-colors group-hover:border-[var(--vendor)44]">
+                <svg class="w-4 h-4 text-[var(--vendor)66] transition-colors group-hover:text-vendor" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" :d="link.icon" />
                 </svg>
               </div>
-              <p class="text-[12px] font-medium text-[#d8d5cf] group-hover:text-white transition-colors">{{ link.label }}</p>
+              <p class="text-[12px] font-medium text-text-secondary group-hover:text-white transition-colors">{{ link.label }}</p>
             </div>
-            <p class="text-[10px] text-[#555] leading-relaxed hidden sm:block">{{ link.desc }}</p>
-            <div class="mt-3 flex items-center gap-1 text-[#8ab4a066] group-hover:text-[#8ab4a0] transition-colors">
+            <p class="text-[10px] text-text-muted leading-relaxed hidden sm:block">{{ link.desc }}</p>
+            <div class="mt-3 flex items-center gap-1 text-[var(--vendor)66] group-hover:text-vendor transition-colors">
               <span class="text-[9px] tracking-[0.14em] uppercase">Ir</span>
               <svg class="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -324,41 +324,41 @@ const quickLinks = [
 </template>
 
 <style scoped>
-.metric-card, .panel { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 0.9rem 1rem; }
-.period-card { background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; padding: 0.75rem 0.85rem; }
-.metric-label { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #3a3a38; margin-bottom: 0.3rem; }
-.metric-value { font-size: 1.25rem; font-weight: 300; color: #e8e5e0; line-height: 1.05; }
-.metric-note  { margin-top: 0.35rem; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: #666; }
+.metric-card, .panel { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 0.9rem 1rem; }
+.period-card { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; padding: 0.75rem 0.85rem; }
+.metric-label { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--border-strong); margin-bottom: 0.3rem; }
+.metric-value { font-size: 1.25rem; font-weight: 300; color: var(--text-primary); line-height: 1.05; }
+.metric-note  { margin-top: 0.35rem; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
 
 .quick-card {
   display: block;
-  background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 0.9rem 1rem;
+  background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 0.9rem 1rem;
   transition: border-color 0.18s ease, background 0.18s ease;
 }
-.quick-card:hover { border-color: #1e2e28; background: #0d110f; }
+.quick-card:hover { border-color: var(--vendor-soft); background: var(--vendor-soft); }
 
 .mini-stat {
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-  padding: 0.5rem 0.65rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px;
+  padding: 0.5rem 0.65rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px;
   font-size: 0.65rem; letter-spacing: 0.08em;
 }
-.mini-stat span   { color: #555; text-transform: uppercase; }
-.mini-stat strong { color: #d8d5cf; font-weight: 500; }
+.mini-stat span   { color: var(--text-muted); text-transform: uppercase; }
+.mini-stat strong { color: var(--text-secondary); font-weight: 500; }
 
 .range-btn {
   padding: 0.2rem 0.6rem;
   font-size: 0.6rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border: 1px solid #1e1e1e;
-  color: #555;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
   border-radius: 2px;
   transition: all 0.15s ease;
   background: transparent;
   cursor: pointer;
 }
-.range-btn:hover   { color: #888; border-color: #2a2a2a; }
-.range-btn--active { color: #8ab4a0; border-color: #8ab4a044; background: #0d1511; }
+.range-btn:hover   { color: var(--text-muted); border-color: var(--border-default); }
+.range-btn--active { color: var(--vendor); border-color: var(--vendor)44; background: var(--vendor-soft); }
 
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }

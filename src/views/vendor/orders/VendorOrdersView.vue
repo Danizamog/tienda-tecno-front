@@ -248,12 +248,12 @@ const STATUS_LABELS = {
   delivered: 'Entregado', cancelled: 'Cancelado', rejected: 'Rechazado',
 }
 const STATUS_COLORS = {
-  reserved:         'text-[#888] border-[#333] bg-[#111]',
+  reserved:         'text-text-muted border-border-default bg-surface-raised',
   payment_uploaded: 'text-yellow-400 border-yellow-900/50 bg-yellow-950/40',
   approved:         'text-blue-400 border-blue-900/50 bg-blue-950/40',
   shipped:          'text-purple-400 border-purple-900/50 bg-purple-950/40',
   delivered:        'text-emerald-400 border-emerald-900/50 bg-emerald-950/40',
-  cancelled:        'text-[#555] border-[#333] bg-[#111]',
+  cancelled:        'text-text-muted border-border-default bg-surface-raised',
   rejected:         'text-red-400 border-red-900/50 bg-red-950/40',
 }
 </script>
@@ -263,8 +263,8 @@ const STATUS_COLORS = {
 
     <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
       <div class="flex-1">
-        <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-0.5">Vendedor</p>
-        <h1 class="text-xl lg:text-2xl font-light tracking-wide text-[#e8e5e0]">Órdenes</h1>
+        <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-0.5">Vendedor</p>
+        <h1 class="text-xl lg:text-2xl font-light tracking-wide text-text-primary">Órdenes</h1>
       </div>
     </div>
 
@@ -275,26 +275,26 @@ const STATUS_COLORS = {
         <option value="">Todas las órdenes</option>
         <option v-for="(label, val) in STATUS_LABELS" :key="val" :value="val">{{ label }}</option>
       </select>
-      <span class="text-[11px] text-[#555] self-center">{{ totalItems }} órdenes</span>
+      <span class="text-[11px] text-text-muted self-center">{{ totalItems }} órdenes</span>
     </div>
 
     <div v-if="error" class="mb-4 px-4 py-3 bg-red-950/40 border border-red-900/50 text-red-400 text-sm rounded-sm">{{ error }}</div>
-    <div v-if="loading" class="flex items-center justify-center py-20 text-[#555] text-sm">Cargando...</div>
+    <div v-if="loading" class="flex items-center justify-center py-20 text-text-muted text-sm">Cargando...</div>
 
     <div v-else-if="!orders.length" class="panel flex items-center justify-center py-20">
       <div class="text-center">
-        <svg class="w-10 h-10 text-[#2a2a2a] mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+        <svg class="w-10 h-10 text-text-disabled mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
-        <p class="text-[#555] text-sm">No hay órdenes</p>
+        <p class="text-text-muted text-sm">No hay órdenes</p>
       </div>
     </div>
 
     <!-- Tabla de órdenes -->
-    <div v-else class="overflow-x-auto rounded-sm border border-[#181818]">
+    <div v-else class="overflow-x-auto rounded-sm border border-[var(--surface-overlay)]">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-[#181818] bg-[#0c0c0c]">
+          <tr class="border-b border-[var(--surface-overlay)] bg-surface-sunken">
             <th class="th">Comprador</th>
             <th class="th hidden sm:table-cell">Total</th>
             <th class="th">Estado</th>
@@ -303,16 +303,21 @@ const STATUS_COLORS = {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="order in orders" :key="order.id" class="border-b border-[#111] bg-[#080808] hover:bg-[#0c0c0c] transition-colors">
+          <tr
+            v-for="order in orders"
+            :key="order.id"
+            class="border-b border-border-subtle bg-surface-base hover:bg-surface-sunken transition-colors cursor-pointer"
+            @click="openOrder(order, 'view')"
+          >
             <!-- Comprador -->
             <td class="td">
-              <p class="text-[13px] text-[#e8e5e0]">{{ order.expand?.buyer?.name || 'Comprador' }}</p>
-              <p class="text-[10px] text-[#555] truncate max-w-32">{{ order.expand?.buyer?.email }}</p>
+              <p class="text-[13px] text-text-primary">{{ order.expand?.buyer?.name || 'Comprador' }}</p>
+              <p class="text-[10px] text-text-muted truncate max-w-32">{{ order.expand?.buyer?.email }}</p>
             </td>
             <!-- Total -->
             <td class="td hidden sm:table-cell">
-              <p class="text-[#c9a96e]">Bs {{ money(order.total) }}</p>
-              <p v-if="order.shipping_cost > 0" class="text-[10px] text-[#555]">Envío: Bs {{ money(order.shipping_cost) }}</p>
+              <p class="text-accent">Bs {{ money(order.total) }}</p>
+              <p v-if="order.shipping_cost > 0" class="text-[10px] text-text-muted">Envío: Bs {{ money(order.shipping_cost) }}</p>
               <p v-else class="text-[10px] text-emerald-600">Envío gratis</p>
             </td>
             <!-- Estado -->
@@ -320,35 +325,35 @@ const STATUS_COLORS = {
               <span class="status-badge" :class="STATUS_COLORS[order.status]">{{ STATUS_LABELS[order.status] || order.status }}</span>
             </td>
             <!-- Fecha -->
-            <td class="td hidden lg:table-cell text-[11px] text-[#555]">{{ fmtDate(order.created) }}</td>
+            <td class="td hidden lg:table-cell text-[11px] text-text-muted">{{ fmtDate(order.created) }}</td>
             <!-- Acciones -->
-            <td class="td">
+            <td class="td" @click.stop>
               <div class="flex items-center gap-1.5 justify-end flex-wrap">
                 <!-- Ver detalles -->
-                <button class="action-btn" @click="openOrder(order, 'view')">Ver</button>
+                <button class="action-btn" @click.stop="openOrder(order, 'view')">Ver</button>
                 <!-- Aprobar (solo si pago subido) -->
                 <button
                   v-if="order.status === 'payment_uploaded'"
                   class="action-btn text-emerald-400/80 border-emerald-900/40 hover:bg-emerald-950/30"
-                  @click="openOrder(order, 'approve')"
+                  @click.stop="openOrder(order, 'approve')"
                 >Aprobar</button>
                 <!-- Rechazar -->
                 <button
                   v-if="order.status === 'payment_uploaded'"
                   class="action-btn text-red-400/70 border-red-900/40 hover:bg-red-950/30"
-                  @click="openOrder(order, 'reject')"
+                  @click.stop="openOrder(order, 'reject')"
                 >Rechazar</button>
                 <!-- Enviar -->
                 <button
                   v-if="order.status === 'approved'"
                   class="action-btn text-purple-400/80 border-purple-900/40 hover:bg-purple-950/30"
-                  @click="shipOrder(order)"
+                  @click.stop="shipOrder(order)"
                 >Enviar</button>
                 <!-- Entregado -->
                 <button
                   v-if="order.status === 'shipped'"
                   class="action-btn text-blue-400/80 border-blue-900/40 hover:bg-blue-950/30"
-                  @click="deliverOrder(order)"
+                  @click.stop="deliverOrder(order)"
                 >Entregado</button>
               </div>
             </td>
@@ -360,7 +365,7 @@ const STATUS_COLORS = {
     <!-- Paginación -->
     <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-5">
       <button class="page-btn" :disabled="page <= 1" @click="page--">←</button>
-      <span class="text-[11px] text-[#555]">{{ page }} / {{ totalPages }}</span>
+      <span class="text-[11px] text-text-muted">{{ page }} / {{ totalPages }}</span>
       <button class="page-btn" :disabled="page >= totalPages" @click="page++">→</button>
     </div>
 
@@ -371,8 +376,8 @@ const STATUS_COLORS = {
 
           <div class="flex items-center justify-between mb-5">
             <div>
-              <p class="text-[9px] tracking-[0.2em] uppercase text-[#3a3a38]">Orden</p>
-              <h2 class="text-[14px] font-medium text-[#e8e5e0]">
+              <p class="text-[9px] tracking-[0.2em] uppercase text-text-disabled">Orden</p>
+              <h2 class="text-[14px] font-medium text-text-primary">
                 {{ actionMode === 'approve' ? 'Aprobar orden' : actionMode === 'reject' ? 'Rechazar orden' : 'Detalle de orden' }}
               </h2>
             </div>
@@ -391,17 +396,17 @@ const STATUS_COLORS = {
             </div>
             <div class="mini-stat">
               <span>Subtotal</span>
-              <strong class="text-[#d8d5cf]">Bs {{ money(currentOrder.subtotal) }}</strong>
+              <strong class="text-text-secondary">Bs {{ money(currentOrder.subtotal) }}</strong>
             </div>
             <div class="mini-stat">
               <span>Envío</span>
-              <strong :class="currentOrder.shipping_cost > 0 ? 'text-[#d8d5cf]' : 'text-emerald-400'">
+              <strong :class="currentOrder.shipping_cost > 0 ? 'text-text-secondary' : 'text-emerald-400'">
                 {{ currentOrder.shipping_cost > 0 ? 'Bs ' + money(currentOrder.shipping_cost) : 'Gratis' }}
               </strong>
             </div>
             <div class="mini-stat">
               <span>Total</span>
-              <strong class="text-[#c9a96e]">Bs {{ money(currentOrder.total) }}</strong>
+              <strong class="text-accent">Bs {{ money(currentOrder.total) }}</strong>
             </div>
             <div class="mini-stat">
               <span>Estado</span>
@@ -423,27 +428,27 @@ const STATUS_COLORS = {
 
           <!-- Items de la orden -->
           <div v-if="currentOrder.items?.length" class="mb-5">
-            <p class="text-[9px] tracking-[0.2em] uppercase text-[#3a3a38] mb-2">Productos</p>
+            <p class="text-[9px] tracking-[0.2em] uppercase text-text-disabled mb-2">Productos</p>
             <div class="flex flex-col gap-1.5">
               <div v-for="item in currentOrder.items" :key="item.id"
-                class="flex items-center justify-between px-3 py-2 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm">
+                class="flex items-center justify-between px-3 py-2 bg-surface-raised border border-border-subtle rounded-sm">
                 <div>
-                  <p class="text-[12px] text-[#d8d5cf]">{{ item.expand?.product?.name || 'Producto' }}</p>
-                  <p class="text-[10px] text-[#555]">Cant: {{ item.quantity }}</p>
+                  <p class="text-[12px] text-text-secondary">{{ item.expand?.product?.name || 'Producto' }}</p>
+                  <p class="text-[10px] text-text-muted">Cant: {{ item.quantity }}</p>
                 </div>
-                <span class="text-[12px] text-[#c9a96e]">Bs {{ money(item.total) }}</span>
+                <span class="text-[12px] text-accent">Bs {{ money(item.total) }}</span>
               </div>
             </div>
           </div>
 
           <!-- Comprobante de pago -->
           <div v-if="currentOrder.payment_proof" class="mb-5">
-            <p class="text-[9px] tracking-[0.2em] uppercase text-[#3a3a38] mb-2">Comprobante de pago</p>
-            <div class="border border-[#1e2e28] bg-[#0d0d0b] overflow-hidden mb-2">
+            <p class="text-[9px] tracking-[0.2em] uppercase text-text-disabled mb-2">Comprobante de pago</p>
+            <div class="border border-vendor-border bg-[#0d0d0b] overflow-hidden mb-2">
               <img :src="proofUrl(currentOrder)" alt="Comprobante de pago" class="w-full max-h-72 object-contain" />
             </div>
             <a :href="proofUrl(currentOrder)" target="_blank" rel="noopener"
-              class="inline-flex items-center gap-2 px-3 py-2 bg-[#0f0f0f] border border-[#1e2e28] rounded-sm text-[#8ab4a0] text-xs hover:bg-[#0d110f] transition-colors">
+              class="inline-flex items-center gap-2 px-3 py-2 bg-surface-raised border border-vendor-border rounded-sm text-vendor text-xs hover:bg-vendor-soft transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -455,15 +460,15 @@ const STATUS_COLORS = {
           </div>
 
           <!-- Notas del comprador -->
-          <div v-if="currentOrder.notes" class="mb-5 px-3 py-2 bg-[#0f0f0f] border border-[#1a1a1a] rounded-sm">
-            <p class="text-[9px] tracking-[0.16em] uppercase text-[#3a3a38] mb-1">Notas del comprador</p>
-            <p class="text-[12px] text-[#888]">{{ currentOrder.notes }}</p>
+          <div v-if="currentOrder.notes" class="mb-5 px-3 py-2 bg-surface-raised border border-border-subtle rounded-sm">
+            <p class="text-[9px] tracking-[0.16em] uppercase text-text-disabled mb-1">Notas del comprador</p>
+            <p class="text-[12px] text-text-muted">{{ currentOrder.notes }}</p>
           </div>
 
           <!-- FORMULARIO DE APROBACIÓN -->
           <template v-if="actionMode === 'approve'">
-            <div class="border-t border-[#181818] pt-5 mt-2">
-              <p class="text-[10px] tracking-[0.2em] uppercase text-[#3a3a38] mb-4">Dirección de envío</p>
+            <div class="border-t border-[var(--surface-overlay)] pt-5 mt-2">
+              <p class="text-[10px] tracking-[0.2em] uppercase text-text-disabled mb-4">Dirección de envío</p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <div>
                   <label class="form-label">Nombre destinatario</label>
@@ -495,10 +500,10 @@ const STATUS_COLORS = {
               <div>
                 <label class="form-label">
                   Ubicación en mapa
-                  <span class="text-[#555] normal-case">(clic para marcar)</span>
+                  <span class="text-text-muted normal-case">(clic para marcar)</span>
                 </label>
-                <div id="order-map" class="w-full h-56 rounded-sm border border-[#1e1e1e] overflow-hidden z-0"></div>
-                <p v-if="mapLat" class="text-[10px] text-[#555] mt-1">
+                <div id="order-map" class="w-full h-56 rounded-sm border border-border-subtle overflow-hidden z-0"></div>
+                <p v-if="mapLat" class="text-[10px] text-text-muted mt-1">
                   Lat: {{ mapLat?.toFixed(5) }} · Lng: {{ mapLng?.toFixed(5) }}
                 </p>
               </div>
@@ -507,14 +512,14 @@ const STATUS_COLORS = {
 
           <!-- FORMULARIO DE RECHAZO -->
           <template v-if="actionMode === 'reject'">
-            <div class="border-t border-[#181818] pt-5 mt-2">
+            <div class="border-t border-[var(--surface-overlay)] pt-5 mt-2">
               <label class="form-label">Motivo del rechazo</label>
               <textarea v-model="rejectReason" class="input-field w-full h-20 resize-none" placeholder="Explica el motivo al comprador..."></textarea>
             </div>
           </template>
 
           <!-- Acciones del modal -->
-          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#181818] flex-wrap">
+          <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[var(--surface-overlay)] flex-wrap">
             <button class="btn-ghost" :disabled="processing" @click="closeModal">
               {{ actionMode === 'view' ? 'Cerrar' : 'Cancelar' }}
             </button>
@@ -533,33 +538,33 @@ const STATUS_COLORS = {
 </template>
 
 <style scoped>
-.panel { background: #0c0c0c; border: 1px solid #181818; border-radius: 3px; padding: 1rem; }
-.th { padding: 0.65rem 0.9rem; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: #3a3a38; text-align: left; }
+.panel { background: var(--surface-sunken); border: 1px solid var(--surface-overlay); border-radius: 3px; padding: 1rem; }
+.th { padding: 0.65rem 0.9rem; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--border-strong); text-align: left; }
 .td { padding: 0.7rem 0.9rem; }
 .status-badge { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.18rem 0.45rem; border-radius: 2px; border-width: 1px; border-style: solid; }
-.icon-btn { padding: 0.3rem; border-radius: 2px; color: #555; transition: color 0.15s, background 0.15s; }
-.icon-btn:hover { color: #d8d5cf; background: #111; }
-.action-btn { padding: 0.25rem 0.6rem; font-size: 0.68rem; letter-spacing: 0.08em; border-radius: 2px; border: 1px solid #222; color: #666; background: transparent; transition: all 0.15s; white-space: nowrap; }
-.action-btn:hover { border-color: #333; color: #aaa; background: #111; }
-.input-field { background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 2px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: #d8d5cf; outline: none; transition: border-color 0.15s; }
-.input-field:focus { border-color: #8ab4a044; }
-.form-label { display: block; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #555; margin-bottom: 0.4rem; }
-.mini-stat { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.65rem; background: #0f0f0f; border: 1px solid #1a1a1a; border-radius: 3px; font-size: 0.62rem; }
-.mini-stat span { color: #555; text-transform: uppercase; letter-spacing: 0.1em; }
-.mini-stat strong { color: #d8d5cf; font-weight: 500; font-size: 0.8rem; }
+.icon-btn { padding: 0.3rem; border-radius: 2px; color: var(--text-muted); transition: color 0.15s, background 0.15s; }
+.icon-btn:hover { color: var(--text-secondary); background: var(--surface-raised); }
+.action-btn { padding: 0.25rem 0.6rem; font-size: 0.68rem; letter-spacing: 0.08em; border-radius: 2px; border: 1px solid var(--border-default); color: var(--text-muted); background: transparent; transition: all 0.15s; white-space: nowrap; }
+.action-btn:hover { border-color: var(--text-disabled); color: var(--text-secondary); background: var(--surface-raised); }
+.input-field { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 2px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: var(--text-secondary); outline: none; transition: border-color 0.15s; }
+.input-field:focus { border-color: var(--vendor)44; }
+.form-label { display: block; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+.mini-stat { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.65rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 3px; font-size: 0.62rem; }
+.mini-stat span { color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.mini-stat strong { color: var(--text-secondary); font-weight: 500; font-size: 0.8rem; }
 .btn-approve { padding: 0.5rem 1rem; background: #064e3b33; border: 1px solid #065f4655; border-radius: 2px; color: #6ee7b7; font-size: 0.75rem; transition: all 0.15s; }
 .btn-approve:hover:not(:disabled) { background: #064e3b55; }
 .btn-approve:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-ghost { padding: 0.5rem 1rem; background: transparent; border: 1px solid #222; border-radius: 2px; color: #666; font-size: 0.75rem; transition: all 0.15s; }
-.btn-ghost:hover:not(:disabled) { border-color: #333; color: #aaa; }
+.btn-ghost { padding: 0.5rem 1rem; background: transparent; border: 1px solid var(--border-default); border-radius: 2px; color: var(--text-muted); font-size: 0.75rem; transition: all 0.15s; }
+.btn-ghost:hover:not(:disabled) { border-color: var(--text-disabled); color: var(--text-secondary); }
 .btn-ghost:disabled { opacity: 0.5; }
-.btn-danger { padding: 0.5rem 1rem; background: #7f1d1d33; border: 1px solid #991b1b55; border-radius: 2px; color: #f87171; font-size: 0.75rem; transition: all 0.15s; }
-.btn-danger:hover:not(:disabled) { background: #7f1d1d55; }
+.btn-danger { padding: 0.5rem 1rem; background: var(--danger-soft)33; border: 1px solid var(--danger)55; border-radius: 2px; color: var(--danger); font-size: 0.75rem; transition: all 0.15s; }
+.btn-danger:hover:not(:disabled) { background: var(--danger-soft)55; }
 .btn-danger:disabled { opacity: 0.5; }
-.page-btn { padding: 0.3rem 0.7rem; background: #0f0f0f; border: 1px solid #1e1e1e; border-radius: 2px; color: #666; font-size: 0.75rem; transition: all 0.15s; }
-.page-btn:hover:not(:disabled) { color: #aaa; border-color: #333; }
+.page-btn { padding: 0.3rem 0.7rem; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 2px; color: var(--text-muted); font-size: 0.75rem; transition: all 0.15s; }
+.page-btn:hover:not(:disabled) { color: var(--text-secondary); border-color: var(--text-disabled); }
 .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.modal-box { background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 4px; padding: 1.5rem; }
+.modal-box { background: var(--surface-base); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1.5rem; }
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 </style>

@@ -43,7 +43,7 @@ const accountLinks = computed(() =>
 </script>
 
 <template>
-  <footer class="bg-[#080808] border-t border-[#161616] mt-auto">
+  <footer class="bg-surface-base border-t border-border-subtle mt-auto">
     <div class="max-w-368 mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
 
       <!-- ── Cuerpo principal ──────────────────────────────────── -->
@@ -53,23 +53,23 @@ const accountLinks = computed(() =>
         <div>
           <RouterLink to="/" class="inline-block mb-5 group">
             <span class="font-display text-xl font-light tracking-[0.18em] uppercase leading-none">
-              <span class="text-[#f0ede8] group-hover:text-[#e8e3dc] transition-colors">Tu</span><span class="text-[#c9a96e]">Venta</span><span class="text-[#f0ede8] group-hover:text-[#e8e3dc] transition-colors">Confiada</span>
+              <span class="text-text-primary group-hover:opacity-80 transition-opacity">Tu</span><span class="text-accent">Venta</span><span class="text-text-primary group-hover:opacity-80 transition-opacity">Confiada</span>
             </span>
           </RouterLink>
 
-          <p class="text-[11px] text-[#46443f] leading-relaxed max-w-[22ch]">
+          <p class="text-[11px] text-text-muted leading-relaxed max-w-[22ch]">
             El marketplace de ropa donde tiendas y compradores se conectan con confianza.
           </p>
 
           <div class="flex items-center gap-2 mt-6">
-            <span class="w-4 h-px bg-[#c9a96e] opacity-50" />
-            <span class="text-[9px] tracking-[0.3em] uppercase text-[#3a3835]">Marketplace de moda</span>
+            <span class="w-4 h-px bg-accent opacity-50" />
+            <span class="text-[9px] tracking-[0.3em] uppercase text-text-disabled">Marketplace de moda</span>
           </div>
         </div>
 
         <!-- Explorar -->
         <div>
-          <p class="text-[9px] tracking-[0.28em] uppercase text-[#c9a96e] mb-5">Explorar</p>
+          <p class="text-[9px] tracking-[0.28em] uppercase text-accent mb-5">Explorar</p>
           <ul class="space-y-3">
             <li v-for="link in exploreLinks" :key="link.label">
               <RouterLink :to="link.to" class="footer-link">{{ link.label }}</RouterLink>
@@ -79,7 +79,7 @@ const accountLinks = computed(() =>
 
         <!-- Vendedores -->
         <div>
-          <p class="text-[9px] tracking-[0.28em] uppercase text-[#c9a96e] mb-5">Vendedores</p>
+          <p class="text-[9px] tracking-[0.28em] uppercase text-accent mb-5">Vendedores</p>
           <ul class="space-y-3">
             <li v-for="link in vendorLinks" :key="link.label">
               <RouterLink :to="link.to" class="footer-link">{{ link.label }}</RouterLink>
@@ -89,7 +89,7 @@ const accountLinks = computed(() =>
 
         <!-- Mi cuenta -->
         <div>
-          <p class="text-[9px] tracking-[0.28em] uppercase text-[#c9a96e] mb-5">Mi cuenta</p>
+          <p class="text-[9px] tracking-[0.28em] uppercase text-accent mb-5">Mi cuenta</p>
           <ul class="space-y-3">
             <li v-for="link in accountLinks" :key="link.label">
               <RouterLink :to="link.to" class="footer-link">{{ link.label }}</RouterLink>
@@ -100,13 +100,13 @@ const accountLinks = computed(() =>
       </div>
 
       <!-- ── Barra inferior ────────────────────────────────────── -->
-      <div class="py-5 border-t border-[#101010] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <p class="text-[10px] tracking-[0.18em] uppercase text-[#3a3835]">
+      <div class="py-5 border-t border-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <p class="text-[10px] tracking-[0.18em] uppercase text-text-disabled">
           &copy; {{ year }} TuVentaConfiada — Todos los derechos reservados
         </p>
         <div class="flex items-center gap-3">
-          <span class="w-1 h-1 rounded-full bg-[#c9a96e] opacity-40" />
-          <p class="text-[10px] tracking-[0.18em] uppercase text-[#3a3835]">Hecho con calidad</p>
+          <span class="w-1 h-1 rounded-full bg-accent opacity-40" />
+          <p class="text-[10px] tracking-[0.18em] uppercase text-text-disabled">Hecho con calidad</p>
         </div>
       </div>
 
@@ -117,12 +117,12 @@ const accountLinks = computed(() =>
 <style scoped>
 .footer-link {
   font-size: 0.6875rem;
-  color: #46443f;
+  color: var(--text-muted);
   letter-spacing: 0.05em;
   line-height: 1;
   transition: color 0.2s;
 }
 .footer-link:hover {
-  color: #c9a96e;
+  color: var(--accent);
 }
 </style>

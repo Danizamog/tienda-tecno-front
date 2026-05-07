@@ -219,14 +219,14 @@ onMounted(() => {
 <template>
   <AppNavbar />
 
-  <main class="products-shell text-[#f0ede8]">
+  <main class="products-shell text-text-primary">
 
     <!-- ══ HERO ══════════════════════════════════════════════════ -->
-    <section class="relative overflow-hidden border-b border-[#1a1a1a]">
-      <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,#1a1f2e_0%,#0a0a0a_55%)] opacity-80" />
+    <section class="relative overflow-hidden border-b border-border-subtle">
+      <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,#1a1f2e_0%,var(--surface-base)_55%)] opacity-80" />
       <div
         class="absolute inset-0 pointer-events-none opacity-[0.04]"
-        style="background-image:linear-gradient(#c9a96e 1px,transparent 1px),linear-gradient(90deg,#c9a96e 1px,transparent 1px);background-size:72px 72px;"
+        style="background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:72px 72px;"
       />
       <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-14 md:py-20">
         <div class="max-w-xl">
@@ -234,7 +234,7 @@ onMounted(() => {
           <h1 class="font-display text-4xl md:text-6xl font-light leading-[0.95] mb-4">
             {{ activeCategoryName || 'Todos los productos' }}
           </h1>
-          <p class="text-[#6f6a61] text-sm leading-relaxed">
+          <p class="text-text-muted text-sm leading-relaxed">
             Explora el catálogo completo de productos disponibles. Encuentra lo que necesitas
             y compra directamente a vendedores de confianza.
           </p>
@@ -243,7 +243,7 @@ onMounted(() => {
     </section>
 
     <!-- ══ BARRA DE FILTROS ═══════════════════════════════════════ -->
-    <section class="w-full border-b border-[#1a1a1a] bg-[#0c0c0c] sticky top-[57px] z-40">
+    <section class="w-full border-b border-border-subtle bg-surface-sunken sticky top-[57px] z-40">
       <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-3">
         <div class="flex flex-wrap items-center gap-2.5">
 
@@ -253,18 +253,18 @@ onMounted(() => {
               v-model="filters.search"
               type="text"
               placeholder="Buscar producto..."
-              class="input-dark pr-9 text-sm h-9 w-full"
+              class="filter-input pr-9 w-full"
             />
-            <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#444440] pointer-events-none"
+            <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-disabled pointer-events-none"
               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35" stroke-linecap="round"/>
             </svg>
           </div>
 
           <!-- Chip categoría activa (desde home) -->
-          <div v-if="activeCategoryName" class="flex items-center gap-1.5 h-9 px-3 border border-[#c9a96e44] bg-[#14110d] text-[#c9a96e] text-[10px] tracking-[0.12em] uppercase">
+          <div v-if="activeCategoryName" class="flex items-center gap-1.5 h-9 px-3 border border-[var(--accent)44] bg-[var(--accent-soft)] text-accent text-[10px] tracking-[0.12em] uppercase">
             <span>{{ activeCategoryName }}</span>
-            <button @click="clearFilters" class="ml-0.5 text-[#c9a96e]/50 hover:text-[#c9a96e] transition-colors leading-none" aria-label="Quitar filtro">✕</button>
+            <button @click="clearFilters" class="ml-0.5 text-accent/50 hover:text-accent transition-colors leading-none" aria-label="Quitar filtro">✕</button>
           </div>
 
           <!-- Categoría -->
@@ -299,7 +299,7 @@ onMounted(() => {
             min="0"
             step="1"
             placeholder="Precio mín"
-            class="input-dark text-sm h-9 w-28"
+            class="filter-input w-28"
           />
           <input
             v-model="filters.maxPrice"
@@ -308,7 +308,7 @@ onMounted(() => {
             min="0"
             step="1"
             placeholder="Precio máx"
-            class="input-dark text-sm h-9 w-28"
+            class="filter-input w-28"
           />
 
           <!-- Toggles -->
@@ -334,11 +334,11 @@ onMounted(() => {
           <button
             v-if="hasActiveFilters"
             @click="clearFilters"
-            class="h-9 px-3 text-[10px] tracking-[0.15em] uppercase text-[#666259] border border-[#252520] hover:border-[#c9a96e44] hover:text-[#c9a96e] transition-colors whitespace-nowrap"
+            class="h-9 px-3 text-[10px] tracking-[0.15em] uppercase text-text-muted border border-[var(--text-disabled)] hover:border-[var(--accent)44] hover:text-accent transition-colors whitespace-nowrap"
           >Limpiar</button>
 
           <!-- Contador -->
-          <span class="ml-auto text-[10px] tracking-[0.18em] uppercase text-[#383835] hidden sm:block whitespace-nowrap">
+          <span class="ml-auto text-[10px] tracking-[0.18em] uppercase text-text-disabled hidden sm:block whitespace-nowrap">
             {{ totalItems }} producto{{ totalItems !== 1 ? 's' : '' }}
           </span>
         </div>
@@ -369,12 +369,12 @@ onMounted(() => {
         </div>
 
         <!-- Sin resultados -->
-        <div v-else-if="!products.length" class="flex flex-col items-center py-24 border border-[#141414]">
-          <svg class="w-10 h-10 text-[#252520] mb-5" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+        <div v-else-if="!products.length" class="flex flex-col items-center py-24 border border-[var(--surface-overlay)]">
+          <svg class="w-10 h-10 text-text-disabled mb-5" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
             <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <p class="font-display text-2xl font-light text-[#444440] mb-2">Sin productos</p>
-          <p class="text-[#333330] text-xs tracking-widest uppercase mb-6">
+          <p class="font-display text-2xl font-light text-text-disabled mb-2">Sin productos</p>
+          <p class="text-text-disabled text-xs tracking-widest uppercase mb-6">
             {{ hasActiveFilters ? 'Intenta con otros filtros' : 'Aún no hay productos activos' }}
           </p>
           <button v-if="hasActiveFilters" @click="clearFilters" class="btn-outline text-xs">Limpiar filtros</button>
@@ -389,7 +389,7 @@ onMounted(() => {
             class="card-dark group flex flex-col overflow-hidden"
           >
             <!-- Imagen -->
-            <div class="relative aspect-square bg-[#0f0f0f] overflow-hidden">
+            <div class="relative aspect-square bg-surface-raised overflow-hidden">
               <img
                 v-if="product._imageUrl"
                 :src="product._imageUrl"
@@ -397,14 +397,14 @@ onMounted(() => {
                 loading="lazy"
                 decoding="async"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                class="w-full h-full object-cover"
               />
               <div
                 v-else
                 class="w-full h-full flex items-center justify-center"
-                style="background:linear-gradient(135deg,#111111 0%,#14110d 100%);"
+                style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
               >
-                <svg class="w-10 h-10 text-[#1e1b16]" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                <svg class="w-10 h-10 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
                   <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
@@ -420,7 +420,7 @@ onMounted(() => {
 
               <!-- Condición -->
               <div v-if="product.condition" class="absolute bottom-2 right-2">
-                <span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-widest uppercase bg-black/60 text-[#6f6a61] border border-[#1e1e1e]/60">
+                <span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-widest uppercase bg-black/60 text-text-muted border border-border-subtle/60">
                   {{ conditionLabel[product.condition] || product.condition }}
                 </span>
               </div>
@@ -430,27 +430,27 @@ onMounted(() => {
             <div class="p-3 flex flex-col gap-1.5 flex-1">
               <!-- Tienda + categoría -->
               <div class="flex items-center gap-1.5 flex-wrap">
-                <span v-if="product.expand?.category?.name" class="text-[10px] tracking-[0.12em] uppercase text-[#c9a96e]/60 truncate">
+                <span v-if="product.expand?.category?.name" class="text-[10px] tracking-[0.12em] uppercase text-accent/60 truncate">
                   {{ product.expand.category.name }}
                 </span>
-                <span v-if="product.expand?.store?.name" class="text-[10px] text-[#3a3835] truncate">
+                <span v-if="product.expand?.store?.name" class="text-[10px] text-text-disabled truncate">
                   · {{ product.expand.store.name }}
                 </span>
               </div>
 
               <!-- Nombre -->
-              <h3 class="text-[12px] font-medium text-[#d8d4ce] leading-snug line-clamp-2 group-hover:text-[#c9a96e] transition-colors duration-200">
+              <h3 class="text-[12px] font-medium text-text-secondary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-200">
                 {{ product.name }}
               </h3>
 
               <!-- Precio -->
               <div class="mt-auto pt-2 flex items-baseline gap-2">
-                <span class="text-sm font-semibold text-[#c9a96e] tabular-nums">
+                <span class="text-sm font-semibold text-accent tabular-nums">
                   ${{ product._pricing.final.toLocaleString('es-CL') }}
                 </span>
                 <span
                   v-if="product._pricing.hasDiscount"
-                  class="text-[10px] text-[#444440] line-through tabular-nums"
+                  class="text-[10px] text-text-disabled line-through tabular-nums"
                 >
                   ${{ Number(product.price || 0).toLocaleString('es-CL') }}
                 </span>
@@ -468,12 +468,12 @@ onMounted(() => {
           </button>
 
           <button v-if="pageWindow[0] > 1" @click="goPage(1)" class="page-btn">1</button>
-          <span v-if="pageWindow[0] > 2" class="text-[#2a2a28] text-xs px-1">…</span>
+          <span v-if="pageWindow[0] > 2" class="text-text-disabled text-xs px-1">…</span>
 
           <button v-for="p in pageWindow" :key="p" @click="goPage(p)"
             :class="['page-btn', p === filters.page && 'page-btn--active']">{{ p }}</button>
 
-          <span v-if="pageWindow[pageWindow.length - 1] < totalPages - 1" class="text-[#2a2a28] text-xs px-1">…</span>
+          <span v-if="pageWindow[pageWindow.length - 1] < totalPages - 1" class="text-text-disabled text-xs px-1">…</span>
           <button v-if="pageWindow[pageWindow.length - 1] < totalPages" @click="goPage(totalPages)" class="page-btn">{{ totalPages }}</button>
 
           <button @click="goPage(filters.page + 1)" :disabled="filters.page === totalPages" class="page-btn" aria-label="Siguiente">
@@ -492,27 +492,19 @@ onMounted(() => {
 
 <style scoped>
 .products-shell {
-  background: linear-gradient(180deg, #0a0a0a 0%, #090909 40%, #0a0a0a 100%);
+  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 40%, var(--surface-base) 100%);
   flex: 1;
   width: 100%;
   overflow-x: hidden;
-}
-.filter-select {
-  appearance: none; -webkit-appearance: none;
-  background-color: #0a0a0a; border: 1px solid #2a2a2a;
-  color: #f0ede8; font-size: 0.8125rem;
-  padding: 0 2.25rem 0 0.75rem; height: 2.25rem;
-  outline: none; cursor: pointer; transition: border-color 0.2s;
-  white-space: nowrap; min-width: 11rem;
 }
 .filter-chip {
   display: inline-flex;
   align-items: center;
   height: 2.25rem;
   padding: 0 0.85rem;
-  border: 1px solid #252520;
+  border: 1px solid var(--text-disabled);
   background: transparent;
-  color: #5a5752;
+  color: var(--text-muted);
   font-size: 0.625rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -522,31 +514,25 @@ onMounted(() => {
   transition: border-color 0.18s, color 0.18s, background 0.18s;
 }
 .filter-chip:hover {
-  border-color: #3a3a35;
-  color: #8a8580;
+  border-color: var(--border-strong);
+  color: var(--text-muted);
 }
 .filter-chip input {
   display: none;
 }
 .filter-chip:has(input:checked) {
-  border-color: #c9a96e;
-  color: #c9a96e;
+  border-color: var(--accent);
+  color: var(--accent);
   background: rgba(201, 169, 110, 0.07);
-}
-.filter-select:focus { border-color: #c9a96e; }
-.filter-select option { background-color: #111111; color: #f0ede8; }
-.select-chevron {
-  position: absolute; right: 0.625rem; top: 50%; transform: translateY(-50%);
-  width: 0.875rem; height: 0.875rem; color: #444440; pointer-events: none;
 }
 .page-btn {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 2rem; height: 2rem; padding: 0 0.4rem;
-  font-size: 0.7rem; letter-spacing: 0.06em; color: #555550;
-  border: 1px solid #1e1e1e; background: #101010; cursor: pointer;
+  font-size: 0.7rem; letter-spacing: 0.06em; color: var(--text-muted);
+  border: 1px solid var(--border-subtle); background: var(--surface-raised); cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
-.page-btn:hover:not(:disabled) { border-color: #c9a96e44; color: #c9a96e; }
+.page-btn:hover:not(:disabled) { border-color: var(--accent)44; color: var(--accent); }
 .page-btn:disabled { opacity: 0.25; cursor: not-allowed; }
-.page-btn--active { border-color: #c9a96e !important; color: #c9a96e !important; background: #14110d; }
+.page-btn--active { border-color: var(--accent) !important; color: var(--accent) !important; background: var(--accent-soft); }
 </style>
