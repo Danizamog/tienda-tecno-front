@@ -37,10 +37,6 @@ export function useTheme() {
   return { theme, setTheme, toggleTheme }
 }
 
-/**
- * Llamado desde main.js antes de montar la app, para evitar el "flash"
- * del tema oscuro mientras Vue arranca cuando el usuario tiene tema claro.
- */
 export function initThemeEarly() {
   applyTheme(getInitialTheme())
 }

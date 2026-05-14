@@ -4,18 +4,23 @@ import { RouterLink, useRouter } from 'vue-router'
 import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useAuctions } from '@/composables/useAuctions'
+import { useScrollReveal } from '@/composables/useScrollReveal'
 
 const API    = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 const PB     = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
 const router = useRouter()
 
 const { subscribeToAuction } = useAuctions()
+useScrollReveal()
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 const stores          = ref([])
 const products        = ref([])
 const auctions        = ref([])
-const allCategories   = ref([])   // todas las categorías (para modal)
+const allCategories   = ref([])
+const heroTiles       = ref([])
+const heroProductsPool = ref([])
+const heroRevealEl    = ref(null)
 
 const loadingStores     = ref(true)
 const loadingProducts   = ref(true)
@@ -27,20 +32,16 @@ const showCatModal = ref(false)
 const now = ref(Date.now())
 let ticker = null
 
-// Categorías que se muestran en el home (hasta 7, aleatorio)
 const homeCategories = computed(() => shuffle(allCategories.value).slice(0, 7))
 
-// ── Shuffle aleatorio ──────────────────────────────────────────────────────────
 function shuffle(arr) {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
-// ── Fetch ──────────────────────────────────────────────────────────────────────
 async function fetchStores() {
   try {
     const res  = await fetch(`${API}/stores/featured`)
     const data = await res.json()
-    // Aleatorio: mezcla las tiendas y toma 3
     stores.value = shuffle(data.items || []).slice(0, 3)
   } catch { stores.value = [] }
   finally   { loadingStores.value = false }
@@ -48,17 +49,70 @@ async function fetchStores() {
 
 async function fetchProducts() {
   try {
-    // Pide 20 y mezcla para mostrar 4 aleatorios
-    const res  = await fetch(`${API}/products?status=active&sort=-created&perPage=20`)
+    const res  = await fetch(`${API}/products?status=active&sort=-created&perPage=24`)
     const data = await res.json()
-    products.value = shuffle(data.items || []).slice(0, 4)
+    const items = shuffle(data.items || [])
+    products.value = items.slice(0, 4)
+    // Guardamos un pool grande para poder re-randomizar las imágenes del hero
+    // en cada ciclo de la animación (cada 14s)
+    heroProductsPool.value = items.filter(p => productImageUrl(p)).slice(0, 20)
+    setupHeroTiles()
+    preloadHeroImages()
   } catch { products.value = [] }
   finally   { loadingProducts.value = false }
 }
 
+// Genera 5 cuadritos en posiciones aleatorias del grid del hero,
+// cada uno con una imagen distinta del pool. Evita la franja central
+// donde se ubica el headline. Se llama una vez al cargar y luego en
+// cada `animationiteration` del sweep para refrescar contenido.
+function setupHeroTiles() {
+  const items = shuffle(heroProductsPool.value)
+  if (!items.length) {
+    heroTiles.value = []
+    return
+  }
+  const cols = 14
+  const rows = 7
+  const cellW = 100 / cols
+  const cellH = 100 / rows
+  const used = new Set()
+  const tiles = []
+  const count = Math.min(items.length, 5)
+
+  for (let i = 0; i < count; i++) {
+    let attempts = 0
+    while (attempts < 50) {
+      const col = Math.floor(Math.random() * cols)
+      const row = Math.floor(Math.random() * rows)
+      // Evita la franja central donde aparece el headline
+      const distFromCenterX = Math.abs(col - cols / 2 + 0.5)
+      const distFromCenterY = Math.abs(row - rows / 2 + 0.5)
+      if (distFromCenterX < 3 && distFromCenterY < 2) { attempts++; continue }
+      // Evita celdas adyacentes para distribuir los tiles
+      const key = `${col}-${row}`
+      const tooClose = [...used].some(k => {
+        const [c, r] = k.split('-').map(Number)
+        return Math.abs(c - col) < 2 && Math.abs(r - row) < 2
+      })
+      if (used.has(key) || tooClose) { attempts++; continue }
+      used.add(key)
+      tiles.push({
+        id: `${Date.now()}-${i}-${col}-${row}`,
+        left: `${col * cellW}%`,
+        top: `${row * cellH}%`,
+        width: `${cellW}%`,
+        height: `${cellH}%`,
+        src: productImageUrl(items[i]),
+      })
+      break
+    }
+  }
+  heroTiles.value = tiles
+}
+
 async function fetchAuctions() {
   try {
-    // Pide todas las activas y mezcla para mostrar 3 aleatorios
     const res  = await fetch(`${API}/auctions?status=active&sort=end_date&perPage=20`)
     const data = await res.json()
     auctions.value = shuffle(data.items || []).slice(0, 3)
@@ -75,7 +129,6 @@ async function fetchCategories() {
   finally   { loadingCategories.value = false }
 }
 
-// Navegar a productos filtrando por categoría
 function goToCategory(cat) {
   showCatModal.value = false
   router.push({ path: '/products', query: { categoryId: cat.id, categoryName: cat.name } })
@@ -95,13 +148,13 @@ function storeLogoUrl(store) {
 function productImageUrl(product) {
   const imgs = Array.isArray(product.images) ? product.images : (product.images ? [product.images] : [])
   if (!imgs[0]) return null
-  return `${PB}/api/files/products/${product.id}/${imgs[0]}?thumb=400x400`
+  return `${PB}/api/files/products/${product.id}/${imgs[0]}?thumb=600x800`
 }
 
 function auctionImageUrl(auction) {
   const imgs = Array.isArray(auction.images) ? auction.images : (auction.images ? [auction.images] : [])
   if (!imgs[0]) return null
-  return `${PB}/api/files/auctions/${auction.id}/${imgs[0]}?thumb=600x400`
+  return `${PB}/api/files/auctions/${auction.id}/${imgs[0]}?thumb=800x600`
 }
 
 function storeInitials(name) {
@@ -121,30 +174,63 @@ function timeLeft(endDateStr) {
   return `${m}m ${s}s`
 }
 
-function urgencyColor(endDateStr) {
+function urgencyClass(endDateStr) {
   const diff = new Date(endDateStr).getTime() - now.value
-  if (diff <= 0) return 'text-text-muted'
-  if (diff < 3600000)  return 'text-red-400'
-  if (diff < 86400000) return 'text-amber-400'
-  return 'text-accent'
+  if (diff <= 0) return 'urgency-gold'
+  if (diff < 3600000)  return 'urgency-red'
+  if (diff < 86400000) return 'urgency-amber'
+  return 'urgency-gold'
 }
 
-// ── Precio ────────────────────────────────────────────────────────────────────
 function formatPrice(n) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n || 0)
 }
 
-// ── Rating estrellas ───────────────────────────────────────────────────────────
 function ratingStars(rating) {
   const r = Math.round(Number(rating || 0) * 2) / 2
   return { full: Math.floor(r), half: r % 1 !== 0, empty: 5 - Math.floor(r) - (r % 1 !== 0 ? 1 : 0) }
 }
 
+// ── Asignación de icono por nombre de categoría ────────────────────────────────
+// Devuelve el `id` de un <symbol> definido en el SVG sprite del template.
+function categoryIcon(name) {
+  const n = (name || '').toLowerCase()
+  if (/(camis|polo|t-?shirt|blusa|top|playera)/.test(n)) return 'icon-shirt'
+  if (/(pantal|jean|short|leg)/.test(n))                 return 'icon-pants'
+  if (/(chamarra|chaqueta|abrig|saco|hood|sweat)/.test(n)) return 'icon-jacket'
+  if (/(vestid|falda|dress)/.test(n))                    return 'icon-dress'
+  if (/(zapat|tenis|calza|sneaker|bota)/.test(n))        return 'icon-shoe'
+  if (/(gorra|sombrero|hat|cap|beanie|gorro)/.test(n))   return 'icon-hat'
+  if (/(bols|mochil|cartera|bag|backpack)/.test(n))      return 'icon-bag'
+  if (/(reloj|watch|joya|jewel|anillo)/.test(n))         return 'icon-watch'
+  if (/(lent|gafa|sunglass)/.test(n))                    return 'icon-glasses'
+  if (/(cintur|belt|accesori)/.test(n))                  return 'icon-belt'
+  if (/(electron|tecno|laptop|celular|tel[eé]fono)/.test(n)) return 'icon-laptop'
+  if (/(auric|headph|aud[ií]o)/.test(n))                 return 'icon-headphones'
+  return 'icon-tag'
+}
+
 const vendorFeatures = [
-  { title: 'Tienda propia', desc: 'Tu catálogo y marca en una página dedicada' },
-  { title: 'Subastas activas', desc: 'Publica productos con pujas en tiempo real' },
-  { title: 'Panel de control', desc: 'Gestiona pedidos, stock y resultados en minutos' },
-  { title: 'Mayor alcance', desc: 'Conecta con compradores de todo el país' },
+  {
+    title: 'Tienda propia',
+    desc: 'Tu catálogo y marca en una página dedicada, lista para vender desde el primer día.',
+    icon: 'm3 9 9-6 9 6v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10',
+  },
+  {
+    title: 'Subastas activas',
+    desc: 'Publica productos con pujas en tiempo real y maximiza el valor de cada venta.',
+    icon: 'm14 5 6 6M9 11l-7 7v3h3l7-7M14 5l3-3 5 5-3 3M9 11l5 5',
+  },
+  {
+    title: 'Panel de control',
+    desc: 'Gestiona pedidos, stock y resultados desde un dashboard pensado para vendedores.',
+    icon: 'M3 3v18h18M7 14l4-4 4 4 5-7',
+  },
+  {
+    title: 'Mayor alcance',
+    desc: 'Conecta con compradores de todo el país a través de un marketplace verificado.',
+    icon: 'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20',
+  },
 ]
 
 let unsubAuctions = null
@@ -161,6 +247,27 @@ function onAuctionEvent(e) {
   auctions.value[idx] = { ...prev, ...e.record, expand: prev.expand }
 }
 
+function handleRevealIteration(e) {
+  // Cuando el sweep completa un ciclo, re-randomizamos las celdas.
+  // El swap ocurre cuando el haz está fuera del viewport del mask,
+  // así que el cambio de src/posición es totalmente invisible y la
+  // animación se siente continua entre ciclos.
+  if (e.animationName === 'hero-reveal-sweep') {
+    setupHeroTiles()
+  }
+}
+
+// Precarga las imágenes del pool para que el swap entre ciclos sea
+// instantáneo y no se vea ningún parpadeo mientras el browser fetcha.
+function preloadHeroImages() {
+  for (const product of heroProductsPool.value) {
+    const url = productImageUrl(product)
+    if (!url) continue
+    const img = new Image()
+    img.src = url
+  }
+}
+
 onMounted(() => {
   fetchStores()
   fetchProducts()
@@ -168,37 +275,151 @@ onMounted(() => {
   fetchCategories()
   ticker = setInterval(() => { now.value = Date.now() }, 1000)
   unsubAuctions = subscribeToAuction('*', onAuctionEvent)
+  // Re-randomización al final de cada ciclo del sweep (cada 14s)
+  if (heroRevealEl.value) {
+    heroRevealEl.value.addEventListener('animationiteration', handleRevealIteration)
+  }
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
   if (unsubAuctions) unsubAuctions()
+  if (heroRevealEl.value) {
+    heroRevealEl.value.removeEventListener('animationiteration', handleRevealIteration)
+  }
 })
 </script>
 
 <template>
+  <!-- SVG sprite con todos los iconos de categorías (oculto, referenciado por <use>) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="icon-shirt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 3a4 4 0 0 1-8 0L3 6l3 4 2-1v12h8V9l2 1 3-4z"/>
+      </symbol>
+      <symbol id="icon-pants" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 3h12l-1 9-2 9h-3l-1-9h-1l-1 9H6L4 12z"/>
+        <path d="M6 3h12"/>
+      </symbol>
+      <symbol id="icon-jacket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 6c2-2 4-3 7-3s5 1 7 3l-2 4v11H7V10z"/>
+        <path d="M12 3v18"/>
+      </symbol>
+      <symbol id="icon-dress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 3h6l1 5 3 13H5l3-13z"/>
+      </symbol>
+      <symbol id="icon-shoe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 15c0-1 1-2 2-2l4-1 3-4 4 1c2 .5 5 2 5 4v3H3z"/>
+        <path d="M9 13l3-4"/>
+      </symbol>
+      <symbol id="icon-hat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 17h16M6 17c0-7 2-12 6-12s6 5 6 12"/>
+      </symbol>
+      <symbol id="icon-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"/>
+      </symbol>
+      <symbol id="icon-watch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="6"/>
+        <path d="M9 3h6l-1 3M9 21h6l-1-3M12 9v3l2 1"/>
+      </symbol>
+      <symbol id="icon-glasses" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="6" cy="14" r="3"/>
+        <circle cx="18" cy="14" r="3"/>
+        <path d="M9 14h6M2 9l3 3M22 9l-3 3"/>
+      </symbol>
+      <symbol id="icon-belt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="9" width="18" height="6" rx="1"/>
+        <rect x="10" y="11" width="4" height="2"/>
+      </symbol>
+      <symbol id="icon-laptop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="5" width="18" height="12" rx="1"/>
+        <path d="M2 20h20"/>
+      </symbol>
+      <symbol id="icon-headphones" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 14a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2h-2v-7h4M4 14v5a2 2 0 0 0 2 2h2v-7H4"/>
+      </symbol>
+      <symbol id="icon-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 12l-8 8a2 2 0 0 1-3 0l-7-7a2 2 0 0 1 0-3l8-8h7v7z"/>
+        <circle cx="15" cy="9" r="1.2"/>
+      </symbol>
+    </defs>
+  </svg>
+
   <AppNavbar />
 
   <main class="home-shell text-text-primary">
 
     <!-- ══ HERO ══════════════════════════════════════════════════ -->
-    <section class="relative overflow-hidden border-b border-border-default">
-      <div class="absolute inset-0 opacity-80 pointer-events-none bg-[radial-gradient(circle_at_top,var(--accent-soft)_0%,var(--surface-base)_45%)]" />
-      <div class="absolute inset-0 opacity-[0.08] pointer-events-none" style="background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:72px 72px;" />
-      <div class="relative max-w-[92rem] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-20 md:py-28">
+    <section class="relative overflow-hidden border-b border-border-subtle">
+      <!-- Capas de fondo animado -->
+      <div class="hero-glow" />
+
+      <!-- Reveal: grid + imágenes de productos que solo aparecen
+           cuando la línea de luz pasa por encima -->
+      <div ref="heroRevealEl" class="hero-reveal" aria-hidden="true">
+        <div class="hero-reveal-grid" />
+        <div
+          v-for="(tile, i) in heroTiles"
+          :key="'tile-' + i"
+          class="hero-reveal-tile"
+          :style="{ left: tile.left, top: tile.top, width: tile.width, height: tile.height }"
+        >
+          <img v-if="tile.src" :src="tile.src" alt="" loading="lazy" />
+        </div>
+      </div>
+
+      <div class="sweep-shine" />
+      <div class="hero-vignette" />
+
+      <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-36 lg:py-44">
         <div class="max-w-4xl mx-auto text-center">
-          <p class="section-label mb-6">Marketplace de tecnología</p>
-          <h1 class="font-display text-5xl md:text-7xl leading-[0.95] mb-7">
-            Tecnología y electrónica
-            <span class="block text-accent">en una sola vitrina</span>
-          </h1>
-          <p class="text-text-muted text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">
-            Descubre tiendas, productos y subastas de tecnología. Compra con confianza
-            o vende con tu propia tienda verificada.
+
+          <div class="hero-divider reveal">
+            <span class="line" />
+            <span class="dot" />
+            <span class="line" />
+          </div>
+
+          <p class="section-label justify-center mb-7 reveal reveal-delay-1">
+            Marketplace de tecnología
           </p>
-          <div class="flex flex-wrap justify-center gap-4">
-            <RouterLink to="/stores"   class="btn-gold">Explorar tiendas</RouterLink>
-            <RouterLink to="/products" class="btn-outline">Ver productos</RouterLink>
-            <RouterLink to="/auctions" class="btn-outline">Ver subastas</RouterLink>
+
+          <h1 class="font-display font-light reveal reveal-delay-2" style="font-size: clamp(2.6rem, 7vw, 5.5rem); line-height: 0.98; letter-spacing: -0.012em;">
+            Tecnología y electrónica
+            <span class="block italic text-accent mt-1" style="font-weight: 400;">
+              en una sola vitrina
+            </span>
+          </h1>
+
+          <p class="text-text-muted text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-9 mb-12 reveal reveal-delay-3">
+            Descubre tiendas, productos y subastas curadas. Compra con confianza
+            o construye tu propia tienda verificada.
+          </p>
+
+          <div class="flex flex-wrap justify-center gap-3 sm:gap-4 reveal reveal-delay-4">
+            <RouterLink to="/stores" class="btn-gold">
+              <span>Explorar tiendas</span>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </RouterLink>
+            <RouterLink to="/products" class="btn-outline"><span>Ver productos</span></RouterLink>
+            <RouterLink to="/auctions" class="btn-outline">
+              <span>Ver subastas</span>
+            </RouterLink>
+          </div>
+
+          <!-- Stats row debajo del hero -->
+          <div class="grid grid-cols-3 max-w-xl mx-auto mt-16 sm:mt-20 reveal reveal-delay-5">
+            <div class="px-2 sm:px-4 border-r border-border-subtle">
+              <p class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">+24h</p>
+              <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mt-1">Subastas en vivo</p>
+            </div>
+            <div class="px-2 sm:px-4 border-r border-border-subtle">
+              <p class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">100%</p>
+              <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mt-1">Tiendas verificadas</p>
+            </div>
+            <div class="px-2 sm:px-4">
+              <p class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">∞</p>
+              <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mt-1">Productos curados</p>
+            </div>
           </div>
         </div>
       </div>
@@ -206,74 +427,68 @@ onBeforeUnmount(() => {
 
     <!-- ══ CATEGORÍAS ════════════════════════════════════════════ -->
     <section class="w-full border-b border-border-subtle">
-      <div class="max-w-[92rem] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-14">
-        <div class="flex items-end justify-between mb-6 gap-4">
+      <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
+        <div class="flex items-end justify-between mb-10 gap-4 reveal">
           <div>
-            <p class="section-label mb-2">Categorías</p>
-            <h2 class="font-display text-3xl font-light">Explora por sección</h2>
+            <p class="section-label mb-3">Categorías</p>
+            <h2 class="section-heading">Explora por <em>sección</em></h2>
           </div>
-          <!-- "Ver todas" abre el modal -->
           <button
             @click="showCatModal = true"
-            class="text-[10px] tracking-[0.2em] uppercase text-text-muted hover:text-accent transition-colors hidden md:flex items-center gap-1.5"
+            class="see-all hidden md:inline-flex"
           >
             Ver todas
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
 
-        <!-- Skeleton -->
         <div v-if="loadingCategories" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          <div v-for="i in 7" :key="i" class="skeleton h-20" />
+          <div v-for="i in 7" :key="i" class="skeleton h-28" />
         </div>
 
-        <!-- Sin categorías -->
         <div v-else-if="!allCategories.length" class="text-center py-10 border border-border-subtle">
           <p class="text-text-disabled text-sm">Sin categorías registradas</p>
         </div>
 
-        <!-- Grid: 7 categorías aleatorias -->
         <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
           <button
-            v-for="cat in homeCategories"
+            v-for="(cat, i) in homeCategories"
             :key="cat.id"
             @click="goToCategory(cat)"
-            class="category-tile"
+            class="category-tile reveal"
+            :class="`reveal-delay-${(i % 6) + 1}`"
           >
-            <span class="category-label">{{ (cat.name || 'TT').slice(0, 2).toUpperCase() }}</span>
+            <svg class="category-icon"><use :href="`#${categoryIcon(cat.name)}`" /></svg>
             <span class="category-name">{{ cat.name }}</span>
           </button>
         </div>
 
-        <!-- "Ver todas" mobile -->
-        <div class="mt-5 md:hidden text-center">
-          <button
-            @click="showCatModal = true"
-            class="text-[10px] tracking-[0.2em] uppercase text-text-muted hover:text-accent transition-colors"
-          >Ver todas las categorías →</button>
+        <div class="mt-7 md:hidden text-center">
+          <button @click="showCatModal = true" class="see-all">
+            Ver todas las categorías
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
       </div>
     </section>
 
     <!-- ══ TIENDAS DESTACADAS ═════════════════════════════════════ -->
     <section class="w-full border-b border-border-subtle">
-      <div class="max-w-[92rem] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-16">
-        <div class="flex items-end justify-between mb-8 gap-4">
+      <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
+        <div class="flex items-end justify-between mb-10 gap-4 reveal">
           <div>
-            <p class="section-label mb-2">Directorio</p>
-            <h2 class="font-display text-3xl font-light">Tiendas verificadas</h2>
+            <p class="section-label mb-3">Directorio</p>
+            <h2 class="section-heading">Tiendas <em>verificadas</em></h2>
           </div>
-          <RouterLink to="/stores" class="text-[10px] tracking-[0.2em] uppercase text-text-muted hover:text-accent transition-colors hidden md:block">
+          <RouterLink to="/stores" class="see-all hidden md:inline-flex">
             Ver todas
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </RouterLink>
         </div>
 
-        <!-- Skeleton -->
-        <div v-if="loadingStores" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div v-for="i in 3" :key="i" class="card-dark overflow-hidden">
-            <div class="skeleton h-36 w-full" />
+        <div v-if="loadingStores" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div v-for="i in 3" :key="i" class="store-card">
+            <div class="skeleton h-44 w-full" />
             <div class="p-5 space-y-3">
               <div class="flex items-center gap-3">
                 <div class="skeleton w-10 h-10 shrink-0" />
@@ -286,41 +501,37 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- Sin tiendas -->
-        <div v-else-if="!stores.length" class="text-center py-14 border border-border-subtle">
+        <div v-else-if="!stores.length" class="text-center py-16 border border-border-subtle">
           <p class="font-display text-2xl font-light text-text-muted mb-2">Aún no hay tiendas verificadas</p>
           <RouterLink to="/vendor" class="btn-gold inline-flex mt-5">Abrir mi tienda</RouterLink>
         </div>
 
-        <!-- Grid de tiendas -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <RouterLink
-            v-for="store in stores"
+            v-for="(store, i) in stores"
             :key="store.id"
             :to="`/stores/${store.slug || store.id}`"
-            class="card-dark group overflow-hidden flex flex-col"
+            class="store-card group reveal"
+            :class="`reveal-delay-${i + 1}`"
           >
-            <!-- Banner fijo 144px -->
-            <div class="h-36 shrink-0 bg-surface-raised overflow-hidden">
+            <div class="store-banner">
               <img
                 v-if="storeBannerUrl(store)"
                 :src="storeBannerUrl(store)"
                 :alt="store.name"
-                class="w-full h-full object-cover object-top"
               />
-              <div
-                v-else
-                class="w-full h-full flex items-center justify-center"
-                style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
-              >
-                <span class="font-display text-4xl font-light text-text-disabled">{{ storeInitials(store.name) }}</span>
+              <div v-else class="w-full h-full flex items-center justify-center">
+                <span class="font-display text-5xl font-light text-text-disabled">{{ storeInitials(store.name) }}</span>
               </div>
+
+              <span class="store-verified-badge">
+                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                Verificada
+              </span>
             </div>
 
-            <!-- Info -->
-            <div class="p-5 flex items-center gap-3">
-              <!-- Logo fijo 40×40 -->
-              <div class="w-10 h-10 shrink-0 border border-border-default bg-surface-raised overflow-hidden">
+            <div class="p-5 flex items-center gap-4">
+              <div class="w-12 h-12 shrink-0 border border-border-default bg-surface-overlay overflow-hidden">
                 <img
                   v-if="storeLogoUrl(store)"
                   :src="storeLogoUrl(store)"
@@ -328,26 +539,27 @@ onBeforeUnmount(() => {
                   class="w-full h-full object-cover object-center"
                 />
                 <div v-else class="w-full h-full flex items-center justify-center">
-                  <span class="font-display text-sm font-light text-text-disabled">{{ storeInitials(store.name).charAt(0) }}</span>
+                  <span class="font-display text-base font-light text-accent">{{ storeInitials(store.name).charAt(0) }}</span>
                 </div>
               </div>
               <div class="min-w-0 flex-1">
-                <h3 class="text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">{{ store.name }}</h3>
-                <div class="flex items-center gap-2 mt-0.5">
-                  <p v-if="store.location" class="text-[11px] text-text-disabled truncate">{{ store.location }}</p>
-                  <!-- Estrellas -->
+                <h3 class="text-sm font-semibold text-text-primary truncate group-hover:text-accent transition-colors duration-300">{{ store.name }}</h3>
+                <div class="flex items-center gap-2 mt-1">
+                  <p v-if="store.location" class="text-[11px] text-text-muted truncate flex items-center gap-1">
+                    <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 11a2 2 0 100-4 2 2 0 000 4z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9a7 7 0 11-14 0c0-3.866 3.134-7 7-7s7 3.134 7 7z M12 16l5 5-5-5z"/>
+                    </svg>
+                    {{ store.location }}
+                  </p>
                   <div class="flex items-center gap-0.5 ml-auto shrink-0">
                     <template v-for="n in ratingStars(store.rating).full" :key="`f${n}`">
-                      <svg class="w-2.5 h-2.5 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                      </svg>
+                      <svg class="w-2.5 h-2.5 text-accent" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                     </template>
                     <template v-for="n in ratingStars(store.rating).empty" :key="`e${n}`">
-                      <svg class="w-2.5 h-2.5 text-text-disabled" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                      </svg>
+                      <svg class="w-2.5 h-2.5 text-text-disabled" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                     </template>
-                    <span class="text-[10px] text-text-muted tabular-nums ml-1">{{ Number(store.rating || 0).toFixed(1) }}</span>
+                    <span class="text-[10px] text-text-muted tabular-nums ml-1 font-medium">{{ Number(store.rating || 0).toFixed(1) }}</span>
                   </div>
                 </div>
               </div>
@@ -355,9 +567,10 @@ onBeforeUnmount(() => {
           </RouterLink>
         </div>
 
-        <div class="mt-6 md:hidden text-center">
-          <RouterLink to="/stores" class="text-[10px] tracking-[0.2em] uppercase text-text-muted hover:text-accent transition-colors">
-            Ver todas las tiendas →
+        <div class="mt-7 md:hidden text-center">
+          <RouterLink to="/stores" class="see-all">
+            Ver todas las tiendas
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </RouterLink>
         </div>
       </div>
@@ -365,21 +578,21 @@ onBeforeUnmount(() => {
 
     <!-- ══ PRODUCTOS RECIENTES ════════════════════════════════════ -->
     <section class="w-full bg-surface-base border-b border-border-subtle">
-      <div class="max-w-[92rem] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-16">
-        <div class="flex items-end justify-between mb-8 gap-4">
+      <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
+        <div class="flex items-end justify-between mb-10 gap-4 reveal">
           <div>
-            <p class="section-label mb-2">Selección</p>
-            <h2 class="font-display text-3xl font-light">Productos recientes</h2>
+            <p class="section-label mb-3">Selección</p>
+            <h2 class="section-heading">Productos <em>recientes</em></h2>
           </div>
-          <RouterLink to="/products" class="text-[10px] tracking-[0.2em] uppercase text-text-muted hover:text-accent transition-colors hidden md:block">
+          <RouterLink to="/products" class="see-all hidden md:inline-flex">
             Ver todos
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </RouterLink>
         </div>
 
-        <!-- Skeleton -->
-        <div v-if="loadingProducts" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div v-for="i in 4" :key="i" class="card-dark overflow-hidden">
-            <div class="skeleton aspect-square w-full" />
+        <div v-if="loadingProducts" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div v-for="i in 4" :key="i" class="product-card">
+            <div class="skeleton aspect-[3/4] w-full" />
             <div class="p-4 space-y-2">
               <div class="skeleton h-2 w-3/4" />
               <div class="skeleton h-3 w-1/2" />
@@ -388,168 +601,204 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- Sin productos -->
-        <div v-else-if="!products.length" class="text-center py-14 border border-border-subtle">
+        <div v-else-if="!products.length" class="text-center py-16 border border-border-subtle">
           <p class="font-display text-2xl font-light text-text-muted">Aún no hay productos activos</p>
         </div>
 
-        <!-- Grid de productos -->
-        <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           <RouterLink
-            v-for="product in products"
+            v-for="(product, i) in products"
             :key="product.id"
             :to="`/products/${product.id}`"
-            class="card-dark group flex flex-col overflow-hidden"
+            class="product-card group reveal"
+            :class="`reveal-delay-${(i % 4) + 1}`"
           >
-            <div class="aspect-square overflow-hidden bg-surface-raised">
+            <div class="product-media aspect-[3/4]">
               <img
                 v-if="productImageUrl(product)"
                 :src="productImageUrl(product)"
                 :alt="product.name"
-                class="w-full h-full object-cover"
               />
               <div v-else class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);">
-                <svg class="w-8 h-8 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <span class="font-display text-3xl font-light text-accent opacity-60">
+                  {{ (product.name || '?').slice(0, 2).toUpperCase() }}
+                </span>
+              </div>
+
+              <span v-if="product.expand?.category?.name" class="product-tag">
+                {{ product.expand.category.name }}
+              </span>
+
+              <div class="product-overlay">
+                <span class="product-cta">
+                  Ver producto
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
               </div>
             </div>
+
             <div class="p-4 flex flex-col gap-1.5 flex-1">
-              <p class="text-[10px] text-text-muted truncate">{{ product.expand?.store?.name || '—' }}</p>
-              <h3 class="text-sm text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors">{{ product.name }}</h3>
-              <p class="text-accent font-medium mt-auto tabular-nums">{{ formatPrice(product.price) }}</p>
+              <p class="text-[9px] tracking-[0.18em] uppercase text-text-muted truncate">{{ product.expand?.store?.name || '—' }}</p>
+              <h3 class="text-sm text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-300">{{ product.name }}</h3>
+              <p class="text-accent font-display text-xl font-medium mt-auto tabular-nums">{{ formatPrice(product.price) }}</p>
             </div>
           </RouterLink>
         </div>
 
-        <div class="mt-6 md:hidden text-center">
-          <RouterLink to="/products" class="text-[10px] tracking-[0.2em] uppercase text-text-muted hover:text-accent transition-colors">
-            Ver todos los productos →
+        <div class="mt-7 md:hidden text-center">
+          <RouterLink to="/products" class="see-all">
+            Ver todos los productos
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </RouterLink>
         </div>
       </div>
     </section>
 
     <!-- ══ SUBASTAS ACTIVAS ═══════════════════════════════════════ -->
-    <section class="w-full border-b border-border-subtle">
-      <div class="max-w-[92rem] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-16">
-        <div class="flex items-end justify-between mb-8 gap-4">
+    <section class="w-full border-b border-border-subtle relative overflow-hidden">
+      <!-- Acento radial sutil en el fondo de esta sección -->
+      <div class="absolute inset-0 pointer-events-none opacity-50" style="background: radial-gradient(ellipse at 20% 0%, rgba(239,68,68,0.04) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(201,169,110,0.04) 0%, transparent 50%);"></div>
+
+      <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
+        <div class="flex items-end justify-between mb-10 gap-4 reveal">
           <div>
-            <p class="section-label mb-2">En vivo</p>
-            <h2 class="font-display text-3xl font-light">Subastas activas</h2>
+            <p class="section-label mb-3">
+              <span class="w-1.5 h-1.5 rounded-full bg-red-400" style="animation: pulse-live 1.5s ease-in-out infinite;"></span>
+              En vivo
+            </p>
+            <h2 class="section-heading">Subastas <em>activas</em></h2>
           </div>
-          <RouterLink to="/auctions" class="text-[10px] tracking-[0.2em] uppercase text-text-muted hover:text-accent transition-colors hidden md:block">
+          <RouterLink to="/auctions" class="see-all hidden md:inline-flex">
             Ver todas
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </RouterLink>
         </div>
 
-        <!-- Skeleton -->
-        <div v-if="loadingAuctions" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div v-for="i in 3" :key="i" class="card-dark overflow-hidden">
-            <div class="skeleton h-44 w-full" />
+        <div v-if="loadingAuctions" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div v-for="i in 3" :key="i" class="auction-card">
+            <div class="skeleton h-56 w-full" />
             <div class="p-5 space-y-3">
               <div class="skeleton h-3 w-2/3" />
               <div class="skeleton h-px w-full mt-2" />
               <div class="flex justify-between pt-1">
-                <div class="skeleton h-5 w-24" />
+                <div class="skeleton h-7 w-32" />
                 <div class="skeleton h-3 w-16" />
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Sin subastas -->
-        <div v-else-if="!auctions.length" class="text-center py-14 border border-border-subtle">
+        <div v-else-if="!auctions.length" class="text-center py-16 border border-border-subtle">
           <p class="font-display text-2xl font-light text-text-muted mb-2">No hay subastas activas</p>
           <RouterLink to="/auctions" class="btn-outline text-xs mt-4 inline-flex">Ver historial</RouterLink>
         </div>
 
-        <!-- Grid de subastas -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <RouterLink
-            v-for="auction in auctions"
+            v-for="(auction, i) in auctions"
             :key="auction.id"
-            to="/auctions"
-            class="card-dark group flex flex-col overflow-hidden"
+            :to="`/auctions/${auction.id}`"
+            class="auction-card group reveal"
+            :class="`reveal-delay-${i + 1}`"
           >
-            <!-- Imagen fija 176px -->
-            <div class="h-44 shrink-0 bg-surface-raised overflow-hidden relative">
+            <div class="auction-media h-56">
               <img
                 v-if="auctionImageUrl(auction)"
                 :src="auctionImageUrl(auction)"
                 :alt="auction.title"
-                class="w-full h-full object-cover object-top"
               />
               <div v-else class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);">
-                <svg class="w-10 h-10 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-                  <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <svg class="w-12 h-12 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
 
-              <!-- Gradiente + countdown -->
-              <div class="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
-              <div class="absolute bottom-3 left-4 flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse" :class="urgencyColor(auction.end_date)" />
-                <span class="text-[11px] font-mono font-medium tabular-nums" :class="urgencyColor(auction.end_date)">
-                  {{ timeLeft(auction.end_date) }}
+              <div class="auction-gradient" />
+
+              <!-- Badge SUBASTA ACTIVA -->
+              <div class="absolute top-3 right-3">
+                <span class="badge-live">Subasta activa</span>
+              </div>
+
+              <!-- Badge pujas -->
+              <div v-if="auction.bids_count > 0" class="absolute top-3 left-3">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] tracking-[0.18em] uppercase bg-black/72 backdrop-blur border border-accent-soft text-accent font-semibold">
+                  <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 3l2.5 5 5.5.8-4 3.9.9 5.5L10 15.5 5.1 18.2 6 12.7 2 8.8l5.5-.8z"/></svg>
+                  {{ auction.bids_count }} puja{{ auction.bids_count !== 1 ? 's' : '' }}
                 </span>
               </div>
 
-              <!-- Pujas -->
-              <div v-if="auction.bids_count > 0" class="absolute top-3 left-3">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] tracking-wide uppercase bg-black/70 border border-border-default text-accent">
-                  {{ auction.bids_count }} puja{{ auction.bids_count !== 1 ? 's' : '' }}
+              <!-- Timer -->
+              <div class="absolute bottom-3 left-3">
+                <span class="auction-timer" :class="urgencyClass(auction.end_date)">
+                  <span class="dot"></span>
+                  {{ timeLeft(auction.end_date) }}
                 </span>
               </div>
             </div>
 
-            <!-- Info -->
             <div class="p-5 flex flex-col gap-3 flex-1">
-              <h3 class="text-sm font-medium text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors">{{ auction.title }}</h3>
-              <div class="mt-auto pt-3 border-t border-[var(--surface-overlay)] flex items-center justify-between gap-2">
+              <h3 class="text-sm font-semibold text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-300">{{ auction.title }}</h3>
+              <div class="mt-auto pt-4 border-t border-border-subtle flex items-end justify-between gap-2">
                 <div>
-                  <p class="text-[9px] tracking-widest uppercase text-text-disabled mb-0.5">
+                  <p class="text-[9px] tracking-[0.22em] uppercase text-text-disabled mb-1.5">
                     {{ (auction.bids_count || 0) > 0 ? 'Oferta actual' : 'Precio base' }}
                   </p>
-                  <span class="text-lg font-semibold text-accent tabular-nums">
+                  <span class="price-ticker">
                     {{ formatPrice(auction.current_price || auction.start_price) }}
                   </span>
                 </div>
-                <span class="text-[10px] tracking-[0.15em] uppercase text-text-disabled border border-border-subtle px-2 py-1">
-                  Ver subasta →
+                <span class="text-[9px] tracking-[0.22em] uppercase text-text-muted group-hover:text-accent transition-colors duration-300 flex items-center gap-1.5 pb-1">
+                  Pujar
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </span>
               </div>
             </div>
           </RouterLink>
         </div>
 
-        <div class="mt-6 md:hidden text-center">
-          <RouterLink to="/auctions" class="text-[10px] tracking-[0.2em] uppercase text-text-muted hover:text-accent transition-colors">
-            Ver todas las subastas →
+        <div class="mt-7 md:hidden text-center">
+          <RouterLink to="/auctions" class="see-all">
+            Ver todas las subastas
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </RouterLink>
         </div>
       </div>
     </section>
 
     <!-- ══ CTA VENDEDORES ═════════════════════════════════════════ -->
-    <section class="w-full border-b border-border-subtle">
-      <div class="max-w-[92rem] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-20">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-          <div>
-            <p class="section-label mb-3">Para vendedores</p>
-            <h2 class="font-display text-4xl md:text-5xl font-light leading-tight mb-5">
-              Crea una vitrina profesional para tu negocio
+    <section class="w-full border-b border-border-subtle relative overflow-hidden">
+      <div class="absolute inset-0 pointer-events-none opacity-60" style="background: radial-gradient(circle at 80% 50%, var(--accent-soft) 0%, transparent 55%);"></div>
+
+      <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-28">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          <div class="reveal">
+            <p class="section-label mb-4">Para vendedores</p>
+            <h2 class="font-display font-light leading-[1.02] mb-6" style="font-size: clamp(2.2rem, 4.5vw, 3.5rem); letter-spacing: -0.012em;">
+              Crea una vitrina
+              <span class="block italic text-accent" style="font-weight:400;">profesional</span>
+              para tu negocio
             </h2>
-            <p class="text-text-muted max-w-xl mb-7">
-              Publica productos, activa subastas y gestiona pedidos desde un panel
-              diseñado para vender con presencia visual de alto nivel.
+            <p class="text-text-muted max-w-xl mb-9 leading-relaxed">
+              Publica productos, activa subastas en tiempo real y gestiona tus pedidos
+              desde un panel diseñado para vender con presencia visual de alto nivel.
             </p>
-            <RouterLink to="/vendor" class="btn-gold">Vender en TuVentaConfiada</RouterLink>
+            <RouterLink to="/vendor" class="btn-gold">
+              <span>Vender en TuVentaConfiada</span>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </RouterLink>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div v-for="feat in vendorFeatures" :key="feat.title" class="card-dark p-5">
-              <h3 class="text-sm text-accent mb-2 uppercase tracking-[0.14em]">{{ feat.title }}</h3>
-              <p class="text-[12px] text-text-muted leading-relaxed">{{ feat.desc }}</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div
+              v-for="(feat, i) in vendorFeatures"
+              :key="feat.title"
+              class="feature-card reveal"
+              :class="`reveal-delay-${i + 1}`"
+            >
+              <svg class="feature-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" :d="feat.icon" />
+              </svg>
+              <h3 class="text-sm text-accent mb-2 uppercase tracking-[0.18em] font-semibold">{{ feat.title }}</h3>
+              <p class="text-[12.5px] text-text-muted leading-relaxed">{{ feat.desc }}</p>
             </div>
           </div>
         </div>
@@ -566,33 +815,27 @@ onBeforeUnmount(() => {
         class="fixed inset-0 z-[200] flex items-center justify-center p-4"
         @click.self="showCatModal = false"
       >
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showCatModal = false" />
+        <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" @click="showCatModal = false" />
 
-        <!-- Panel -->
-        <div class="relative w-full max-w-3xl max-h-[80vh] bg-surface-sunken border border-border-subtle flex flex-col overflow-hidden">
+        <div class="relative w-full max-w-3xl max-h-[80vh] bg-surface-sunken border border-border-default flex flex-col overflow-hidden shadow-2xl shadow-black/50">
 
-          <!-- Cabecera -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-border-subtle shrink-0">
             <div>
-              <p class="text-[9px] tracking-[0.2em] uppercase text-text-muted mb-0.5">Catálogo</p>
-              <h2 class="font-display text-xl font-light text-text-primary">Todas las categorías</h2>
+              <p class="text-[9px] tracking-[0.28em] uppercase text-accent mb-1">Catálogo</p>
+              <h2 class="font-display text-2xl font-light text-text-primary">Todas las categorías</h2>
             </div>
             <button
               @click="showCatModal = false"
-              class="w-8 h-8 flex items-center justify-center border border-border-default text-text-muted hover:border-[var(--accent)44] hover:text-accent transition-colors"
+              class="w-9 h-9 flex items-center justify-center border border-border-default text-text-muted hover:border-accent hover:text-accent transition-colors"
               aria-label="Cerrar"
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           </div>
 
-          <!-- Grid de categorías -->
           <div class="overflow-y-auto flex-1 p-6">
             <div v-if="loadingCategories" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              <div v-for="i in 8" :key="i" class="skeleton h-16" />
+              <div v-for="i in 8" :key="i" class="skeleton h-20" />
             </div>
 
             <div v-else-if="!allCategories.length" class="flex items-center justify-center py-16">
@@ -604,20 +847,15 @@ onBeforeUnmount(() => {
                 v-for="cat in allCategories"
                 :key="cat.id"
                 @click="goToCategory(cat)"
-                class="group flex flex-col items-center justify-center gap-1.5 py-4 px-3 border border-border-subtle bg-surface-raised hover:border-[var(--accent)55] hover:bg-[#110f0a] transition-all duration-200"
+                class="category-tile"
+                style="min-height: 5.5rem; padding: 1rem 0.75rem;"
               >
-                <!-- Icono / iniciales -->
-                <span class="text-xs tracking-[0.2em] uppercase text-accent group-hover:text-[var(--accent-hover)] transition-colors">
-                  {{ (cat.name || 'TT').slice(0, 2).toUpperCase() }}
-                </span>
-                <span class="text-[11px] tracking-[0.06em] uppercase text-text-muted group-hover:text-accent transition-colors text-center leading-tight">
-                  {{ cat.name }}
-                </span>
+                <svg class="category-icon" style="width:1.4rem;height:1.4rem;"><use :href="`#${categoryIcon(cat.name)}`" /></svg>
+                <span class="category-name">{{ cat.name }}</span>
               </button>
             </div>
           </div>
 
-          <!-- Footer -->
           <div class="px-6 py-3 border-t border-border-subtle shrink-0 flex items-center justify-between">
             <span class="text-[10px] tracking-widest uppercase text-text-disabled">
               {{ allCategories.length }} categoría{{ allCategories.length !== 1 ? 's' : '' }}
@@ -625,9 +863,10 @@ onBeforeUnmount(() => {
             <RouterLink
               to="/products"
               @click="showCatModal = false"
-              class="text-[10px] tracking-[0.15em] uppercase text-text-muted hover:text-accent transition-colors"
+              class="see-all"
             >
-              Ver todos los productos →
+              Ver todos los productos
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </RouterLink>
           </div>
         </div>
@@ -640,36 +879,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .home-shell {
-  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 38%, var(--surface-base) 100%);
+  background: var(--surface-base);
   width: 100%;
   overflow-x: hidden;
-}
-
-.category-tile {
-  border: 1px solid var(--border-subtle);
-  background-color: var(--surface-raised);
-  min-height: 5.2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  transition: border-color 0.25s, transform 0.25s;
-}
-.category-tile:hover { border-color: var(--accent)66; transform: translateY(-2px); }
-
-.category-label {
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-.category-name {
-  font-size: 0.67rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  text-align: center;
 }
 
 /* ── Animación modal categorías ── */
@@ -680,8 +892,8 @@ onBeforeUnmount(() => {
 
 .cat-modal-enter-active .relative,
 .cat-modal-leave-active .relative {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
 }
 .cat-modal-enter-from .relative,
-.cat-modal-leave-to   .relative { transform: translateY(12px) scale(0.98); opacity: 0; }
+.cat-modal-leave-to   .relative { transform: translateY(16px) scale(0.97); opacity: 0; }
 </style>
