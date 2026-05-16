@@ -290,10 +290,27 @@ a {
   }
 }
 
-/* ── Línea de barrido (shimmer dorado en hero) ── */
+/* ── Línea de barrido (shimmer dorado en hero) ──
+   Rango ampliado para sincronizar con el mask-size: 300% del .hero-reveal.
+   La línea visual entra/sale muy lejos del viewport en sintonía con la
+   máscara, así no se ve nada al inicio del ciclo. */
+/* ── PAUSA entre ciclos ──────────────────────────────────────────
+   La duración TOTAL es la del animation-duration (ahora 24s).
+   El movimiento real ocupa del 12% al 82% → 70% del tiempo.
+   El 0-12% y el 82-100% son PAUSAS con el haz fuera del viewport.
+
+   Para ajustar la pausa:
+      • Más pausa al INICIO  → aumentar el 12% de la 2ª línea
+      • Más pausa al FINAL   → reducir el 82% de la 3ª línea
+      • Sin pausa            → pon 0% y 100% directamente
+─────────────────────────────────────────────────────────────── */
+/* SIN PAUSAS — flujo continuo. Sincronizado con .hero-reveal:
+   translateX -80% → 80% mantiene el pico del sweep alineado con
+   el pico del mask en cada frame. El haz entra desde FUERA de
+   la pantalla y sale FUERA, no inicia ni termina en los bordes. */
 @keyframes sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  from { transform: translateX(-70%); }
+  to   { transform: translateX(180%); }
 }
 
 /* ── Subida de la barra inferior (CTA hover) ── */
@@ -868,58 +885,74 @@ a {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  /* Máscara ASIMÉTRICA:
-     - AHEAD (gradient > 50%): corte súper agudo → invisible
-       (no se ven los cuadros hasta que la línea llega)
-     - AT 50%: pico negro = la línea de luz revela todo
-     - BEHIND (gradient 42-50%): fade gradual → eco/reflejo
-       breve detrás de la línea antes de volver a oscuridad */
+  /* Máscara SIMÉTRICA sin base alpha — tiles/grid SOLO visibles donde
+     pasa la luz. Bordes transparent para entrada/salida natural. */
   -webkit-mask-image: linear-gradient(
     110deg,
     transparent 0%,
-    transparent 42%,
-    rgba(0, 0, 0, 0.18) 45%,
-    rgba(0, 0, 0, 0.5) 47%,
-    rgba(0, 0, 0, 0.85) 49%,
+    transparent 20%,
+    rgba(0, 0, 0, 0.05) 27%,
+    rgba(0, 0, 0, 0.18) 34%,
+    rgba(0, 0, 0, 0.42) 41%,
+    rgba(0, 0, 0, 0.72) 46%,
+    rgba(0, 0, 0, 0.92) 48%,
     black 50%,
-    transparent 51.5%,
+    rgba(0, 0, 0, 0.92) 52%,
+    rgba(0, 0, 0, 0.72) 54%,
+    rgba(0, 0, 0, 0.42) 59%,
+    rgba(0, 0, 0, 0.18) 66%,
+    rgba(0, 0, 0, 0.05) 73%,
+    transparent 80%,
     transparent 100%
   );
   mask-image: linear-gradient(
     110deg,
     transparent 0%,
-    transparent 42%,
-    rgba(0, 0, 0, 0.18) 45%,
-    rgba(0, 0, 0, 0.5) 47%,
-    rgba(0, 0, 0, 0.85) 49%,
+    transparent 20%,
+    rgba(0, 0, 0, 0.05) 27%,
+    rgba(0, 0, 0, 0.18) 34%,
+    rgba(0, 0, 0, 0.42) 41%,
+    rgba(0, 0, 0, 0.72) 46%,
+    rgba(0, 0, 0, 0.92) 48%,
     black 50%,
-    transparent 51.5%,
+    rgba(0, 0, 0, 0.92) 52%,
+    rgba(0, 0, 0, 0.72) 54%,
+    rgba(0, 0, 0, 0.42) 59%,
+    rgba(0, 0, 0, 0.18) 66%,
+    rgba(0, 0, 0, 0.05) 73%,
+    transparent 80%,
     transparent 100%
   );
-  -webkit-mask-size: 240% 100%;
-  mask-size: 240% 100%;
+  -webkit-mask-size: 200% 100%;
+  mask-size: 200% 100%;
+  /* Inicial: pico fuera de pantalla a la izquierda. Rango ampliado:
+     130% → -30% para que la luz entre desde MUY fuera del viewport
+     y salga también fuera. */
+  -webkit-mask-position: 130% 0;
+  mask-position: 130% 0;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  /* ease-in: arranque lento (la línea entra suave desde la izquierda)
-     → final rápido (la línea zooma al salir, swap invisible).
-     Loop continuo: el reset entre iteraciones ocurre con la línea
-     fuera del viewport, así nunca se ve un "salto". */
-  animation: hero-reveal-sweep 8s ease-in infinite;
+  animation: hero-reveal-sweep 18s linear infinite;
 }
 
+/* SIN PAUSAS — movimiento continuo del pico. Loop invisible porque
+   en ambos endpoints el pico está fuera del viewport. El echo
+   (delay -9s) cubre el espacio entre ciclos para flujo continuo. */
 @keyframes hero-reveal-sweep {
-  0%   { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
-  100% { -webkit-mask-position: 0% 0;   mask-position: 0% 0; }
+  from { -webkit-mask-position: 130% 0; mask-position: 130% 0; }
+  to   { -webkit-mask-position: -30% 0; mask-position: -30% 0; }
 }
 
-/* Cuadrícula interna que se revela con la luz */
+/* Cuadrícula interna que se revela con la luz.
+   El tamaño de celda es CSS variable que JS sincroniza con
+   el tamaño real de los tiles → grid y tiles encajan perfecto. */
 .hero-reveal-grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(201, 169, 110, 0.5) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 169, 110, 0.5) 1px, transparent 1px);
-  background-size: 80px 80px;
+    linear-gradient(rgba(201, 169, 110, 0.5) 3px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 169, 110, 0.5) 3px, transparent 1px);
+  background-size: var(--tile-w, 144px) var(--tile-h, 192px);
   opacity: 0.9;
 }
 
@@ -958,24 +991,70 @@ a {
   pointer-events: none;
 }
 
+/* Haz principal de LUZ — gradiente simétrico ancho con peak brillante,
+   blur(6px) para dispersión real + mix-blend-mode:screen para mezclar
+   naturalmente sobre el fondo oscuro. Parece luz, no línea. */
 .sweep-shine {
   position: absolute;
   top: 0;
   left: 0;
-  width: 56%;
+  width: 100%;
   height: 100%;
-  /* Brillo asimétrico: pico al frente (alineado con la línea del mask)
-     y un trail suave detrás → coincide con dónde revelan los cuadros */
   background: linear-gradient(
     110deg,
-    transparent 0%,
-    rgba(201, 169, 110, 0.04) 40%,
-    rgba(201, 169, 110, 0.14) 52%,
-    rgba(201, 169, 110, 0.03) 58%,
-    transparent 70%
+    transparent          0%,
+    rgba(201, 169, 110, 0.008) 18%,
+    rgba(201, 169, 110, 0.04)  28%,
+    rgba(201, 169, 110, 0.10)  36%,
+    rgba(201, 169, 110, 0.22)  42%,
+    rgba(201, 169, 110, 0.38)  46%,
+    rgba(201, 169, 110, 0.55)  50%,
+    rgba(201, 169, 110, 0.38)  54%,
+    rgba(201, 169, 110, 0.22)  58%,
+    rgba(201, 169, 110, 0.10)  64%,
+    rgba(201, 169, 110, 0.04)  72%,
+    rgba(201, 169, 110, 0.008) 82%,
+    transparent          100%
   );
-  /* ease-in en sincronía con .hero-reveal — la línea entra lenta y sale rápida */
-  animation: sweep 8s ease-in infinite;
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  transform: translateX(-80%);
+  animation: sweep 18s linear infinite;
+  pointer-events: none;
+}
+
+/* Echo — segunda luz desfasada media duración (delay -9s),
+   ya está visible en pantalla al cargar (no hay frame en negro)
+   y cubre el espacio entre cada cycle del haz principal → SIN GAP. */
+.sweep-shine-echo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    110deg,
+    transparent          0%,
+    rgba(201, 169, 110, 0.005) 18%,
+    rgba(201, 169, 110, 0.025) 30%,
+    rgba(201, 169, 110, 0.07)  38%,
+    rgba(201, 169, 110, 0.15)  44%,
+    rgba(201, 169, 110, 0.25)  47%,
+    rgba(201, 169, 110, 0.36)  50%,
+    rgba(201, 169, 110, 0.25)  53%,
+    rgba(201, 169, 110, 0.15)  56%,
+    rgba(201, 169, 110, 0.07)  62%,
+    rgba(201, 169, 110, 0.025) 70%,
+    rgba(201, 169, 110, 0.005) 82%,
+    transparent          100%
+  );
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  transform: translateX(-80%);
+  /* -9s = mitad del cycle: cuando el haz principal está saliendo,
+     el echo está entrando por el lado opuesto → flujo continuo
+     sin gap visual entre ciclos */
+  animation: sweep 18s linear -9.5s infinite;
   pointer-events: none;
 }
 
@@ -1138,6 +1217,303 @@ a {
 }
 .feature-card:hover .feature-icon {
   transform: scale(1.1) translateY(-2px);
+}
+
+/* ═════════════════════════════════════════════════════════
+   MARQUEE TICKER — texto desfilando estilo fashion editorial
+═════════════════════════════════════════════════════════ */
+.marquee {
+  position: relative;
+  overflow: hidden;
+  border-block: 1px solid var(--border-subtle);
+  background-color: var(--surface-sunken);
+  padding-block: 1.1rem;
+  mask-image: linear-gradient(90deg, transparent 0%, black 6%, black 94%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 6%, black 94%, transparent 100%);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 38s linear infinite;
+  will-change: transform;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.6rem;
+  padding-inline: 1.6rem;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.marquee-item em {
+  font-style: italic;
+  color: var(--accent);
+  font-weight: 400;
+}
+.marquee-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ═════════════════════════════════════════════════════════
+   CATEGORY SCROLL — carrusel horizontal de categorías
+═════════════════════════════════════════════════════════ */
+.cat-scroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  padding-block: 0.5rem 1.5rem;
+  padding-inline: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-soft) transparent;
+  mask-image: linear-gradient(90deg, transparent 0%, black 3%, black 97%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 3%, black 97%, transparent 100%);
+}
+.cat-scroll::-webkit-scrollbar {
+  height: 3px;
+}
+.cat-scroll::-webkit-scrollbar-thumb {
+  background: var(--accent-soft);
+  border-radius: 2px;
+}
+.cat-scroll-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  width: 9.5rem;
+  height: 12rem;
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+  cursor: pointer;
+}
+.cat-scroll-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center 70%, var(--accent-soft) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.cat-scroll-item:hover {
+  border-color: var(--accent);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 32px -18px var(--accent-glow-strong);
+}
+.cat-scroll-item:hover::before { opacity: 1; }
+.cat-scroll-item:hover .cat-scroll-icon { color: var(--accent); transform: scale(1.15); }
+.cat-scroll-item:hover .cat-scroll-name { color: var(--text-primary); }
+
+.cat-scroll-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--accent);
+  opacity: 0.9;
+  transition: transform 0.4s ease, color 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+.cat-scroll-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+  transition: color 0.3s ease;
+  position: relative;
+  z-index: 1;
+  padding-inline: 0.5rem;
+}
+
+/* ═════════════════════════════════════════════════════════
+   PRODUCT MEDIA — crossfade segunda imagen al hover
+═════════════════════════════════════════════════════════ */
+.product-media-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.product-media-stack img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.product-media-stack .img-front {
+  opacity: 1;
+  z-index: 2;
+}
+.product-media-stack .img-back {
+  opacity: 0;
+  z-index: 1;
+  transform: scale(1.05);
+}
+.product-card:hover .product-media-stack .img-front {
+  opacity: 0;
+  transform: scale(1.05);
+}
+.product-card:hover .product-media-stack .img-back {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ═════════════════════════════════════════════════════════
+   QUICK VIEW MODAL
+═════════════════════════════════════════════════════════ */
+.quick-view-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.quick-view-panel {
+  position: relative;
+  width: 100%;
+  max-width: 64rem;
+  max-height: 90vh;
+  background-color: var(--surface-base);
+  border: 1px solid var(--border-default);
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  box-shadow: 0 32px 64px -24px rgba(0,0,0,0.5);
+}
+@media (min-width: 768px) {
+  .quick-view-panel {
+    grid-template-columns: 1.1fr 1fr;
+  }
+}
+.quick-view-media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(135deg, var(--surface-raised) 0%, #1a1612 100%);
+  overflow: hidden;
+}
+.quick-view-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.4s ease;
+}
+.quick-view-thumbs {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+}
+.quick-view-thumb {
+  flex: 1;
+  height: 0.18rem;
+  background: rgba(255,255,255,0.2);
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.quick-view-thumb.is-active {
+  background: var(--accent);
+}
+.quick-view-content {
+  padding: 2.4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+}
+@media (min-width: 768px) {
+  .quick-view-content { padding: 3rem 2.4rem; }
+}
+.quick-view-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.6);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 20;
+  transition: color 0.25s, border-color 0.25s, background-color 0.25s;
+  backdrop-filter: blur(4px);
+}
+.quick-view-close:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background-color: var(--surface-raised);
+}
+
+/* Animaciones del modal */
+.qv-enter-active { transition: opacity 0.25s ease; }
+.qv-leave-active { transition: opacity 0.18s ease; }
+.qv-enter-from, .qv-leave-to { opacity: 0; }
+.qv-enter-active .quick-view-panel,
+.qv-leave-active .quick-view-panel {
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+}
+.qv-enter-from .quick-view-panel,
+.qv-leave-to   .quick-view-panel {
+  transform: translateY(20px) scale(0.97);
+  opacity: 0;
+}
+
+/* ═════════════════════════════════════════════════════════
+   NAVBAR GLASS — efecto glass al scroll
+═════════════════════════════════════════════════════════ */
+.app-header {
+  transition:
+    backdrop-filter 0.35s ease,
+    -webkit-backdrop-filter 0.35s ease,
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+.app-header.is-scrolled {
+  background-color: color-mix(in srgb, var(--surface-base) 65%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom-color: color-mix(in srgb, var(--accent) 25%, transparent);
+  box-shadow: 0 1px 0 0 color-mix(in srgb, var(--accent) 10%, transparent),
+              0 12px 30px -18px rgba(0, 0, 0, 0.4);
 }
 
 /* ═════════════════════════════════════════════════════════

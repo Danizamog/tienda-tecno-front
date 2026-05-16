@@ -1,10 +1,13 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import QuickViewModal from '@/components/ui/QuickViewModal.vue'
 import { useAuctions } from '@/composables/useAuctions'
 import { useScrollReveal } from '@/composables/useScrollReveal'
+import { useCountUp } from '@/composables/useCountUp'
+import { vTilt } from '@/composables/useTilt3D'
 
 const API    = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 const PB     = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
@@ -12,6 +15,44 @@ const router = useRouter()
 
 const { subscribeToAuction } = useAuctions()
 useScrollReveal()
+
+// Stats animados del hero (count-up al entrar al viewport)
+const { value: auctionsValue, elRef: auctionsRef } = useCountUp(24,  { suffix: 'h', duration: 1700 })
+const { value: verifiedValue, elRef: verifiedRef } = useCountUp(100, { suffix: '%', duration: 2000 })
+const { value: productsValue, elRef: productsRef } = useCountUp(0,   { raw: '∞' })
+
+// Quick view del producto
+const quickViewProduct = ref(null)
+function openQuickView(product, evt) {
+  if (evt) {
+    evt.preventDefault()
+    evt.stopPropagation()
+  }
+  quickViewProduct.value = product
+}
+function closeQuickView() {
+  quickViewProduct.value = null
+}
+
+// Helpers para crossfade de imagen secundaria
+function productImagesArr(product) {
+  return Array.isArray(product?.images) ? product.images : (product?.images ? [product.images] : [])
+}
+function productImageUrlByIdx(product, idx) {
+  const imgs = productImagesArr(product)
+  if (!imgs[idx]) return null
+  return `${PB}/api/files/products/${product.id}/${imgs[idx]}?thumb=600x800`
+}
+
+// Items del marquee — frases editoriales
+const marqueeItems = [
+  { text: 'Nueva colección', em: false },
+  { text: 'Subastas activas', em: true },
+  { text: 'Tiendas verificadas', em: false },
+  { text: 'Envío en 48h', em: false },
+  { text: 'Catálogo curado', em: true },
+  { text: 'Pagos seguros', em: false },
+]
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 const stores          = ref([])
@@ -56,53 +97,86 @@ async function fetchProducts() {
     // Guardamos un pool grande para poder re-randomizar las imágenes del hero
     // en cada ciclo de la animación (cada 14s)
     heroProductsPool.value = items.filter(p => productImageUrl(p)).slice(0, 20)
+    // Esperar a que el DOM termine de actualizarse antes de medir el hero
+    await nextTick()
     setupHeroTiles()
     preloadHeroImages()
   } catch { products.value = [] }
   finally   { loadingProducts.value = false }
 }
 
-// Genera 5 cuadritos en posiciones aleatorias del grid del hero,
-// cada uno con una imagen distinta del pool. Evita la franja central
-// donde se ubica el headline. Se llama una vez al cargar y luego en
-// cada `animationiteration` del sweep para refrescar contenido.
+// Genera 5 cuadritos en posiciones aleatorias del grid del hero.
+//
+// Cada tile tiene dimensiones FIJAS en px con aspect 3:4 → las imágenes
+// (que son 600×800, mismo aspect) encajan perfectamente sin recortes.
+// Las CSS variables `--tile-w/-h` sincronizan el grid de fondo con el
+// tamaño real de los tiles → grid y cuadros se alinean pixel-perfect.
 function setupHeroTiles() {
+  if (!heroRevealEl.value) {
+    heroTiles.value = []
+    return
+  }
+  const rect = heroRevealEl.value.getBoundingClientRect()
+  const heroW = rect.width
+  const heroH = rect.height
+  if (heroW < 60 || heroH < 80) {
+    heroTiles.value = []
+    return
+  }
+
+  // Tamaño del tile responsivo: escala con el hero pero acotado.
+  // Aspect 3:4 vertical = mismo aspect que las imágenes de producto.
+  const TILE_W = Math.max(96, Math.min(160, Math.round(heroW / 12)))
+  const TILE_H = Math.round(TILE_W * 4 / 3)
+
+  // Cuadrícula en celdas enteras: aprovecha todo el ancho/alto
+  const cols = Math.max(2, Math.floor(heroW / TILE_W))
+  const rows = Math.max(2, Math.floor(heroH / TILE_H))
+
+  // Sincroniza el grid CSS con el tamaño real de los tiles
+  heroRevealEl.value.style.setProperty('--tile-w', `${TILE_W}px`)
+  heroRevealEl.value.style.setProperty('--tile-h', `${TILE_H}px`)
+
   const items = shuffle(heroProductsPool.value)
   if (!items.length) {
     heroTiles.value = []
     return
   }
-  const cols = 14
-  const rows = 7
-  const cellW = 100 / cols
-  const cellH = 100 / rows
+
+  // Zona central excluida (donde está el headline) — ~50% ancho × ~50% alto
+  const cxStart = Math.floor(cols * 0.25)
+  const cxEnd   = Math.floor(cols * 0.75)
+  const cyStart = Math.floor(rows * 0.30)
+  const cyEnd   = Math.floor(rows * 0.70)
+
   const used = new Set()
   const tiles = []
-  const count = Math.min(items.length, 5)
+  const count = Math.min(items.length, 8)
 
   for (let i = 0; i < count; i++) {
     let attempts = 0
-    while (attempts < 50) {
+    while (attempts < 60) {
       const col = Math.floor(Math.random() * cols)
       const row = Math.floor(Math.random() * rows)
-      // Evita la franja central donde aparece el headline
-      const distFromCenterX = Math.abs(col - cols / 2 + 0.5)
-      const distFromCenterY = Math.abs(row - rows / 2 + 0.5)
-      if (distFromCenterX < 3 && distFromCenterY < 2) { attempts++; continue }
-      // Evita celdas adyacentes para distribuir los tiles
+
+      // Saltar zona del headline
+      if (col >= cxStart && col <= cxEnd && row >= cyStart && row <= cyEnd) {
+        attempts++; continue
+      }
+      // Evitar celdas adyacentes para distribuir los tiles
       const key = `${col}-${row}`
       const tooClose = [...used].some(k => {
         const [c, r] = k.split('-').map(Number)
-        return Math.abs(c - col) < 2 && Math.abs(r - row) < 2
+        return Math.abs(c - col) <= 1 && Math.abs(r - row) <= 1
       })
       if (used.has(key) || tooClose) { attempts++; continue }
+
       used.add(key)
       tiles.push({
-        id: `${Date.now()}-${i}-${col}-${row}`,
-        left: `${col * cellW}%`,
-        top: `${row * cellH}%`,
-        width: `${cellW}%`,
-        height: `${cellH}%`,
+        left:   `${col * TILE_W}px`,
+        top:    `${row * TILE_H}px`,
+        width:  `${TILE_W}px`,
+        height: `${TILE_H}px`,
         src: productImageUrl(items[i]),
       })
       break
@@ -268,6 +342,15 @@ function preloadHeroImages() {
   }
 }
 
+// Recalcula los tiles cuando cambia el tamaño del viewport (debounced)
+let resizeTimer = null
+function handleHeroResize() {
+  clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(() => {
+    setupHeroTiles()
+  }, 180)
+}
+
 onMounted(() => {
   fetchStores()
   fetchProducts()
@@ -275,14 +358,17 @@ onMounted(() => {
   fetchCategories()
   ticker = setInterval(() => { now.value = Date.now() }, 1000)
   unsubAuctions = subscribeToAuction('*', onAuctionEvent)
-  // Re-randomización al final de cada ciclo del sweep (cada 14s)
+  // Re-randomización al final de cada ciclo del sweep
   if (heroRevealEl.value) {
     heroRevealEl.value.addEventListener('animationiteration', handleRevealIteration)
   }
+  window.addEventListener('resize', handleHeroResize)
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
+  clearTimeout(resizeTimer)
   if (unsubAuctions) unsubAuctions()
+  window.removeEventListener('resize', handleHeroResize)
   if (heroRevealEl.value) {
     heroRevealEl.value.removeEventListener('animationiteration', handleRevealIteration)
   }
@@ -368,6 +454,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="sweep-shine" />
+      <div class="sweep-shine-echo" />
       <div class="hero-vignette" />
 
       <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-36 lg:py-44">
@@ -406,18 +493,24 @@ onBeforeUnmount(() => {
             </RouterLink>
           </div>
 
-          <!-- Stats row debajo del hero -->
+          <!-- Stats row debajo del hero (con count-up animado) -->
           <div class="grid grid-cols-3 max-w-xl mx-auto mt-16 sm:mt-20 reveal reveal-delay-5">
             <div class="px-2 sm:px-4 border-r border-border-subtle">
-              <p class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">+24h</p>
+              <p ref="auctionsRef" class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">
+                +{{ auctionsValue }}
+              </p>
               <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mt-1">Subastas en vivo</p>
             </div>
             <div class="px-2 sm:px-4 border-r border-border-subtle">
-              <p class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">100%</p>
+              <p ref="verifiedRef" class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">
+                {{ verifiedValue }}
+              </p>
               <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mt-1">Tiendas verificadas</p>
             </div>
             <div class="px-2 sm:px-4">
-              <p class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">∞</p>
+              <p ref="productsRef" class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">
+                {{ productsValue }}
+              </p>
               <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mt-1">Productos curados</p>
             </div>
           </div>
@@ -425,10 +518,26 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- ══ CATEGORÍAS ════════════════════════════════════════════ -->
+    <!-- ══ MARQUEE TICKER ═════════════════════════════════════════ -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <!-- Duplicamos los items para crear un loop continuo -->
+        <template v-for="loop in 2" :key="loop">
+          <div v-for="(item, i) in marqueeItems" :key="`l${loop}-${i}`" class="marquee-item">
+            <span :class="{ italic: item.em }">
+              <em v-if="item.em">{{ item.text }}</em>
+              <template v-else>{{ item.text }}</template>
+            </span>
+            <span class="marquee-dot" />
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ══ CATEGORÍAS (scroll horizontal) ════════════════════════ -->
     <section class="w-full border-b border-border-subtle">
-      <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
-        <div class="flex items-end justify-between mb-10 gap-4 reveal">
+      <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+        <div class="flex items-end justify-between mb-8 gap-4 reveal">
           <div>
             <p class="section-label mb-3">Categorías</p>
             <h2 class="section-heading">Explora por <em>sección</em></h2>
@@ -442,28 +551,27 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div v-if="loadingCategories" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          <div v-for="i in 7" :key="i" class="skeleton h-28" />
+        <div v-if="loadingCategories" class="flex gap-4 overflow-hidden">
+          <div v-for="i in 6" :key="i" class="skeleton shrink-0" style="width: 9.5rem; height: 12rem;" />
         </div>
 
         <div v-else-if="!allCategories.length" class="text-center py-10 border border-border-subtle">
           <p class="text-text-disabled text-sm">Sin categorías registradas</p>
         </div>
 
-        <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div v-else class="cat-scroll reveal">
           <button
-            v-for="(cat, i) in homeCategories"
+            v-for="cat in allCategories"
             :key="cat.id"
             @click="goToCategory(cat)"
-            class="category-tile reveal"
-            :class="`reveal-delay-${(i % 6) + 1}`"
+            class="cat-scroll-item"
           >
-            <svg class="category-icon"><use :href="`#${categoryIcon(cat.name)}`" /></svg>
-            <span class="category-name">{{ cat.name }}</span>
+            <svg class="cat-scroll-icon"><use :href="`#${categoryIcon(cat.name)}`" /></svg>
+            <span class="cat-scroll-name">{{ cat.name }}</span>
           </button>
         </div>
 
-        <div class="mt-7 md:hidden text-center">
+        <div class="mt-6 md:hidden text-center">
           <button @click="showCatModal = true" class="see-all">
             Ver todas las categorías
             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -511,6 +619,7 @@ onBeforeUnmount(() => {
             v-for="(store, i) in stores"
             :key="store.id"
             :to="`/stores/${store.slug || store.id}`"
+            v-tilt="{ max: 5, scale: 1.01 }"
             class="store-card group reveal"
             :class="`reveal-delay-${i + 1}`"
           >
@@ -610,15 +719,26 @@ onBeforeUnmount(() => {
             v-for="(product, i) in products"
             :key="product.id"
             :to="`/products/${product.id}`"
+            v-tilt="{ max: 6, scale: 1.012 }"
             class="product-card group reveal"
             :class="`reveal-delay-${(i % 4) + 1}`"
           >
             <div class="product-media aspect-[3/4]">
-              <img
-                v-if="productImageUrl(product)"
-                :src="productImageUrl(product)"
-                :alt="product.name"
-              />
+              <!-- Crossfade entre la primera y segunda imagen al hover -->
+              <div v-if="productImagesArr(product).length" class="product-media-stack">
+                <img
+                  :src="productImageUrlByIdx(product, 0)"
+                  :alt="product.name"
+                  class="img-front"
+                />
+                <img
+                  v-if="productImagesArr(product).length > 1"
+                  :src="productImageUrlByIdx(product, 1)"
+                  :alt="product.name"
+                  class="img-back"
+                  loading="lazy"
+                />
+              </div>
               <div v-else class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);">
                 <span class="font-display text-3xl font-light text-accent opacity-60">
                   {{ (product.name || '?').slice(0, 2).toUpperCase() }}
@@ -628,6 +748,19 @@ onBeforeUnmount(() => {
               <span v-if="product.expand?.category?.name" class="product-tag">
                 {{ product.expand.category.name }}
               </span>
+
+              <!-- Botón Quick View (esquina superior derecha) -->
+              <button
+                type="button"
+                class="absolute top-2.5 right-2.5 z-10 w-8 h-8 flex items-center justify-center bg-black/65 border border-white/10 text-text-primary backdrop-blur opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-accent hover:text-accent-on hover:border-accent"
+                aria-label="Vista rápida"
+                @click="openQuickView(product, $event)"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
 
               <div class="product-overlay">
                 <span class="product-cta">
@@ -698,6 +831,7 @@ onBeforeUnmount(() => {
             v-for="(auction, i) in auctions"
             :key="auction.id"
             :to="`/auctions/${auction.id}`"
+            v-tilt="{ max: 5, scale: 1.01 }"
             class="auction-card group reveal"
             :class="`reveal-delay-${i + 1}`"
           >
@@ -873,6 +1007,13 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
   </Teleport>
+
+  <!-- Quick View del producto -->
+  <QuickViewModal
+    :product="quickViewProduct"
+    :image-base-url="PB"
+    @close="closeQuickView"
+  />
 
   <AppFooter />
 </template>
