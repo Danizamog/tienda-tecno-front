@@ -3,6 +3,7 @@ import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import { vTilt } from '@/composables/useTilt3D'
 
 const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 
@@ -128,18 +129,17 @@ onMounted(fetchStores)
 
     <!-- ══ HERO ══════════════════════════════════════════════════ -->
     <section class="relative overflow-hidden border-b border-border-subtle">
-      <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_left,var(--accent-soft)_0%,var(--surface-base)_55%)] opacity-75" />
-      <div
-        class="absolute inset-0 pointer-events-none opacity-[0.05]"
-        style="background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:72px 72px;"
-      />
-      <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-14 md:py-20">
-        <div class="max-w-xl">
-          <p class="section-label mb-3">Directorio</p>
-          <h1 class="font-display text-4xl md:text-6xl font-light leading-[0.95] mb-4">
-            Todas las tiendas
+      <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 30% 0%, var(--accent-soft) 0%, transparent 60%);opacity:0.7;" />
+      <div class="absolute inset-0 pointer-events-none opacity-[0.04]"
+        style="background-image:linear-gradient(var(--border-default) 1px,transparent 1px),linear-gradient(90deg,var(--border-default) 1px,transparent 1px);background-size:80px 80px;" />
+      <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-16 md:py-24">
+        <div class="max-w-2xl">
+          <p class="section-label mb-5">Directorio</p>
+          <h1 class="font-display font-light leading-[0.95] mb-5" style="font-size:clamp(2.8rem,6vw,5rem);">
+            Descubre tiendas
+            <span class="block italic text-accent" style="font-weight:400;">verificadas</span>
           </h1>
-          <p class="text-text-muted text-sm leading-relaxed">
+          <p class="text-text-muted text-sm md:text-base leading-relaxed max-w-lg">
             Explora el directorio completo de vendedores. Encuentra tu marca favorita
             o descubre nuevos comercios de confianza.
           </p>
@@ -271,69 +271,37 @@ onMounted(fetchStores)
         </div>
 
         <!-- Grid -->
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <RouterLink
             v-for="store in stores"
             :key="store.id"
             :to="`/stores/${store.slug || store.id}`"
-            class="card-dark group flex flex-col overflow-hidden"
+            v-tilt="{ max: 4, scale: 1.01 }"
+            class="store-card group"
           >
-            <!-- Banner — altura fija estándar: 160 px independiente del tamaño de la imagen -->
-            <div class="relative h-40 shrink-0 bg-surface-raised overflow-hidden">
-              <img
-                v-if="bannerUrl(store)"
-                :src="bannerUrl(store)"
-                :alt="store.name"
-                class="w-full h-full object-cover object-top"
-              />
-              <div
-                v-else
-                class="w-full h-full flex items-center justify-center"
-                style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
-              >
-                <span class="font-display text-5xl font-light text-text-disabled">
-                  {{ initials(store.name) }}
-                </span>
+            <div class="store-banner">
+              <img v-if="bannerUrl(store)" :src="bannerUrl(store)" :alt="store.name" />
+              <div v-else class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);">
+                <span class="font-display text-5xl font-light text-text-disabled">{{ initials(store.name) }}</span>
               </div>
-
-              <!-- Gradiente inferior -->
-              <div class="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/60 to-transparent pointer-events-none" />
-
-              <!-- Badge verificada -->
-              <div v-if="store.verified" class="absolute top-3 right-3">
-                <span class="badge-gold">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-.497 3.842 3.745 3.745 0 01-3.842.497A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.842-.497 3.745 3.745 0 01-.497-3.842A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 01.497-3.842 3.746 3.746 0 013.842-.497A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.842.497 3.746 3.746 0 01.497 3.842A3.745 3.745 0 0121 12z" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Verificada
-                </span>
-              </div>
+              <span v-if="store.verified" class="store-verified-badge">
+                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Verificada
+              </span>
             </div>
 
-            <!-- Cuerpo -->
             <div class="p-5 flex flex-col gap-3 flex-1">
-
-              <!-- Logo + nombre -->
               <div class="flex items-center gap-3">
-                <!-- Logo — tamaño fijo 40×40 px -->
-                <div class="w-10 h-10 flex-shrink-0 border border-border-default bg-surface-raised overflow-hidden">
-                  <img
-                    v-if="logoUrl(store)"
-                    :src="logoUrl(store)"
-                    :alt="store.name"
-                    class="w-full h-full object-cover object-center"
-                  />
+                <div class="w-11 h-11 flex-shrink-0 border border-border-default bg-surface-raised overflow-hidden">
+                  <img v-if="logoUrl(store)" :src="logoUrl(store)" :alt="store.name" class="w-full h-full object-cover object-center" />
                   <div v-else class="w-full h-full flex items-center justify-center">
-                    <span class="font-display text-sm font-light text-text-disabled">
-                      {{ initials(store.name).charAt(0) }}
-                    </span>
+                    <span class="font-display text-sm font-light text-text-disabled">{{ initials(store.name).charAt(0) }}</span>
                   </div>
                 </div>
-
                 <div class="min-w-0 flex-1">
-                  <h2 class="text-sm font-medium text-text-primary leading-snug truncate group-hover:text-accent transition-colors duration-200">
-                    {{ store.name }}
-                  </h2>
+                  <h2 class="text-sm font-semibold text-text-primary leading-snug truncate group-hover:text-accent transition-colors duration-300">{{ store.name }}</h2>
                   <p v-if="store.location" class="text-[11px] text-text-disabled mt-0.5 truncate flex items-center gap-1">
                     <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -344,47 +312,27 @@ onMounted(fetchStores)
                 </div>
               </div>
 
-              <!-- Descripción -->
-              <p
-                v-if="store.description"
-                class="text-[11px] text-text-muted leading-relaxed line-clamp-2"
-                v-html="store.description"
-              />
+              <p v-if="store.description" class="text-[11px] text-text-muted leading-relaxed line-clamp-2" v-html="store.description" />
 
-              <!-- Pie: rating + reseñas -->
-              <div class="mt-auto pt-3 border-t border-[var(--surface-overlay)] flex items-center justify-between gap-2">
-
-                <!-- Estrellas -->
+              <div class="mt-auto pt-3 border-t border-border-subtle flex items-center justify-between gap-2">
                 <div class="flex items-center gap-1.5">
                   <div class="flex items-center gap-0.5">
                     <template v-for="n in ratingStars(store.rating).full" :key="`f${n}`">
-                      <svg class="w-3 h-3 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                      </svg>
+                      <svg class="w-3 h-3 text-accent" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                     </template>
                     <template v-if="ratingStars(store.rating).half">
                       <svg class="w-3 h-3" viewBox="0 0 20 20">
-                        <defs>
-                          <linearGradient :id="`hs-${store.id}`" x1="0" x2="1" y1="0" y2="0">
-                            <stop offset="50%" stop-color="var(--accent)"/>
-                            <stop offset="50%" stop-color="var(--text-disabled)"/>
-                          </linearGradient>
-                        </defs>
+                        <defs><linearGradient :id="`hs-${store.id}`" x1="0" x2="1" y1="0" y2="0"><stop offset="50%" stop-color="var(--accent)"/><stop offset="50%" stop-color="var(--text-disabled)"/></linearGradient></defs>
                         <path :fill="`url(#hs-${store.id})`" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                       </svg>
                     </template>
                     <template v-for="n in ratingStars(store.rating).empty" :key="`e${n}`">
-                      <svg class="w-3 h-3 text-text-disabled" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                      </svg>
+                      <svg class="w-3 h-3 text-text-disabled" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                     </template>
                   </div>
-                  <span class="text-[10px] text-text-muted tabular-nums">
-                    {{ Number(store.rating || 0).toFixed(1) }}
-                  </span>
+                  <span class="text-[10px] text-text-muted tabular-nums">{{ Number(store.rating || 0).toFixed(1) }}</span>
                 </div>
-
-                <span class="text-[10px] text-text-disabled tabular-nums">
+                <span class="text-[9px] tracking-[0.18em] uppercase text-text-disabled tabular-nums">
                   {{ store.reviews_count || 0 }} reseña{{ (store.reviews_count || 0) !== 1 ? 's' : '' }}
                 </span>
               </div>

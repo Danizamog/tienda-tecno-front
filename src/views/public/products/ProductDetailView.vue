@@ -285,7 +285,7 @@ onMounted(fetchProduct)
       </div>
 
       <!-- ══ CONTENIDO ══════════════════════════════════════════════ -->
-      <div v-else-if="product" class="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-16">
+      <div v-else-if="product" class="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-20">
 
         <!-- ── GALERÍA DE IMÁGENES ─────────────────────────────────── -->
         <MediaGallery
@@ -307,57 +307,65 @@ onMounted(fetchProduct)
         </MediaGallery>
 
         <!-- ── DETALLES ─────────────────────────────────────────────── -->
-        <div class="flex flex-col gap-5">
+        <div class="detail-info-panel flex flex-col gap-0">
 
           <!-- Categoría + condición -->
-          <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-2 flex-wrap pb-5">
             <span v-if="category" class="section-label">{{ category.name }}</span>
             <span
               v-if="product.condition"
-              class="inline-flex items-center px-2 py-0.5 text-[10px] tracking-widest uppercase border border-border-default text-text-muted"
+              class="inline-flex items-center px-2 py-0.5 text-[9px] tracking-[0.22em] uppercase border border-border-default text-text-muted"
             >
               {{ conditionMap[product.condition] || product.condition }}
             </span>
           </div>
 
           <!-- Nombre -->
-          <h1 class="font-display text-3xl md:text-4xl font-light leading-tight">
+          <h1 class="font-display text-4xl md:text-5xl font-light leading-[1.02] letter-spacing-tight pb-6">
             {{ product.name }}
           </h1>
 
-          <!-- Precio -->
-          <div class="flex items-baseline gap-3">
-            <span class="text-2xl font-semibold text-accent tabular-nums">
+          <!-- Precio + descuento -->
+          <div class="flex items-baseline gap-3 pb-2">
+            <span class="font-display text-4xl font-medium text-accent tabular-nums leading-none">
               ${{ pricing.final.toLocaleString('es-CL') }}
             </span>
-            <span v-if="pricing.hasDiscount" class="text-base text-text-disabled line-through tabular-nums">
+            <span v-if="pricing.hasDiscount" class="font-display text-xl text-text-disabled line-through tabular-nums">
               ${{ pricing.base.toLocaleString('es-CL') }}
+            </span>
+            <span v-if="pricing.hasDiscount" class="text-[10px] tracking-[0.18em] uppercase text-red-400 bg-red-900/15 border border-red-900/25 px-2 py-0.5 ml-1">
+              {{ pricing.discountLabel }}
             </span>
           </div>
 
-          <!-- Stock -->
-          <p class="text-xs" :class="stockStatus.cls">
-            {{ stockStatus.label }}
-          </p>
+          <!-- Stock indicador -->
+          <div class="pb-6 pt-1 flex items-center gap-3">
+            <div class="w-1.5 h-1.5 rounded-full shrink-0"
+              :class="Number(product.stock) === 0 ? 'bg-red-400' : Number(product.stock) <= 5 ? 'bg-amber-400' : 'bg-emerald-400'"
+            />
+            <p class="text-[11px] tracking-[0.14em] uppercase" :class="stockStatus.cls">
+              {{ stockStatus.label }}
+            </p>
+          </div>
 
-          <div class="border-t border-[var(--surface-overlay)]" />
+          <div class="detail-divider" />
 
           <!-- Descripción -->
           <div
             v-if="product.description"
-            class="prose-dark text-[13px] text-text-muted leading-relaxed"
+            class="prose-dark text-[13.5px] text-text-muted leading-relaxed py-6"
             v-html="product.description"
           />
 
-          <div class="border-t border-[var(--surface-overlay)]" />
+          <div class="detail-divider" />
 
           <!-- Tienda vendedora -->
           <RouterLink
             v-if="store"
             :to="`/stores/${store.slug || store.id}`"
-            class="flex items-center gap-3 p-3 border border-border-subtle hover:border-[var(--accent)44] transition-colors group"
+            class="detail-store-link flex items-center gap-4 py-5 group"
           >
-            <div class="w-10 h-10 shrink-0 border border-border-default bg-surface-raised overflow-hidden">
+            <div class="w-11 h-11 shrink-0 border border-border-default bg-surface-raised overflow-hidden">
               <img
                 v-if="logoUrl(store)"
                 :src="logoUrl(store)"
@@ -371,43 +379,44 @@ onMounted(fetchProduct)
               </div>
             </div>
             <div class="min-w-0 flex-1">
-              <p class="text-[10px] tracking-[0.15em] uppercase text-text-disabled mb-0.5">Vendido por</p>
-              <p class="text-sm text-text-secondary group-hover:text-accent transition-colors truncate">
+              <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mb-1">Vendido por</p>
+              <p class="text-sm font-medium text-text-primary group-hover:text-accent transition-colors duration-200 truncate">
                 {{ store.name }}
               </p>
             </div>
-            <svg class="w-3.5 h-3.5 text-text-disabled group-hover:text-accent transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-text-disabled group-hover:text-accent transition-colors shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
               <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </RouterLink>
 
-          <!-- Agregar al carrito -->
-          <div class="flex flex-col gap-3 mt-1">
-            <!-- Selector de cantidad + botón agregar -->
+          <div class="detail-divider" />
+
+          <!-- ── Agregar al carrito ──────────────────────────────── -->
+          <div class="flex flex-col gap-3 pt-6">
+
+            <!-- Selector cantidad + botón principal -->
             <div v-if="Number(product.stock) > 0" class="flex gap-2">
-              <!-- Cantidad -->
-              <div class="flex items-center border border-border-default bg-surface-raised">
+              <div class="detail-qty-ctrl flex items-center border border-border-default bg-surface-raised">
                 <button
                   @click="cartQty = Math.max(1, cartQty - 1)"
-                  class="w-9 h-11 flex items-center justify-center text-text-muted hover:text-accent transition-colors text-base"
+                  class="w-10 h-12 flex items-center justify-center text-text-muted hover:text-accent transition-colors text-lg leading-none"
                 >−</button>
-                <span class="w-8 text-center text-[13px] text-text-primary tabular-nums select-none">{{ cartQty }}</span>
+                <span class="w-10 text-center text-sm text-text-primary tabular-nums select-none font-medium">{{ cartQty }}</span>
                 <button
                   @click="cartQty = Math.min(Number(product.stock), cartQty + 1)"
-                  class="w-9 h-11 flex items-center justify-center text-text-muted hover:text-accent transition-colors text-base"
+                  class="w-10 h-12 flex items-center justify-center text-text-muted hover:text-accent transition-colors text-lg leading-none"
                 >+</button>
               </div>
 
-              <!-- Botón agregar -->
               <button
                 @click="handleAddToCart"
                 :disabled="cartLoading"
-                class="add-to-cart-btn flex-1 h-11 px-5 flex items-center justify-center gap-2 text-xs tracking-[0.12em] uppercase font-medium border transition-all duration-200 ease-out cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface-base) disabled:cursor-not-allowed"
+                class="add-to-cart-btn flex-1 h-12 px-5 flex items-center justify-center gap-2.5 text-[11px] tracking-[0.18em] uppercase font-semibold border transition-all duration-200 ease-out cursor-pointer select-none focus:outline-none disabled:cursor-not-allowed"
                 :class="cartFeedback === 'added'
                   ? 'bg-emerald-900/40 border-emerald-700/50 text-emerald-400'
                   : cartFeedback === 'error'
                   ? 'bg-red-900/40 border-red-700/50 text-red-400 animate-shake'
-                  : 'bg-accent text-accent-on border-accent shadow-sm hover:bg-accent-hover hover:border-accent-hover hover:shadow-[0_0_18px_-4px_var(--accent-glow)] hover:-translate-y-px active:translate-y-0 active:scale-[0.98]'"
+                  : 'bg-accent text-accent-on border-accent hover:bg-accent-hover hover:border-accent-hover hover:shadow-[0_8px_30px_-10px_var(--accent-glow-strong)] hover:-translate-y-px active:translate-y-0 active:scale-[0.98]'"
               >
                 <Transition name="cart-icon" mode="out-in">
                   <svg v-if="cartLoading" key="spin" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -427,7 +436,7 @@ onMounted(fetchProduct)
                 <span class="leading-none">
                   {{
                     cartLoading ? 'Agregando...'
-                    : cartFeedback === 'added' ? '¡Agregado!'
+                    : cartFeedback === 'added' ? '¡Agregado al carrito!'
                     : cartFeedback === 'error' ? 'Error al agregar'
                     : (inCart ? 'Agregar más' : 'Agregar al carrito')
                   }}
@@ -435,21 +444,23 @@ onMounted(fetchProduct)
               </button>
             </div>
 
-            <!-- Acciones secundarias -->
-            <div class="flex flex-col sm:flex-row gap-3">
+            <!-- Acciones secundarias en grid 3 columnas -->
+            <div class="grid grid-cols-3 gap-2">
 
               <!-- Wishlist -->
               <button
                 @click="handleToggleWishlist"
-                class="flex-1 flex items-center justify-center gap-2 h-11 px-5 border text-xs tracking-[0.12em] uppercase transition-colors duration-200"
+                class="detail-action-btn flex flex-col items-center justify-center gap-1.5 py-3 border transition-colors duration-200"
                 :class="inWishlist
-                  ? 'bg-[var(--accent)12] border-[var(--accent)55] text-accent'
-                  : 'border-border-default text-text-muted hover:border-[var(--accent)44] hover:text-accent'"
+                  ? 'border-accent/40 text-accent bg-accent/5'
+                  : 'border-border-default text-text-muted hover:border-accent/40 hover:text-accent'"
               >
                 <svg class="w-4 h-4 transition-all duration-200" :fill="inWishlist ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                {{ inWishlist ? 'En wishlist' : 'Añadir a wishlist' }}
+                <span class="text-[9px] tracking-[0.18em] uppercase leading-none">
+                  {{ inWishlist ? 'Guardado' : 'Wishlist' }}
+                </span>
               </button>
 
               <!-- WhatsApp -->
@@ -458,23 +469,32 @@ onMounted(fetchProduct)
                 :href="whatsappUrl"
                 target="_blank"
                 rel="noopener"
-                class="flex-1 flex items-center justify-center gap-2 h-11 px-5 bg-[#25d366]/10 border border-[#25d366]/30 text-[#25d366] text-xs tracking-[0.12em] uppercase hover:bg-[#25d366]/20 transition-colors"
+                class="detail-action-btn flex flex-col items-center justify-center gap-1.5 py-3 border border-[#25d366]/25 text-[#25d366] hover:bg-[#25d366]/08 hover:border-[#25d366]/50 transition-colors"
               >
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
-                Consultar por WhatsApp
+                <span class="text-[9px] tracking-[0.18em] uppercase leading-none">WhatsApp</span>
               </a>
+              <div v-else class="detail-action-btn flex flex-col items-center justify-center gap-1.5 py-3 border border-border-subtle opacity-30 cursor-not-allowed">
+                <svg class="w-4 h-4 text-text-disabled" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                <span class="text-[9px] tracking-[0.18em] uppercase leading-none text-text-disabled">WhatsApp</span>
+              </div>
 
               <!-- Ver reseñas -->
               <button
                 @click="toggleReviews"
-                class="flex-1 flex items-center justify-center gap-2 h-11 px-5 border border-border-default text-text-muted text-xs tracking-[0.12em] uppercase hover:border-[var(--accent)44] hover:text-accent transition-colors"
+                class="detail-action-btn flex flex-col items-center justify-center gap-1.5 py-3 border border-border-default text-text-muted hover:border-accent/40 hover:text-accent transition-colors"
+                :class="showReviews ? 'border-accent/40 text-accent bg-accent/5' : ''"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                {{ showReviews ? 'Ocultar reseñas' : (reviewsTotal > 0 ? `Ver reseñas (${reviewsTotal})` : 'Ver reseñas') }}
+                <span class="text-[9px] tracking-[0.18em] uppercase leading-none">
+                  {{ reviewsTotal > 0 ? `${reviewsTotal} reseñas` : 'Reseñas' }}
+                </span>
               </button>
             </div>
           </div>
@@ -583,10 +603,57 @@ onMounted(fetchProduct)
 
 <style scoped>
 .detail-shell {
-  background: linear-gradient(180deg, var(--surface-base) 0%, var(--surface-base) 100%);
+  background-color: var(--surface-base);
   flex: 1;
   width: 100%;
   overflow-x: hidden;
+}
+
+/* Info panel — thin gold left border as editorial accent */
+.detail-info-panel {
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 2rem;
+}
+@media (max-width: 1023px) {
+  .detail-info-panel {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 2rem;
+  }
+}
+
+/* Divider — hairline, more refined than the border shorthand */
+.detail-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-subtle) 0%, transparent 100%);
+}
+
+/* Store link — borderless, just a bottom hairline */
+.detail-store-link {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.2s ease;
+}
+.detail-store-link:hover {
+  background-color: var(--surface-raised);
+  margin-inline: -1rem;
+  padding-inline: 1rem;
+}
+
+/* Quantity control */
+.detail-qty-ctrl button {
+  border-right: 1px solid var(--border-subtle);
+}
+.detail-qty-ctrl button:last-child {
+  border-right: none;
+  border-left: 1px solid var(--border-subtle);
+}
+
+/* Secondary action buttons */
+.detail-action-btn {
+  cursor: pointer;
+  background: transparent;
 }
 
 /* Prose oscuro para la descripción HTML */

@@ -28,6 +28,11 @@ function openQuickView(product, evt) {
     evt.preventDefault()
     evt.stopPropagation()
   }
+  const card = evt?.currentTarget?.closest('.product-card')
+  if (card) {
+    card.classList.add('is-qv-expanding')
+    card.addEventListener('animationend', () => card.classList.remove('is-qv-expanding'), { once: true })
+  }
   quickViewProduct.value = product
 }
 function closeQuickView() {
@@ -467,19 +472,19 @@ onBeforeUnmount(() => {
           </div>
 
           <p class="section-label justify-center mb-7 reveal reveal-delay-1">
-            Marketplace de tecnología
+            Marketplace de moda
           </p>
 
           <h1 class="font-display font-light reveal reveal-delay-2" style="font-size: clamp(2.6rem, 7vw, 5.5rem); line-height: 0.98; letter-spacing: -0.012em;">
-            Tecnología y electrónica
+            Moda exclusiva,
             <span class="block italic text-accent mt-1" style="font-weight: 400;">
-              en una sola vitrina
+              tu venta de confianza
             </span>
           </h1>
 
           <p class="text-text-muted text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-9 mb-12 reveal reveal-delay-3">
-            Descubre tiendas, productos y subastas curadas. Compra con confianza
-            o construye tu propia tienda verificada.
+            Descubre ropa, accesorios y subastas de vendedores verificados.
+            Compra con total seguridad o abre tu propia tienda en minutos.
           </p>
 
           <div class="flex flex-wrap justify-center gap-3 sm:gap-4 reveal reveal-delay-4">
@@ -725,7 +730,7 @@ onBeforeUnmount(() => {
           >
             <div class="product-media aspect-[3/4]">
               <!-- Crossfade entre la primera y segunda imagen al hover -->
-              <div v-if="productImagesArr(product).length" class="product-media-stack">
+              <div v-if="productImagesArr(product).length" class="product-media-stack" :class="{ 'has-crossfade': productImagesArr(product).length > 1 }">
                 <img
                   :src="productImageUrlByIdx(product, 0)"
                   :alt="product.name"

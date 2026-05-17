@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useAuctions } from '@/composables/useAuctions'
+import { vTilt } from '@/composables/useTilt3D'
 
 const { subscribeToAuction } = useAuctions()
 
@@ -196,18 +197,20 @@ onBeforeUnmount(() => {
 
     <!-- ══ HERO ══════════════════════════════════════════════════ -->
     <section class="relative overflow-hidden border-b border-border-subtle">
-      <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom_right,#1f1508_0%,var(--surface-base)_55%)] opacity-80" />
-      <div
-        class="absolute inset-0 pointer-events-none opacity-[0.04]"
-        style="background-image:linear-gradient(var(--accent) 1px,transparent 1px),linear-gradient(90deg,var(--accent) 1px,transparent 1px);background-size:72px 72px;"
-      />
-      <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-14 md:py-20">
-        <div class="max-w-xl">
-          <p class="section-label mb-3">En vivo</p>
-          <h1 class="font-display text-4xl md:text-6xl font-light leading-[0.95] mb-4">
-            Subastas activas
+      <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 20% 100%, rgba(239,68,68,0.05) 0%, transparent 50%), radial-gradient(ellipse at 80% 0%, var(--accent-soft) 0%, transparent 50%);opacity:0.9;" />
+      <div class="absolute inset-0 pointer-events-none opacity-[0.04]"
+        style="background-image:linear-gradient(var(--border-default) 1px,transparent 1px),linear-gradient(90deg,var(--border-default) 1px,transparent 1px);background-size:80px 80px;" />
+      <div class="relative max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-16 md:py-24">
+        <div class="max-w-2xl">
+          <p class="section-label mb-5">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" style="animation:pulse-live 1.5s ease-in-out infinite;" />
+            En vivo
+          </p>
+          <h1 class="font-display font-light leading-[0.95] mb-5" style="font-size:clamp(2.8rem,6vw,5rem);">
+            Subastas
+            <span class="block italic text-accent" style="font-weight:400;">activas</span>
           </h1>
-          <p class="text-text-muted text-sm leading-relaxed">
+          <p class="text-text-muted text-sm md:text-base leading-relaxed max-w-lg">
             Participa en subastas en tiempo real. Haz tu oferta antes de que termine el tiempo
             y llévate productos únicos al mejor precio.
           </p>
@@ -331,17 +334,16 @@ onBeforeUnmount(() => {
             v-for="auction in auctions"
             :key="auction.id"
             :to="`/auctions/${auction.id}`"
-            class="card-dark group flex flex-col overflow-hidden cursor-pointer"
+            v-tilt="{ max: 5, scale: 1.01 }"
+            class="auction-card group"
           >
-            <!-- Imagen -->
-            <div class="relative h-48 bg-surface-raised overflow-hidden shrink-0">
+            <div class="auction-media h-56">
               <img
                 v-if="auctionImageUrl(auction)"
                 :src="auctionImageUrl(auction)"
                 :alt="auction.title"
-                  loading="lazy"
-                  decoding="async"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                loading="lazy"
+                decoding="async"
                 class="w-full h-full object-cover object-top"
               />
               <div
@@ -353,94 +355,74 @@ onBeforeUnmount(() => {
                   <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
-              <!-- Gradiente inferior -->
-              <div class="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
 
-              <!-- Countdown badge superpuesto -->
-              <div class="absolute bottom-3 left-3 right-3">
-                <div v-if="!countdownById[auction.id]?.expired" class="flex items-center gap-1.5">
-                  <svg class="w-3 h-3 shrink-0" :class="urgencyClass(auction.end_date)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span class="font-mono text-[11px] font-semibold tabular-nums" :class="urgencyClass(auction.end_date)">
-                    <template v-if="countdownById[auction.id]?.days > 0">
-                      {{ countdownById[auction.id]?.days }}d {{ pad(countdownById[auction.id]?.hours || 0) }}h {{ pad(countdownById[auction.id]?.minutes || 0) }}m
-                    </template>
-                    <template v-else>
-                      {{ pad(countdownById[auction.id]?.hours || 0) }}:{{ pad(countdownById[auction.id]?.minutes || 0) }}:{{ pad(countdownById[auction.id]?.seconds || 0) }}
-                    </template>
-                  </span>
-                </div>
-                <span v-else class="text-[11px] tracking-wider uppercase text-text-muted">Finalizada</span>
+              <div class="auction-gradient" />
+
+              <!-- Bids badge -->
+              <div v-if="auction.bids_count > 0" class="absolute top-3 left-3">
+                <span class="badge-live">{{ auction.bids_count }} puja{{ auction.bids_count !== 1 ? 's' : '' }}</span>
               </div>
 
-              <!-- Badge pujas -->
-              <div v-if="auction.bids_count > 0" class="absolute top-3 left-3">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] tracking-wide uppercase bg-black/70 border border-border-default text-accent">
-                  <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
-                  </svg>
-                  {{ auction.bids_count }} puja{{ auction.bids_count !== 1 ? 's' : '' }}
+              <!-- Live badge -->
+              <div class="absolute top-3 right-3">
+                <span class="badge-live">Subasta activa</span>
+              </div>
+
+              <!-- Countdown timer -->
+              <div class="absolute bottom-3 left-3">
+                <span v-if="!countdownById[auction.id]?.expired" class="auction-timer" :class="urgencyClass(auction.end_date)">
+                  <span class="dot" />
+                  <template v-if="countdownById[auction.id]?.days > 0">
+                    {{ countdownById[auction.id]?.days }}d {{ pad(countdownById[auction.id]?.hours || 0) }}h {{ pad(countdownById[auction.id]?.minutes || 0) }}m
+                  </template>
+                  <template v-else>
+                    {{ pad(countdownById[auction.id]?.hours || 0) }}:{{ pad(countdownById[auction.id]?.minutes || 0) }}:{{ pad(countdownById[auction.id]?.seconds || 0) }}
+                  </template>
                 </span>
+                <span v-else class="text-[10px] tracking-widest uppercase text-text-muted">Finalizada</span>
               </div>
             </div>
 
-            <!-- Cuerpo -->
             <div class="p-5 flex flex-col gap-3 flex-1">
-
-              <!-- Tienda -->
+              <!-- Store -->
               <div v-if="auction.expand?.store" class="flex items-center gap-2">
                 <div class="w-5 h-5 shrink-0 border border-border-default bg-surface-raised overflow-hidden">
-                  <img
-                    v-if="storeLogoUrl(auction.expand.store)"
-                    :src="storeLogoUrl(auction.expand.store)"
-                    :alt="auction.expand.store.name"
-                    class="w-full h-full object-cover"
-                  />
-                  <span v-else class="w-full h-full flex items-center justify-center text-[8px] text-text-disabled">
-                    {{ storeInitials(auction.expand.store.name).charAt(0) }}
-                  </span>
+                  <img v-if="storeLogoUrl(auction.expand.store)" :src="storeLogoUrl(auction.expand.store)" :alt="auction.expand.store.name" class="w-full h-full object-cover" />
+                  <span v-else class="w-full h-full flex items-center justify-center text-[8px] text-text-disabled">{{ storeInitials(auction.expand.store.name).charAt(0) }}</span>
                 </div>
                 <RouterLink
                   :to="`/stores/${auction.expand.store.slug || auction.expand.store.id}`"
-                  class="text-[10px] tracking-[0.12em] uppercase text-text-disabled hover:text-accent transition-colors truncate"
+                  class="text-[9px] tracking-[0.18em] uppercase text-text-disabled hover:text-accent transition-colors truncate"
                   @click.stop
-                >
-                  {{ auction.expand.store.name }}
-                </RouterLink>
+                >{{ auction.expand.store.name }}</RouterLink>
               </div>
 
-              <!-- Título -->
-              <h3 class="text-sm font-medium text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-200">
+              <!-- Title -->
+              <h3 class="text-sm font-semibold text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-300">
                 {{ auction.title }}
               </h3>
 
-              <div class="mt-auto pt-3 border-t border-[var(--surface-overlay)]">
-                <div class="flex items-end justify-between gap-2">
-
-                  <!-- Precio actual -->
-                  <div>
-                    <p class="text-[9px] tracking-widest uppercase text-text-disabled mb-0.5">
-                      {{ auction.bids_count > 0 ? 'Oferta actual' : 'Precio base' }}
-                    </p>
-                    <p class="text-xl font-semibold text-accent tabular-nums">
-                      Bs {{ Number(auction.current_price || auction.start_price || 0).toLocaleString('es-BO', { maximumFractionDigits: 0 }) }}
-                    </p>
-                    <p v-if="auction.current_price && auction.current_price > auction.start_price" class="text-[10px] text-text-disabled tabular-nums">
-                      Base: Bs {{ Number(auction.start_price || 0).toLocaleString('es-BO', { maximumFractionDigits: 0 }) }}
-                    </p>
-                  </div>
-
-                  <!-- Buy now -->
-                  <div v-if="auction.buy_now_price" class="text-right">
-                    <p class="text-[9px] tracking-widest uppercase text-text-disabled mb-0.5">Cómpralo ya</p>
-                    <p class="text-sm font-medium text-text-muted tabular-nums">
-                      Bs {{ Number(auction.buy_now_price).toLocaleString('es-BO', { maximumFractionDigits: 0 }) }}
-                    </p>
-                  </div>
+              <!-- Price footer -->
+              <div class="mt-auto pt-4 border-t border-border-subtle flex items-end justify-between gap-2">
+                <div>
+                  <p class="text-[9px] tracking-[0.22em] uppercase text-text-disabled mb-1.5">
+                    {{ (auction.bids_count || 0) > 0 ? 'Oferta actual' : 'Precio base' }}
+                  </p>
+                  <span class="price-ticker">
+                    Bs {{ Number(auction.current_price || auction.start_price || 0).toLocaleString('es-BO', { maximumFractionDigits: 0 }) }}
+                  </span>
                 </div>
+                <div v-if="auction.buy_now_price" class="text-right pb-0.5">
+                  <p class="text-[9px] tracking-[0.18em] uppercase text-text-disabled mb-1">Cómpralo ya</p>
+                  <p class="text-sm font-medium text-text-muted tabular-nums">
+                    Bs {{ Number(auction.buy_now_price).toLocaleString('es-BO', { maximumFractionDigits: 0 }) }}
+                  </p>
+                </div>
+                <span class="text-[9px] tracking-[0.22em] uppercase text-text-muted group-hover:text-accent transition-colors flex items-center gap-1.5 pb-1">
+                  Pujar
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
               </div>
-
             </div>
           </RouterLink>
         </div>

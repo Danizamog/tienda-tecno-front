@@ -309,8 +309,8 @@ a {
    el pico del mask en cada frame. El haz entra desde FUERA de
    la pantalla y sale FUERA, no inicia ni termina en los bordes. */
 @keyframes sweep {
-  from { transform: translateX(-70%); }
-  to   { transform: translateX(180%); }
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(450%); }
 }
 
 /* ── Subida de la barra inferior (CTA hover) ── */
@@ -925,22 +925,25 @@ a {
   );
   -webkit-mask-size: 200% 100%;
   mask-size: 200% 100%;
-  /* Inicial: pico fuera de pantalla a la izquierda. Rango ampliado:
-     130% → -30% para que la luz entre desde MUY fuera del viewport
-     y salga también fuera. */
-  -webkit-mask-position: 130% 0;
-  mask-position: 130% 0;
+  /* Con mask-size:200%, el gradiente tiene offset = −C×(p/100).
+     Para que x=0 mapee al stop transparent(80%), necesitamos:
+       (0 + C×p/100) / (2C) ≥ 0.80  →  p ≥ 160
+     Para que x=C mapee al stop transparent(20%) al final:
+       (C + C×p/100) / (2C) ≤ 0.20  →  p ≤ −60
+     Por tanto: 160% → −60% garantiza que todo el contenedor
+     está completamente opaco (sin tiles visibles) en ambos extremos. */
+  -webkit-mask-position: 160% 0;
+  mask-position: 160% 0;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   animation: hero-reveal-sweep 18s linear infinite;
 }
 
-/* SIN PAUSAS — movimiento continuo del pico. Loop invisible porque
-   en ambos endpoints el pico está fuera del viewport. El echo
-   (delay -9s) cubre el espacio entre ciclos para flujo continuo. */
+/* Pico entra por la izquierda (−0.6C) y sale por la derecha (1.6C).
+   En ambos endpoints el contenedor es completamente invisible. */
 @keyframes hero-reveal-sweep {
-  from { -webkit-mask-position: 130% 0; mask-position: 130% 0; }
-  to   { -webkit-mask-position: -30% 0; mask-position: -30% 0; }
+  from { -webkit-mask-position: 160% 0; mask-position: 160% 0; }
+  to   { -webkit-mask-position: -60% 0; mask-position: -60% 0; }
 }
 
 /* Cuadrícula interna que se revela con la luz.
@@ -1377,13 +1380,28 @@ a {
   z-index: 1;
   transform: scale(1.05);
 }
-.product-card:hover .product-media-stack .img-front {
+/* Only crossfade when a second image exists (.has-crossfade set by JS).
+   Without it img-front stays at opacity:1 so the card never goes black. */
+.product-card:hover .product-media-stack.has-crossfade .img-front {
   opacity: 0;
   transform: scale(1.05);
 }
-.product-card:hover .product-media-stack .img-back {
+.product-card:hover .product-media-stack.has-crossfade .img-back {
   opacity: 1;
   transform: scale(1);
+}
+
+/* Quick view card flash — gold ring pulse that avoids fighting with v-tilt's
+   inline transform (box-shadow doesn't conflict with perspective transforms). */
+@keyframes qv-card-flash {
+  0%   { box-shadow: 0 22px 45px -22px var(--accent-glow-strong); }
+  38%  { box-shadow: 0 0 0 2px var(--accent), 0 28px 55px -18px var(--accent-glow-strong); border-color: var(--accent); }
+  100% { box-shadow: 0 22px 45px -22px var(--accent-glow-strong); }
+}
+.product-card.is-qv-expanding {
+  animation: qv-card-flash 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  z-index: 10;
 }
 
 /* ═════════════════════════════════════════════════════════
@@ -1393,9 +1411,9 @@ a {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.78);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1404,96 +1422,274 @@ a {
 .quick-view-panel {
   position: relative;
   width: 100%;
-  max-width: 64rem;
-  max-height: 90vh;
+  max-width: 62rem;
+  max-height: 92vh;
   background-color: var(--surface-base);
   border: 1px solid var(--border-default);
   display: grid;
   grid-template-columns: 1fr;
   overflow: hidden;
-  box-shadow: 0 32px 64px -24px rgba(0,0,0,0.5);
+  box-shadow:
+    0 40px 80px -30px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(201, 169, 110, 0.10);
 }
 @media (min-width: 768px) {
-  .quick-view-panel {
-    grid-template-columns: 1.1fr 1fr;
-  }
+  .quick-view-panel { grid-template-columns: 1.15fr 1fr; }
 }
+
+/* Gold hairline at the very top of the panel */
+.quick-view-accent-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 25%, var(--accent) 75%, transparent 100%);
+  z-index: 30;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* Media / image panel */
 .quick-view-media {
   position: relative;
   aspect-ratio: 3 / 4;
-  background: linear-gradient(135deg, var(--surface-raised) 0%, #1a1612 100%);
+  background: linear-gradient(160deg, #0d0c0a 0%, #1a1410 100%);
   overflow: hidden;
 }
+[data-theme="light"] .quick-view-media {
+  background: linear-gradient(160deg, var(--surface-raised) 0%, var(--surface-overlay) 100%);
+}
 .quick-view-media img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.45s ease;
 }
-.quick-view-thumbs {
+.quick-view-media-vignette {
   position: absolute;
-  bottom: 1rem;
-  left: 1rem;
-  right: 1rem;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.50) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Arrow navigation buttons */
+.quick-view-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.6rem;
+  height: 2.6rem;
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 7, 5, 0.60);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(240, 237, 232, 0.85);
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.quick-view-nav:hover {
+  background: rgba(8, 7, 5, 0.90);
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+.quick-view-nav-prev { left: 0.85rem; }
+.quick-view-nav-next { right: 0.85rem; }
+
+/* Image dots indicator */
+.quick-view-dots {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.45rem;
   z-index: 10;
 }
-.quick-view-thumb {
-  flex: 1;
-  height: 0.18rem;
-  background: rgba(255,255,255,0.2);
+.quick-view-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
   cursor: pointer;
-  transition: background 0.3s ease;
+  border: none;
+  padding: 0;
+  transition: background 0.25s ease, transform 0.25s ease;
+  flex-shrink: 0;
 }
-.quick-view-thumb.is-active {
+.quick-view-dot.is-active {
   background: var(--accent);
+  transform: scale(1.45);
 }
+
+/* Content panel */
 .quick-view-content {
-  padding: 2.4rem 2rem;
+  padding: 2.6rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.2rem;
   overflow-y: auto;
+  border-left: 1px solid var(--border-subtle);
 }
 @media (min-width: 768px) {
-  .quick-view-content { padding: 3rem 2.4rem; }
+  .quick-view-content { padding: 3.2rem 2.6rem; }
 }
+
+/* Header: category + name */
+.quick-view-header { display: flex; flex-direction: column; gap: 0.55rem; }
+.quick-view-category-tag {
+  font-size: 0.58rem;
+  letter-spacing: 0.30em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+.quick-view-store-tag {
+  font-size: 0.58rem;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+}
+.quick-view-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.8rem, 3vw, 2.75rem);
+  font-weight: 300;
+  line-height: 1.03;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* Shared label style */
+.quick-view-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+  margin-bottom: 0.45rem;
+  display: block;
+}
+
+/* Price block */
+.quick-view-price-block {
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.quick-view-price {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Description */
+.quick-view-description {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Stock indicator */
+.quick-view-stock-bar {
+  height: 2px;
+  background: var(--border-subtle);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.quick-view-stock-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
+  border-radius: 1px;
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  min-width: 4px;
+}
+
+/* Actions */
+.quick-view-actions { margin-top: 0.25rem; }
+
+/* Decorative footer with brand name */
+.quick-view-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.quick-view-footer-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-subtle));
+}
+.quick-view-footer-line:first-child {
+  background: linear-gradient(90deg, var(--border-subtle), transparent);
+}
+.quick-view-footer-brand {
+  font-size: 0.58rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--text-disabled);
+  white-space: nowrap;
+}
+
+/* Close button */
 .quick-view-close {
   position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
+  top: 1rem;
+  right: 1rem;
   width: 2.25rem;
   height: 2.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 10, 0.6);
+  background: rgba(8, 7, 5, 0.65);
   border: 1px solid var(--border-default);
   color: var(--text-muted);
   cursor: pointer;
-  z-index: 20;
+  z-index: 30;
   transition: color 0.25s, border-color 0.25s, background-color 0.25s;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .quick-view-close:hover {
   color: var(--accent);
   border-color: var(--accent);
-  background-color: var(--surface-raised);
+  background-color: rgba(8, 7, 5, 0.90);
 }
 
-/* Animaciones del modal */
-.qv-enter-active { transition: opacity 0.25s ease; }
-.qv-leave-active { transition: opacity 0.18s ease; }
+/* Modal entrance/exit animations — dramatic zoom-bloom from the card */
+.qv-enter-active { transition: opacity 0.32s ease; }
+.qv-leave-active { transition: opacity 0.22s ease; }
 .qv-enter-from, .qv-leave-to { opacity: 0; }
 .qv-enter-active .quick-view-panel,
 .qv-leave-active .quick-view-panel {
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+  transition:
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity   0.32s ease,
+    filter    0.42s ease;
 }
 .qv-enter-from .quick-view-panel,
 .qv-leave-to   .quick-view-panel {
-  transform: translateY(20px) scale(0.97);
+  transform: scale(0.88) translateY(28px);
   opacity: 0;
+  filter: blur(8px);
 }
 
 /* ═════════════════════════════════════════════════════════
@@ -1614,6 +1810,81 @@ a {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* ═════════════════════════════════════════════════════════
+   LIGHT MODE — sweep / hero overrides
+   screen blend → blanco sobre fondo claro (invisible).
+   Solución: multiply con ámbar cálido, opacidades más altas.
+   multiply(Cs, Cd) ≈ Cs cuando Cd≈blanco → color visible.
+═════════════════════════════════════════════════════════ */
+[data-theme="light"] .sweep-shine {
+  background: linear-gradient(
+    110deg,
+    transparent                    0%,
+    rgba(167, 136, 80, 0.00)  18%,
+    rgba(167, 136, 80, 0.07)  28%,
+    rgba(167, 136, 80, 0.20)  36%,
+    rgba(167, 136, 80, 0.42)  42%,
+    rgba(167, 136, 80, 0.64)  46%,
+    rgba(167, 136, 80, 0.80)  50%,
+    rgba(167, 136, 80, 0.64)  54%,
+    rgba(167, 136, 80, 0.42)  58%,
+    rgba(167, 136, 80, 0.20)  64%,
+    rgba(167, 136, 80, 0.07)  72%,
+    rgba(167, 136, 80, 0.00)  82%,
+    transparent                  100%
+  );
+  mix-blend-mode: multiply;
+}
+
+[data-theme="light"] .sweep-shine-echo {
+  background: linear-gradient(
+    110deg,
+    transparent                    0%,
+    rgba(167, 136, 80, 0.00)  18%,
+    rgba(167, 136, 80, 0.04)  30%,
+    rgba(167, 136, 80, 0.14)  38%,
+    rgba(167, 136, 80, 0.30)  44%,
+    rgba(167, 136, 80, 0.48)  47%,
+    rgba(167, 136, 80, 0.60)  50%,
+    rgba(167, 136, 80, 0.48)  53%,
+    rgba(167, 136, 80, 0.30)  56%,
+    rgba(167, 136, 80, 0.14)  62%,
+    rgba(167, 136, 80, 0.04)  70%,
+    rgba(167, 136, 80, 0.00)  82%,
+    transparent                  100%
+  );
+  mix-blend-mode: multiply;
+}
+
+/* Grid lines más oscuras en light para seguir siendo visibles */
+[data-theme="light"] .hero-reveal-grid {
+  background-image:
+    linear-gradient(rgba(130, 98, 38, 0.55) 3px, transparent 1px),
+    linear-gradient(90deg, rgba(130, 98, 38, 0.55) 3px, transparent 1px);
+}
+
+/* En modo claro:
+   1. El fondo oscuro del tile (rgba(10,10,10,0.25)) aparece como parche
+      gris frío sobre el beige → lo quitamos.
+   2. Las imágenes con sepia+multiply sobre fondo beige crean siluetas
+      cálidas ambarina como fotografías antiguas, elegante y coherente. */
+[data-theme="light"] .hero-reveal-tile {
+  background-color: transparent;
+  border-color: rgba(167, 136, 80, 0.14);
+}
+[data-theme="light"] .hero-reveal-tile img {
+  display: block;
+  opacity: 0.15;
+  filter: grayscale(1) sepia(0.7) brightness(0.72) contrast(1.2) hue-rotate(-5deg);
+  mix-blend-mode: multiply;
+}
+
+/* Product card media background — dark by default (suits product images).
+   In light mode switch to a warm neutral so empty/failed images don't show black. */
+[data-theme="light"] .product-media {
+  background: linear-gradient(135deg, var(--surface-raised) 0%, var(--surface-overlay) 100%);
 }
 
 /* ═════════════════════════════════════════════════════════
