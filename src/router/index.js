@@ -205,8 +205,13 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(_to, _from, saved) {
-    if (saved) return saved
-    return { top: 0, behavior: 'smooth' }
+    // En un refresh, el browser conserva el history.state con la posición
+    // anterior y 'saved' llega con ese valor — ignorarlo para ir siempre
+    // al inicio. Solo restaurar posición en navegación atrás/adelante del
+    // historial (type !== 'reload').
+    const isReload = performance?.getEntriesByType?.('navigation')?.[0]?.type === 'reload'
+    if (saved && !isReload) return saved
+    return { top: 0 }
   },
 })
 
