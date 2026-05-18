@@ -265,6 +265,16 @@ function formatPrice(n) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n || 0)
 }
 
+function productPricing(product) {
+  const base = Number(product?.price || 0)
+  const pct  = Number(product?.discount_percent || 0)
+  const amt  = Number(product?.discount_amount  || 0)
+  let final = base, label = ''
+  if (pct > 0)      { final = Math.round(base * (1 - pct / 100)); label = `-${pct}%` }
+  else if (amt > 0) { final = Math.max(0, base - amt);            label = `-${formatPrice(amt)}` }
+  return { base, final, hasDiscount: final < base, label }
+}
+
 function ratingStars(rating) {
   const r = Math.round(Number(rating || 0) * 2) / 2
   return { full: Math.floor(r), half: r % 1 !== 0, empty: 5 - Math.floor(r) - (r % 1 !== 0 ? 1 : 0) }
@@ -778,7 +788,15 @@ onBeforeUnmount(() => {
             <div class="p-4 flex flex-col gap-1.5 flex-1">
               <p class="text-[9px] tracking-[0.18em] uppercase text-text-muted truncate">{{ product.expand?.store?.name || '—' }}</p>
               <h3 class="text-sm text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-300">{{ product.name }}</h3>
-              <p class="text-accent font-display text-xl font-medium mt-auto tabular-nums">{{ formatPrice(product.price) }}</p>
+              <div class="mt-auto pt-1.5">
+                <div v-if="productPricing(product).hasDiscount" class="flex items-center gap-1.5 mb-0.5">
+                  <span class="text-[9px] tracking-widest uppercase font-bold text-red-400 bg-red-900/20 border border-red-900/40 px-1.5 py-0.5">
+                    {{ productPricing(product).label }}
+                  </span>
+                  <span class="text-text-disabled text-[11px] line-through tabular-nums">{{ formatPrice(productPricing(product).base) }}</span>
+                </div>
+                <p class="text-accent font-display text-xl font-medium tabular-nums">{{ formatPrice(productPricing(product).final) }}</p>
+              </div>
             </div>
           </RouterLink>
         </div>
@@ -852,9 +870,9 @@ onBeforeUnmount(() => {
 
               <div class="auction-gradient" />
 
-              <!-- Badge SUBASTA ACTIVA -->
+              <!-- Badge EN VIVO — solo si la subasta no ha expirado -->
               <div class="absolute top-3 right-3">
-                <span class="badge-live">Subasta activa</span>
+                <span v-if="timeLeft(auction.end_date) !== 'Finalizada'" class="badge-live">En vivo</span>
               </div>
 
               <!-- Badge pujas -->

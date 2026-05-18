@@ -262,12 +262,16 @@ const reachesBuyNow = computed(() => (
 ))
 const meetsMinBid = computed(() => isValidAmount.value && parsedBid.value >= minBid.value)
 
-const statusLabel = computed(() => ({
-  draft: 'Borrador',
-  active: 'Activa',
-  ended: 'Finalizada',
-  cancelled: 'Cancelada',
-}[auction.value?.status] || auction.value?.status))
+const statusLabel = computed(() => {
+  // Si el backend aún dice 'active' pero el tiempo ya expiró, mostramos 'Finalizada'
+  if (auction.value?.status === 'active' && timeLeft.value?.expired) return 'Finalizada'
+  return {
+    draft:     'Borrador',
+    active:    'Activa',
+    ended:     'Finalizada',
+    cancelled: 'Cancelada',
+  }[auction.value?.status] || auction.value?.status
+})
 
 // ── Acciones ──────────────────────────────────────────────────────────────────
 function resetFeedback() {
@@ -547,8 +551,8 @@ function goLogin() {
             <template #overlay>
               <span class="absolute top-4 left-4 status-badge z-10"
                 :class="{
-                  'text-emerald-400 border-emerald-900/50 bg-emerald-950/60': auction.status === 'active',
-                  'text-blue-400 border-blue-900/50 bg-blue-950/60': auction.status === 'ended',
+                  'text-emerald-400 border-emerald-900/50 bg-emerald-950/60': auction.status === 'active' && !timeLeft.expired,
+                  'text-blue-400 border-blue-900/50 bg-blue-950/60': auction.status === 'ended' || (auction.status === 'active' && timeLeft.expired),
                   'text-yellow-400 border-yellow-900/50 bg-yellow-950/60': auction.status === 'draft',
                   'text-red-400 border-red-900/50 bg-red-950/60': auction.status === 'cancelled',
                 }">

@@ -399,8 +399,11 @@ onBeforeUnmount(() => {
 
 	</nav>
 
-	<!-- Cart Drawer (fuera del nav pero dentro del template) -->
-	<CartDrawer :open="showCart" @close="showCart = false" />
+	<!-- Cart Drawer — Teleport a body para evitar que backdrop-filter del
+	     navbar rompa position:fixed y el drawer quede anclado fuera del viewport -->
+	<Teleport to="body">
+		<CartDrawer :open="showCart" @close="showCart = false" />
+	</Teleport>
 </template>
 
 <style scoped>

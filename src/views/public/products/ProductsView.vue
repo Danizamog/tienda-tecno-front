@@ -88,11 +88,14 @@ async function fetchProducts() {
     const data = await res.json()
 
     products.value = (data.items || []).map((product) => {
-      const pricing = formatPrice(product.price, product.discount_percent, product.discount_amount)
+      const pct    = Number(product.discount_percent || 0)
+      const amt    = Number(product.discount_amount  || 0)
+      const pricing = formatPrice(product.price, pct, amt)
+      const label  = pct > 0 ? `-${pct}%` : amt > 0 && pricing.hasDiscount ? `-${amt.toLocaleString('es-CL')}` : ''
       return {
         ...product,
         _imageUrl: productImageUrl(product),
-        _pricing: pricing,
+        _pricing:  { ...pricing, label },
       }
     })
     totalItems.value = data.totalItems || 0
@@ -111,7 +114,7 @@ function productImageUrl(product) {
   const imgs = Array.isArray(product.images) ? product.images : (product.images ? [product.images] : [])
   const img  = imgs[0]
   if (!img) return null
-  return `${PB}/api/files/products/${product.id}/${img}?thumb=400x400`
+  return `${PB}/api/files/products/${product.id}/${img}?thumb=600x800`
 }
 
 function formatPrice(price, pct, amt) {
@@ -425,10 +428,13 @@ onMounted(() => {
               <!-- Category tag — top-left via CSS -->
               <span v-if="product.expand?.category?.name" class="product-tag">{{ product.expand.category.name }}</span>
 
-              <!-- Featured/discount badges — bottom-left, don't overlap category tag -->
+              <!-- Badges — bottom-left, no overlap con category tag -->
               <div class="absolute bottom-12 left-2 flex flex-col gap-1 z-10">
                 <span v-if="product.featured" class="badge-gold text-[9px]">Destacado</span>
-                <span v-if="product._pricing.hasDiscount" class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-widest uppercase bg-red-900/60 text-red-300 border border-red-800/40">Oferta</span>
+                <span v-if="product._pricing.hasDiscount && product._pricing.label"
+                  class="inline-flex items-center px-2 py-0.5 text-[10px] tracking-widest uppercase bg-red-600 text-white font-bold border border-red-500/60">
+                  {{ product._pricing.label }}
+                </span>
               </div>
 
               <!-- Quick view button — top-right, appears on hover -->
@@ -455,12 +461,17 @@ onMounted(() => {
             <div class="p-4 flex flex-col gap-1.5 flex-1">
               <p class="text-[9px] tracking-[0.18em] uppercase text-text-muted truncate">{{ product.expand?.store?.name || '—' }}</p>
               <h3 class="text-sm text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-300">{{ product.name }}</h3>
-              <div class="mt-auto pt-2 flex items-baseline gap-2">
+              <div class="mt-auto pt-1.5">
+                <div v-if="product._pricing.hasDiscount" class="flex items-center gap-1.5 mb-0.5">
+                  <span class="text-[9px] tracking-widest uppercase font-bold text-red-400 bg-red-900/20 border border-red-900/40 px-1.5 py-0.5">
+                    {{ product._pricing.label }}
+                  </span>
+                  <span class="text-text-disabled text-[11px] line-through tabular-nums">
+                    ${{ Number(product.price || 0).toLocaleString('es-CL') }}
+                  </span>
+                </div>
                 <span class="font-display text-xl font-medium text-accent tabular-nums">
                   ${{ product._pricing.final.toLocaleString('es-CL') }}
-                </span>
-                <span v-if="product._pricing.hasDiscount" class="text-[10px] text-text-disabled line-through tabular-nums">
-                  ${{ Number(product.price || 0).toLocaleString('es-CL') }}
                 </span>
               </div>
             </div>

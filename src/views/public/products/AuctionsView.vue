@@ -74,7 +74,7 @@ function auctionImageUrl(auction) {
   const imgs = Array.isArray(auction.images) ? auction.images : (auction.images ? [auction.images] : [])
   const img  = imgs[0]
   if (!img) return null
-  return `${PB}/api/files/auctions/${auction.id}/${img}?thumb=600x400`
+  return `${PB}/api/files/auctions/${auction.id}/${img}?thumb=800x600`
 }
 
 function storeLogoUrl(store) {
@@ -363,9 +363,9 @@ onBeforeUnmount(() => {
                 <span class="badge-live">{{ auction.bids_count }} puja{{ auction.bids_count !== 1 ? 's' : '' }}</span>
               </div>
 
-              <!-- Live badge -->
+              <!-- Live badge — solo cuando la subasta no ha expirado -->
               <div class="absolute top-3 right-3">
-                <span class="badge-live">Subasta activa</span>
+                <span v-if="!countdownById[auction.id]?.expired" class="badge-live">En vivo</span>
               </div>
 
               <!-- Countdown timer -->

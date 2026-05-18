@@ -166,7 +166,7 @@ function productImageUrl(product) {
   const imgs = Array.isArray(product.images) ? product.images : (product.images ? [product.images] : [])
   const img  = imgs[0]
   if (!img) return null
-  return `${PB}/api/files/products/${product.id}/${img}?thumb=400x400`
+  return `${PB}/api/files/products/${product.id}/${img}?thumb=600x800`
 }
 
 function initials(name) {
@@ -263,7 +263,7 @@ function auctionImageUrl(auction) {
   const imgs = Array.isArray(auction.images) ? auction.images : (auction.images ? [auction.images] : [])
   const img  = imgs[0]
   if (!img) return null
-  return `${PB}/api/files/auctions/${auction.id}/${img}?thumb=600x400`
+  return `${PB}/api/files/auctions/${auction.id}/${img}?thumb=800x600`
 }
 
 function timeLeft(endDateStr) {

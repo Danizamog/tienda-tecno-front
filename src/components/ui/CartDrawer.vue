@@ -85,7 +85,7 @@ const orderTotal = computed(() => {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function imgUrl(storeId, filename) {
   if (!filename || !storeId) return ''
-  return `${PB}/api/files/products/${storeId}/${filename}?thumb=200x200`
+  return `${PB}/api/files/products/${storeId}/${filename}?thumb=400x400`
 }
 
 function storeQrUrl() {
@@ -220,6 +220,12 @@ async function handleValidateGcCode() {
 }
 
 function openCheckout(storeId) {
+  // Requiere sesión iniciada para proceder al pedido
+  if (!isAuthenticated.value) {
+    emit('close')
+    router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
+    return
+  }
   initCart()  // Asegurar que el carrito está inicializado
   checkoutStoreId.value = storeId
   checkoutError.value   = ''
