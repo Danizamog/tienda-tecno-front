@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
@@ -8,6 +8,9 @@ import { useCartStore } from '@/composables/useCartStore'
 import { useWishlistStore } from '@/composables/useWishlistStore'
 import { useAuthSession } from '@/composables/useAuthSession'
 import { useProductReviews } from '@/composables/useReviewsApi'
+import { useCompareStore } from '@/composables/useCompareStore'
+import { useRecentlyViewed } from '@/composables/useRecentlyViewed'
+import Swal from 'sweetalert2'
 
 const API    = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 const PB     = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
@@ -92,6 +95,7 @@ async function fetchProduct() {
     if (res.status === 404) { error.value = 'Producto no encontrado.'; return }
     if (!res.ok) throw new Error(`Error ${res.status}`)
     product.value = await res.json()
+    recordView(product.value)
   } catch {
     error.value = 'No se pudo cargar el producto.'
   } finally {
@@ -224,7 +228,86 @@ const whatsappUrl = computed(() => {
   return `https://wa.me/${clean}?text=Hola%2C+me+interesa+el+producto%3A+${name}`
 })
 
-onMounted(fetchProduct)
+// ── Comparador ────────────────────────────────────────────────────────────────
+const { isInCompare, toggleCompare, maxCompare } = useCompareStore()
+
+const inCompare = computed(() => product.value ? isInCompare(product.value.id) : false)
+
+function handleCompare() {
+  if (!product.value) return
+  const result = toggleCompare(product.value)
+  if (result.error === 'limit_reached') {
+    Swal.fire({
+      toast: true,
+      position: 'bottom-end',
+      icon: 'warning',
+      title: `Máximo ${maxCompare} productos para comparar`,
+      showConfirmButton: false,
+      timer: 2200,
+    })
+  }
+}
+
+// ── Vistos recientemente ──────────────────────────────────────────────────────
+const { recordView, recentItems } = useRecentlyViewed()
+
+const recentList = computed(() =>
+  recentItems.value.filter(p => p.id !== route.params.id).slice(0, 4)
+)
+
+// ── Productos similares ───────────────────────────────────────────────────────
+const similarProducts = ref([])
+
+async function fetchSimilar() {
+  similarProducts.value = []
+  const cat = product.value?.category
+  const categoryId = Array.isArray(cat) ? cat[0] : cat
+  if (!categoryId) return
+  try {
+    const params = new URLSearchParams({ categoryId, perPage: '8', page: '1' })
+    const res = await fetch(`${API}/products?${params}`)
+    if (!res.ok) return
+    const data = await res.json()
+    similarProducts.value = (data.items || [])
+      .filter(p => p.id !== product.value?.id)
+      .slice(0, 4)
+  } catch { /* sección opcional, silenciar */ }
+}
+
+function similarImgUrl(p) {
+  const imgs = Array.isArray(p.images) ? p.images : (p.images ? [p.images] : [])
+  if (!imgs[0]) return null
+  return `${PB}/api/files/products/${p.id}/${imgs[0]}?thumb=600x800`
+}
+
+function similarPricing(p) {
+  const base = Number(p.price || 0)
+  const pct  = Number(p.discount_percent || 0)
+  const amt  = Number(p.discount_amount  || 0)
+  let final  = base
+  if (pct > 0)      final = base * (1 - pct / 100)
+  else if (amt > 0) final = Math.max(0, base - amt)
+  return { base, final: Math.round(final * 100) / 100, hasDiscount: final < base }
+}
+
+// ── Carga inicial + re-navegación entre fichas ───────────────────────────────
+async function loadAll() {
+  // Resetear estado de reseñas (el composable queda ligado al producto anterior)
+  showReviews.value   = false
+  reviews.value       = []
+  reviewsTotal.value  = 0
+  reviewsAvg.value    = null
+  reviewsComposable   = null
+
+  await fetchProduct()
+  fetchSimilar()
+}
+
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId && newId !== oldId) loadAll()
+})
+
+onMounted(loadAll)
 
 </script>
 
@@ -444,8 +527,8 @@ onMounted(fetchProduct)
               </button>
             </div>
 
-            <!-- Acciones secundarias en grid 3 columnas -->
-            <div class="grid grid-cols-3 gap-2">
+            <!-- Acciones secundarias en grid 4 columnas -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
 
               <!-- Wishlist -->
               <button
@@ -460,6 +543,22 @@ onMounted(fetchProduct)
                 </svg>
                 <span class="text-[9px] tracking-[0.18em] uppercase leading-none">
                   {{ inWishlist ? 'Guardado' : 'Wishlist' }}
+                </span>
+              </button>
+
+              <!-- Comparar -->
+              <button
+                @click="handleCompare"
+                class="detail-action-btn flex flex-col items-center justify-center gap-1.5 py-3 border transition-colors duration-200"
+                :class="inCompare
+                  ? 'border-accent/40 text-accent bg-accent/5'
+                  : 'border-border-default text-text-muted hover:border-accent/40 hover:text-accent'"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
+                </svg>
+                <span class="text-[9px] tracking-[0.18em] uppercase leading-none">
+                  {{ inCompare ? 'Comparando' : 'Comparar' }}
                 </span>
               </button>
 
@@ -594,6 +693,101 @@ onMounted(fetchProduct)
 
         </div>
       </div>
+
+      <!-- ══ PRODUCTOS SIMILARES ══════════════════════════════════ -->
+      <section v-if="similarProducts.length" class="mt-16 pt-12 border-t border-border-subtle">
+        <div class="flex items-end justify-between gap-4 mb-8">
+          <div>
+            <p class="section-label mb-3">{{ category?.name || 'Misma categoría' }}</p>
+            <h2 class="font-display font-light text-2xl md:text-3xl">Productos <em class="text-accent italic font-normal">similares</em></h2>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          <RouterLink
+            v-for="p in similarProducts"
+            :key="p.id"
+            :to="`/products/${p.id}`"
+            class="product-card group"
+          >
+            <div class="product-media aspect-[3/4]">
+              <img
+                v-if="similarImgUrl(p)"
+                :src="similarImgUrl(p)"
+                :alt="p.name"
+                loading="lazy"
+                decoding="async"
+                class="w-full h-full object-cover"
+              />
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center"
+                style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
+              >
+                <svg class="w-10 h-10 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <div class="p-4 flex flex-col gap-1.5 flex-1">
+              <p class="text-[9px] tracking-[0.18em] uppercase text-text-muted truncate">{{ p.expand?.store?.name || '—' }}</p>
+              <h3 class="text-sm text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-300">{{ p.name }}</h3>
+              <div class="mt-auto pt-1.5">
+                <span v-if="similarPricing(p).hasDiscount" class="text-text-disabled text-[11px] line-through tabular-nums mr-1.5">
+                  ${{ similarPricing(p).base.toLocaleString('es-CL') }}
+                </span>
+                <span class="font-display text-xl font-medium text-accent tabular-nums">
+                  ${{ similarPricing(p).final.toLocaleString('es-CL') }}
+                </span>
+              </div>
+            </div>
+          </RouterLink>
+        </div>
+      </section>
+
+      <!-- ══ VISTOS RECIENTEMENTE ═════════════════════════════════ -->
+      <section v-if="recentList.length" class="mt-16 pt-12 border-t border-border-subtle">
+        <div class="mb-8">
+          <p class="section-label mb-3">Tu historial</p>
+          <h2 class="font-display font-light text-2xl md:text-3xl">Vistos <em class="text-accent italic font-normal">recientemente</em></h2>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          <RouterLink
+            v-for="p in recentList"
+            :key="p.id"
+            :to="`/products/${p.id}`"
+            class="product-card group"
+          >
+            <div class="product-media aspect-[3/4]">
+              <img
+                v-if="p.image"
+                :src="p.image"
+                :alt="p.name"
+                loading="lazy"
+                decoding="async"
+                class="w-full h-full object-cover"
+              />
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center"
+                style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);"
+              >
+                <svg class="w-10 h-10 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <div class="p-4 flex flex-col gap-1.5 flex-1">
+              <p class="text-[9px] tracking-[0.18em] uppercase text-text-muted truncate">{{ p.storeName || '—' }}</p>
+              <h3 class="text-sm text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-300">{{ p.name }}</h3>
+              <div class="mt-auto pt-1.5">
+                <span class="font-display text-xl font-medium text-accent tabular-nums">
+                  ${{ Number(p.finalPrice || p.price || 0).toLocaleString('es-CL') }}
+                </span>
+              </div>
+            </div>
+          </RouterLink>
+        </div>
+      </section>
 
     </div>
   </main>

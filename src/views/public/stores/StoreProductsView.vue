@@ -8,6 +8,8 @@ import { useWishlistStore } from '@/composables/useWishlistStore'
 import { useAuthSession } from '@/composables/useAuthSession'
 import { useStoreReviews } from '@/composables/useReviewsApi'
 import { useStoreFollowers } from '@/composables/useStoreFollowers'
+import { useCompareStore } from '@/composables/useCompareStore'
+import Swal from 'sweetalert2'
 
 const API = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 const PB  = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
@@ -373,6 +375,29 @@ async function quickToggleWishlist(event, product) {
   event.stopPropagation()
   if (!isAuthenticated.value) return
   await toggleWishlist(product.id)
+}
+
+// ── Comparador ────────────────────────────────────────────────────────────────
+const { isInCompare, toggleCompare, maxCompare } = useCompareStore()
+
+function handleCompare(event, product) {
+  event.preventDefault()
+  event.stopPropagation()
+  const enriched = {
+    ...product,
+    expand: { ...product.expand, store: { id: store.value?.id, name: store.value?.name, slug: store.value?.slug } },
+  }
+  const result = toggleCompare(enriched)
+  if (result.error === 'limit_reached') {
+    Swal.fire({
+      toast: true,
+      position: 'bottom-end',
+      icon: 'warning',
+      title: `Máximo ${maxCompare} productos para comparar`,
+      showConfirmButton: false,
+      timer: 2200,
+    })
+  }
 }
 </script>
 
@@ -765,6 +790,23 @@ async function quickToggleWishlist(event, product) {
                 >
                   <svg class="w-3 h-3" :fill="isInWishlist(product.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+
+                <!-- Botón comparar -->
+                <button
+                  @click="handleCompare($event, product)"
+                  class="absolute right-2 w-6 h-6 flex items-center justify-center bg-black/60 border transition-all duration-200"
+                  :class="[
+                    isAuthenticated ? 'top-9' : 'top-2',
+                    isInCompare(product.id)
+                      ? 'opacity-100 border-[var(--accent)55] text-accent'
+                      : 'opacity-0 group-hover:opacity-100 border-border-default text-text-muted hover:border-[var(--accent)44] hover:text-[var(--accent)88]',
+                  ]"
+                  :aria-label="isInCompare(product.id) ? 'Quitar del comparador' : 'Añadir al comparador'"
+                >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
                   </svg>
                 </button>
 

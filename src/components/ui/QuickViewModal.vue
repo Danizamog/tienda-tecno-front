@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { useCompareStore } from '@/composables/useCompareStore'
+import { useRecentlyViewed } from '@/composables/useRecentlyViewed'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   product: { type: Object, default: null },
@@ -60,9 +63,31 @@ function handleKey(e) {
   if (e.key === 'ArrowLeft')  prevImage()
 }
 
+// ── Comparador ────────────────────────────────────────────────────────────────
+const { isInCompare, toggleCompare, maxCompare } = useCompareStore()
+
+function handleCompare() {
+  if (!props.product) return
+  const result = toggleCompare(props.product)
+  if (result.error === 'limit_reached') {
+    Swal.fire({
+      toast: true,
+      position: 'bottom-end',
+      icon: 'warning',
+      title: `Máximo ${maxCompare} productos para comparar`,
+      showConfirmButton: false,
+      timer: 2200,
+    })
+  }
+}
+
+// ── Vistos recientemente ──────────────────────────────────────────────────────
+const { recordView } = useRecentlyViewed()
+
 watch(() => props.product, (val) => {
   activeImageIdx.value = 0
   if (val) {
+    recordView(val)
     document.body.style.overflow = 'hidden'
     document.addEventListener('keydown', handleKey)
   } else {
@@ -198,6 +223,9 @@ onBeforeUnmount(() => {
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/>
                 </svg>
+              </button>
+              <button class="btn-outline w-full mt-2" @click="handleCompare">
+                <span>{{ isInCompare(product.id) ? 'Quitar del comparador' : 'Añadir al comparador' }}</span>
               </button>
             </div>
 

@@ -8,6 +8,7 @@ import { useAuctions } from '@/composables/useAuctions'
 import { useScrollReveal } from '@/composables/useScrollReveal'
 import { useCountUp } from '@/composables/useCountUp'
 import { vTilt } from '@/composables/useTilt3D'
+import { useRecentlyViewed } from '@/composables/useRecentlyViewed'
 
 const API    = (import.meta.env.VITE_GATEWAY_API_BASE_URL || '').replace(/\/$/, '')
 const PB     = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
@@ -15,6 +16,9 @@ const router = useRouter()
 
 const { subscribeToAuction } = useAuctions()
 useScrollReveal()
+
+// Vistos recientemente (snapshots locales, sin fetch)
+const { recentItems, clearRecent } = useRecentlyViewed()
 
 // Stats animados del hero (count-up al entrar al viewport)
 const { value: auctionsValue, elRef: auctionsRef } = useCountUp(24,  { suffix: 'h', duration: 1700 })
@@ -805,6 +809,73 @@ onBeforeUnmount(() => {
           <RouterLink to="/products" class="see-all">
             Ver todos los productos
             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </RouterLink>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ VISTOS RECIENTEMENTE ═══════════════════════════════════ -->
+    <section v-if="recentItems.length" class="w-full border-b border-border-subtle">
+      <div class="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
+        <div class="flex items-end justify-between mb-10 gap-4 reveal">
+          <div>
+            <p class="section-label mb-3">Tu historial</p>
+            <h2 class="section-heading">Vistos <em>recientemente</em></h2>
+          </div>
+          <button
+            type="button"
+            class="text-text-muted hover:text-accent transition-colors text-[10px] tracking-[0.14em] uppercase shrink-0"
+            @click="clearRecent"
+          >
+            Limpiar historial
+          </button>
+        </div>
+
+        <div class="flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+          <RouterLink
+            v-for="item in recentItems"
+            :key="item.id"
+            :to="`/products/${item.id}`"
+            class="product-card group shrink-0 w-[200px] sm:w-[230px] snap-start"
+          >
+            <div class="product-media aspect-[3/4]">
+              <img
+                v-if="item.image"
+                :src="item.image"
+                :alt="item.name"
+                loading="lazy"
+                decoding="async"
+                class="w-full h-full object-cover"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,var(--surface-raised) 0%,var(--accent-soft) 100%);">
+                <span class="font-display text-3xl font-light text-accent opacity-60">
+                  {{ (item.name || '?').slice(0, 2).toUpperCase() }}
+                </span>
+              </div>
+
+              <span v-if="item.categoryName" class="product-tag">{{ item.categoryName }}</span>
+
+              <div class="product-overlay">
+                <span class="product-cta">
+                  Ver producto
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </span>
+              </div>
+            </div>
+
+            <div class="p-4 flex flex-col gap-1.5 flex-1">
+              <p class="text-[9px] tracking-[0.18em] uppercase text-text-muted truncate">{{ item.storeName || '—' }}</p>
+              <h3 class="text-sm text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors duration-300">{{ item.name }}</h3>
+              <div class="mt-auto pt-1.5">
+                <div v-if="item.discountLabel" class="flex items-center gap-1.5 mb-0.5">
+                  <span class="text-[9px] tracking-widest uppercase font-bold text-red-400 bg-red-900/20 border border-red-900/40 px-1.5 py-0.5">
+                    {{ item.discountLabel }}
+                  </span>
+                  <span class="text-text-disabled text-[11px] line-through tabular-nums">${{ Number(item.price || 0).toLocaleString('es-CL') }}</span>
+                </div>
+                <p class="text-accent font-display text-xl font-medium tabular-nums">${{ Number(item.finalPrice || item.price || 0).toLocaleString('es-CL') }}</p>
+              </div>
+            </div>
           </RouterLink>
         </div>
       </div>

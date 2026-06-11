@@ -5,6 +5,8 @@ import AppNavbar from '@/components/layout/AppNavbar.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import QuickViewModal from '@/components/ui/QuickViewModal.vue'
 import { vTilt } from '@/composables/useTilt3D'
+import { useCompareStore } from '@/composables/useCompareStore'
+import Swal from 'sweetalert2'
 
 const route  = useRoute()
 const router = useRouter()
@@ -213,6 +215,24 @@ function openQuickView(product, evt) {
   quickViewProduct.value = product
 }
 function closeQuickView() { quickViewProduct.value = null }
+
+// ── Comparador ────────────────────────────────────────────────────────────────
+const { isInCompare, toggleCompare, maxCompare } = useCompareStore()
+
+function handleCompare(product, evt) {
+  if (evt) { evt.preventDefault(); evt.stopPropagation() }
+  const result = toggleCompare(product)
+  if (result.error === 'limit_reached') {
+    Swal.fire({
+      toast: true,
+      position: 'bottom-end',
+      icon: 'warning',
+      title: `Máximo ${maxCompare} productos para comparar`,
+      showConfirmButton: false,
+      timer: 2200,
+    })
+  }
+}
 
 onMounted(() => {
   if (route.query.search) filters.search = String(route.query.search)
@@ -447,6 +467,21 @@ onMounted(() => {
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+
+              <!-- Compare button — debajo de vista rápida, visible si está seleccionado -->
+              <button
+                type="button"
+                class="absolute top-12 right-2.5 z-10 w-8 h-8 flex items-center justify-center border backdrop-blur transition-all duration-300"
+                :class="isInCompare(product.id)
+                  ? 'opacity-100 bg-accent text-accent-on border-accent'
+                  : 'opacity-0 group-hover:opacity-100 bg-black/65 border-white/10 text-text-primary hover:bg-accent hover:text-accent-on hover:border-accent'"
+                :aria-label="isInCompare(product.id) ? 'Quitar del comparador' : 'Añadir al comparador'"
+                @click="handleCompare(product, $event)"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
                 </svg>
               </button>
 
