@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
 
 				<!-- Usuario autenticado -->
 				<template v-if="isAuthenticated">
-					<div class="relative" ref="dropdownRef">
+					<div class="relative hidden lg:block" ref="dropdownRef">
 						<button
 							type="button"
 							class="group flex items-center gap-2.5 px-3 py-2 border border-border-default bg-surface-raised rounded-sm transition-all duration-300 hover:border-[#c9a96e55] hover:bg-surface-overlay hover:shadow-[0_0_16px_rgba(201,169,110,0.06)]"
@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
 				<template v-else>
 					<RouterLink
 						to="/login"
-						class="group flex items-center gap-2.5 px-3 py-2 border border-border-default bg-surface-raised rounded-sm transition-all duration-300 hover:border-[#c9a96e55] hover:bg-surface-overlay hover:shadow-[0_0_16px_rgba(201,169,110,0.06)]"
+						class="group hidden lg:flex items-center gap-2.5 px-3 py-2 border border-border-default bg-surface-raised rounded-sm transition-all duration-300 hover:border-[#c9a96e55] hover:bg-surface-overlay hover:shadow-[0_0_16px_rgba(201,169,110,0.06)]"
 					>
 						<div class="w-8 h-8 rounded-full border border-[#c9a96e33] bg-surface-overlay flex items-center justify-center shrink-0 transition-all duration-300 group-hover:border-[#c9a96e66] group-hover:shadow-[0_0_8px_rgba(201,169,110,0.15)]">
 							<svg class="w-3.5 h-3.5 text-[#c9a96e88] transition-colors duration-300 group-hover:text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -314,11 +314,12 @@ onBeforeUnmount(() => {
 		     MENÚ MÓVIL — panel fixed con scroll (< lg)
 		     fixed top-16: queda justo debajo del header sticky (h-16 = 64px)
 		════════════════════════════════════════════ -->
-		<Transition name="mobile-menu">
-			<div
-				v-if="showMobileMenu"
-				class="lg:hidden fixed inset-x-0 top-16 bottom-0 z-40 flex flex-col"
-			>
+		<Teleport to="body">
+			<Transition name="mobile-menu">
+				<div
+					v-if="showMobileMenu"
+					class="lg:hidden fixed inset-x-0 top-16 bottom-0 z-40 flex flex-col"
+				>
 				<!-- Overlay oscuro detrás del panel -->
 				<div
 					class="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
@@ -337,6 +338,16 @@ onBeforeUnmount(() => {
 					</div>
 
 					<template v-if="isAuthenticated">
+						<div class="px-5 py-4 flex items-center gap-3 border-t border-border-subtle">
+							<div class="w-10 h-10 rounded-full border border-[#c9a96e44] bg-surface-overlay flex items-center justify-center text-accent font-display text-base shrink-0 shadow-[0_0_10px_rgba(201,169,110,0.15)]">
+								{{ avatarInitial }}
+							</div>
+							<div class="min-w-0">
+								<p class="text-[14px] font-medium text-text-primary truncate">{{ userLabel }}</p>
+								<p class="text-[10px] tracking-[0.2em] uppercase text-[#c9a96e77]">{{ userRole }}</p>
+							</div>
+						</div>
+
 						<div class="px-5 py-3 border-t border-border-subtle flex flex-col gap-0.5">
 							<p class="mobile-section-label">Cuenta</p>
 							<RouterLink to="/orders"     class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Pedidos</RouterLink>
@@ -395,7 +406,8 @@ onBeforeUnmount(() => {
 
 				</div>
 			</div>
-		</Transition>
+			</Transition>
+		</Teleport>
 
 	</nav>
 

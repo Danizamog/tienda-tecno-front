@@ -123,6 +123,11 @@ const routes = [
         redirect: { name: 'vendor-dashboard' },
       },
       {
+        path: 'projections',
+        name: 'vendor-projections',
+        component: () => import('@/views/vendor/projections/VendorProjectionsView.vue'),
+      },
+      {
         path: 'products',
         name: 'vendor-products',
         component: () => import('@/views/vendor/products/VendorProductsView.vue'),

@@ -41,7 +41,7 @@ const restockError = ref('')
 
 function emptyForm() {
   return {
-    name: '', description: '', price: '', stock: '1',
+    name: '', description: '', price: '', cost_price: '', stock: '1',
     category: '', status: 'active', condition: 'new',
     featured: false, discount_percent: '', discount_amount: '',
     discount_starts_at: '', discount_ends_at: '',
@@ -128,6 +128,7 @@ function openEdit(product) {
     name: product.name || '',
     description: product.description || '',
     price: String(product.price || ''),
+    cost_price: product.cost_price == null ? '' : String(product.cost_price),
     stock: String(product.stock ?? 1),
     category: product.category || '',
     status: product.status || 'active',
@@ -176,6 +177,7 @@ async function save() {
     fd.append('name',        form.value.name.trim())
     fd.append('description', form.value.description || '')
     fd.append('price',       form.value.price)
+    if (String(form.value.cost_price).trim() !== '') fd.append('cost_price', form.value.cost_price)
     const numericStock = Number(form.value.stock || 0)
     // Compatibilidad: algunos esquemas PB no aceptan stock=0 aunque UI lo permita.
     const stockToSend = numericStock === 0 ? 1 : numericStock
@@ -313,6 +315,8 @@ function toggleCreateDiscountPanel() {
 function validateProductForm() {
   const name = form.value.name.trim()
   const price = Number(form.value.price)
+  const costPriceRaw = String(form.value.cost_price || '').trim()
+  const costPrice = costPriceRaw === '' ? null : Number(costPriceRaw)
   const stock = Number(form.value.stock)
   const discountPercentRaw = String(form.value.discount_percent || '').trim()
   const discountAmountRaw = String(form.value.discount_amount || '').trim()
@@ -321,6 +325,7 @@ function validateProductForm() {
 
   if (!name) return 'El nombre es obligatorio'
   if (!Number.isFinite(price) || price < 0) return 'El precio debe ser un número válido mayor o igual a 0'
+  if (costPrice !== null && (!Number.isFinite(costPrice) || costPrice < 0)) return 'El coste debe ser un número válido mayor o igual a 0'
   if (!Number.isInteger(stock) || stock < 0) return 'El stock debe ser un número entero mayor o igual a 0'
   if (discountPercentRaw !== '') {
     const discountPercent = Number(discountPercentRaw)
@@ -550,6 +555,12 @@ function money(v) {
             <div>
               <label class="form-label">Precio (Bs) *</label>
               <input v-model="form.price" type="number" min="0" step="0.01" class="input-field w-full" placeholder="0.00" />
+            </div>
+
+            <!-- Coste -->
+            <div>
+              <label class="form-label">Coste de adquisición (Bs)</label>
+              <input v-model="form.cost_price" type="number" min="0" step="0.01" class="input-field w-full" placeholder="Opcional" />
             </div>
 
             <!-- Stock -->

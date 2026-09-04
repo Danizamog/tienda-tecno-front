@@ -57,6 +57,12 @@ export function useVendorApi() {
     return handleResponse(res)
   }
 
+  async function getVendorForecast(storeId, { historyDays = 365, horizonDays = 30 } = {}) {
+    const params = new URLSearchParams({ historyDays, horizonDays })
+    const res = await safeFetch(`${API}/predictions/vendor/${storeId}?${params}`, { headers: authHeaders() })
+    return handleResponse(res)
+  }
+
   async function listFinanceTransactions({ storeId } = {}) {
     const params = new URLSearchParams()
     if (storeId) params.set('storeId', storeId)
@@ -279,6 +285,7 @@ export function useVendorApi() {
     getMyStores,
     getVendorDashboard,
     getStoreDashboardMetrics,
+    getVendorForecast,
     listFinanceTransactions,
     getFinanceSummary,
     updateStoreInfo,
