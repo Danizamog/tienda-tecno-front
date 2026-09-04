@@ -44,6 +44,7 @@ const newAddress = ref({
 
 // ── Store info (QR + configuración de envío) ──────────────────────────────────
 const storeInfo = ref(null)
+const qrViewerOpen = ref(false)
 
 // ── Modal de confirmación (centrado sobre todo) ───────────────────────────────
 const confirmModal        = ref(false)
@@ -91,6 +92,31 @@ function imgUrl(storeId, filename) {
 function storeQrUrl() {
   if (!storeInfo.value?.payment_qr || !storeInfo.value?.id) return ''
   return `${PB}/api/files/stores/${storeInfo.value.id}/${storeInfo.value.payment_qr}`
+}
+
+function closeQrViewer() {
+  qrViewerOpen.value = false
+}
+
+async function downloadQr() {
+  const url = storeQrUrl()
+  if (!url) return
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('No se pudo descargar el QR')
+
+    const blobUrl = URL.createObjectURL(await response.blob())
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = 'qr-pago.png'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(blobUrl)
+  } catch {
+    window.open(url, '_blank', 'noopener')
+  }
 }
 
 function fmt(n) {
@@ -769,9 +795,15 @@ function goToOrders() {
           <div>
             <p class="text-[9px] tracking-[0.18em] uppercase text-text-disabled mb-3">QR de pago</p>
             <div v-if="storeQrUrl()" class="flex flex-col items-center gap-3">
-              <div class="w-52 h-52 bg-white p-2.5 shadow-lg">
-                <img :src="storeQrUrl()" alt="QR de pago de la tienda" class="w-full h-full object-contain" />
-              </div>
+              <button
+                type="button"
+                class="w-52 h-52 bg-white p-2.5 shadow-lg cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-accent"
+                aria-label="Ampliar QR de pago"
+                @click="qrViewerOpen = true"
+              >
+                <img :src="storeQrUrl()" alt="QR de pago de la tienda. Haz clic para ampliar" class="w-full h-full object-contain" />
+              </button>
+              <p class="text-[10px] text-text-disabled">Haz clic en el QR para ampliarlo o descargarlo</p>
               <p v-if="storeInfo?.payment_instructions" class="text-[11px] text-text-muted text-center leading-relaxed px-2">
                 {{ storeInfo.payment_instructions }}
               </p>
@@ -833,6 +865,41 @@ function goToOrders() {
           </button>
         </div>
 
+      </div>
+    </div>
+  </Transition>
+
+  <Transition name="confirm-modal">
+    <div
+      v-if="qrViewerOpen && storeQrUrl()"
+      class="fixed inset-0 z-100 flex items-center justify-center bg-black/85 backdrop-blur-sm px-4 py-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="QR de pago ampliado"
+      @click.self="closeQrViewer"
+    >
+      <div class="flex max-h-full w-full max-w-lg flex-col items-center gap-4">
+        <div class="flex w-full items-center justify-between">
+          <p class="text-[10px] tracking-[0.18em] uppercase text-white/70">QR de pago</p>
+          <button @click="closeQrViewer" class="w-8 h-8 flex items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="Cerrar QR ampliado">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="w-full max-w-[min(80vw,28rem)] aspect-square bg-white p-4 shadow-2xl">
+          <img :src="storeQrUrl()" alt="QR de pago ampliado" class="w-full h-full object-contain" />
+        </div>
+        <button
+          type="button"
+          @click="downloadQr"
+          class="inline-flex items-center gap-2 h-9 px-4 text-[10px] tracking-[0.15em] uppercase bg-accent text-accent-on font-bold hover:bg-accent-hover transition-colors"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Descargar QR
+        </button>
       </div>
     </div>
   </Transition>
