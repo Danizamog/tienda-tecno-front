@@ -66,6 +66,26 @@ const SHAPE_STYLE_GUIDE = {
     pieces: 'Poleras de cuello redondo o V, pantalones rectos y chaquetas ajustadas sin exceso de volumen.',
     avoid: 'Evita ocultar el rostro con cuellos demasiado altos o accesorios excesivamente grandes.',
   },
+  cuadrada: {
+    summary: 'Las líneas definidas se equilibran con prendas que suavicen el conjunto.',
+    pieces: 'Poleras de cuello V, pantalones straight o relaxed y chaquetas de hombro natural.',
+    avoid: 'Evita repetir líneas muy rígidas en cuello, hombros y estampados al mismo tiempo.',
+  },
+  corazón: {
+    summary: 'Conviene equilibrar una frente más amplia con volumen visual en la parte inferior.',
+    pieces: 'Poleras de cuello redondo, pantalones wide leg o bootcut y chaquetas de solapa fina.',
+    avoid: 'Evita hombreras marcadas y cuellos muy amplios que aumenten el volumen superior.',
+  },
+  diamante: {
+    summary: 'El equilibrio está en suavizar los pómulos y dar presencia a frente y mandíbula.',
+    pieces: 'Poleras de cuello redondo, pantalones rectos y chaquetas con solapa o textura ligera.',
+    avoid: 'Evita prendas demasiado ajustadas en cuello y accesorios que terminen justo en el pómulo.',
+  },
+  indeterminada: {
+    summary: 'La foto no permite establecer una forma con suficiente seguridad.',
+    pieces: 'Prueba prendas equilibradas: poleras de cuello redondo o V, pantalones rectos y chaquetas de estructura media.',
+    avoid: 'Evita tomar esta lectura como definitiva; una foto frontal, nítida y sin inclinación mejora el resultado.',
+  },
 }
 
 let landmarkerLoading = null
@@ -158,12 +178,55 @@ function toneFrom(color) {
 }
 
 function shapeFrom(landmarks) {
-  const x = landmarks.map((point) => point.x)
-  const y = landmarks.map((point) => point.y)
-  const ratio = (Math.max(...x) - Math.min(...x)) / (Math.max(...y) - Math.min(...y))
-  if (ratio > 0.82) return { name: 'redonda', advice: 'prendas estructuradas y cuellos en V', guide: SHAPE_STYLE_GUIDE.redonda }
-  if (ratio < 0.68) return { name: 'alargada', advice: 'cuellos altos y volumen lateral', guide: SHAPE_STYLE_GUIDE.alargada }
-  return { name: 'ovalada', advice: 'la mayoría de cortes y escotes equilibrados', guide: SHAPE_STYLE_GUIDE.ovalada }
+  const point = (index) => landmarks[index] || { x: 0, y: 0 }
+  const distance = (first, second) => Math.hypot(first.x - second.x, first.y - second.y)
+  const requiredPoints = [10, 152, 127, 356, 234, 454, 132, 361, 33, 263, 1]
+  if (requiredPoints.some((index) => !landmarks[index])) {
+    return { name: 'indeterminada', confidence: 0, advice: SHAPE_STYLE_GUIDE.indeterminada.pieces, guide: SHAPE_STYLE_GUIDE.indeterminada }
+  }
+
+  const top = point(10)
+  const chin = point(152)
+  const faceHeight = distance(top, chin)
+  const eyeDistance = distance(point(33), point(263))
+  const forehead = distance(point(127), point(356))
+  const cheekbones = distance(point(234), point(454))
+  const jaw = distance(point(132), point(361))
+  if (!faceHeight || !cheekbones || !eyeDistance) return { name: 'indeterminada', confidence: 0, advice: SHAPE_STYLE_GUIDE.indeterminada.pieces, guide: SHAPE_STYLE_GUIDE.indeterminada }
+
+  // El desplazamiento de la nariz respecto al eje de los ojos estima cuánto
+  // está girado el rostro; la clasificación geométrica pierde precisión de perfil.
+  const eyeMidpoint = (point(33).x + point(263).x) / 2
+  const yaw = Math.abs(point(1).x - eyeMidpoint) / eyeDistance
+  if (yaw > 0.3) return { name: 'indeterminada', confidence: 0, advice: SHAPE_STYLE_GUIDE.indeterminada.pieces, guide: SHAPE_STYLE_GUIDE.indeterminada }
+
+  const features = {
+    length: faceHeight / cheekbones,
+    forehead: forehead / cheekbones,
+    jaw: jaw / cheekbones,
+    cheekDominance: cheekbones / Math.max(forehead, jaw),
+  }
+  const profiles = {
+    ovalada: [1.43, .88, .82, 1.12],
+    redonda: [1.25, .92, .88, 1.08],
+    alargada: [1.68, .86, .78, 1.10],
+    cuadrada: [1.39, 1.00, .98, 1.03],
+    corazón: [1.43, 1.08, .76, 1.10],
+    diamante: [1.42, .84, .74, 1.20],
+  }
+  const weights = [1.4, 1, 1, 1.2]
+  const values = [features.length, features.forehead, features.jaw, features.cheekDominance]
+  const ranked = Object.entries(profiles).map(([name, profile]) => ({
+    name,
+    score: profile.reduce((total, expected, index) => total + ((values[index] - expected) ** 2 * weights[index]), 0),
+  })).sort((first, second) => first.score - second.score)
+  const best = ranked[0]
+  const second = ranked[1]
+  const confidence = Math.max(0, Math.min(0.98, 1 - best.score / 0.16))
+  if (confidence < 0.35 || second.score - best.score < 0.012) {
+    return { name: 'indeterminada', confidence, advice: SHAPE_STYLE_GUIDE.indeterminada.pieces, guide: SHAPE_STYLE_GUIDE.indeterminada }
+  }
+  return { name: best.name, confidence, advice: SHAPE_STYLE_GUIDE[best.name].pieces, guide: SHAPE_STYLE_GUIDE[best.name] }
 }
 
 async function capturePhoto() {
@@ -193,15 +256,6 @@ async function capturePhoto() {
     const skin = cheeks.reduce((total, color) => ({ red: total.red + color.red / cheeks.length, green: total.green + color.green / cheeks.length, blue: total.blue + color.blue / cheeks.length }), { red: 0, green: 0, blue: 0 })
     const tone = toneFrom(skin)
     const shape = shapeFrom(landmarks)
-    shape.advice = [
-      shape.advice,
-      tone.guide.summary,
-      `Poleras: ${tone.guide.tops}`,
-      `Pantalones: ${tone.guide.bottoms}`,
-      `Capas: ${tone.guide.layers}`,
-      `Según tu rostro: ${shape.guide.pieces}`,
-      shape.guide.avoid,
-    ].join('\n')
     result.value = { tone, shape }
     status.value = 'result'
     stopCamera()
@@ -237,6 +291,12 @@ onBeforeUnmount(stopCamera)
         <section class="result-card border border-border-default bg-surface-raised p-6 min-h-[20rem]"><div v-if="status === 'loading' || status === 'analysing'" class="flex min-h-[18rem] items-center justify-center text-center"><div><div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" /><p class="text-sm text-text-secondary">{{ status === 'loading' ? 'Preparando la cámara...' : 'Analizando tu foto...' }}</p><p class="text-xs text-text-muted mt-2">Esto puede tardar unos segundos.</p></div></div><div v-else-if="error" class="min-h-[18rem] flex flex-col justify-center"><p class="text-xs uppercase tracking-[0.18em] text-red-400 mb-3">No pudimos continuar</p><p class="text-sm text-text-secondary leading-relaxed">{{ error }}</p><button type="button" class="action-button action-primary mt-6 self-start" @click="startCamera">Intentar de nuevo</button></div><div v-else-if="result" class="result-panel"><div class="result-heading"><div><p class="eyebrow">Lectura visual</p><h2 class="font-display text-3xl font-light mt-2">Una base versátil</h2></div><span class="confidence-mark">A partir de tu foto</span></div><div class="insight-grid"><div class="insight-block"><span class="insight-label">Colorimetría</span><strong class="insight-value">{{ result.tone.name }}</strong><span class="insight-note">temperatura predominante</span></div><div class="insight-block"><span class="insight-label">Forma del rostro</span><strong class="insight-value">{{ result.shape.name }}</strong><span class="insight-note">proporción general</span></div></div><div class="palette-block"><div class="flex items-center justify-between gap-3 mb-3"><p class="insight-label">Paleta para explorar</p><span class="text-[10px] text-text-disabled">{{ result.tone.colors.length }} tonos</span></div><div class="palette-list"><span v-for="color in result.tone.colors" :key="color" class="color-chip"><i :style="{ backgroundColor: COLOR_SWATCHES[color] }" />{{ color }}</span></div></div><div class="style-callout"><span class="callout-kicker">Sugerencia de corte</span><p>{{ result.shape.advice }}.</p></div><p class="result-disclaimer">Lectura orientativa. La iluminación y la cámara pueden cambiar la percepción del color.</p></div><div v-else class="min-h-[18rem] flex flex-col justify-center"><p class="text-[10px] uppercase tracking-[0.2em] text-text-muted mb-3">Resultado</p><h2 class="font-display text-3xl font-light">Tu recomendación aparecerá aquí</h2><p class="text-sm text-text-muted mt-3 leading-relaxed">No guardamos ni enviamos tu foto. El análisis ocurre en este dispositivo.</p></div></section>
       </div>
     </div>
+    <section v-if="result" class="wardrobe-section max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pb-12">
+      <div class="wardrobe-header"><div><p class="eyebrow">Guía de vestuario</p><h2 class="font-display text-3xl font-light mt-2">Cómo llevar esta lectura</h2></div><span class="guide-dot" /></div>
+      <p class="guide-summary">{{ result.tone.guide.summary }}</p>
+      <div class="wardrobe-grid"><div><span>Poleras</span><p>{{ result.tone.guide.tops }}</p></div><div><span>Pantalones</span><p>{{ result.tone.guide.bottoms }}</p></div><div><span>Capas</span><p>{{ result.tone.guide.layers }}</p></div><div><span>Según tu rostro</span><p>{{ result.shape.guide.pieces }}</p></div></div>
+      <p class="guide-avoid">{{ result.shape.guide.avoid }}</p>
+    </section>
   </main>
   <AppFooter />
 </template>
@@ -256,9 +316,20 @@ onBeforeUnmount(stopCamera)
 .palette-list { display: flex; flex-wrap: wrap; gap: .5rem; }
 .color-chip { display: inline-flex; align-items: center; gap: .45rem; border: 1px solid var(--border-default); color: var(--text-secondary); padding: .42rem .6rem; font-size: .68rem; text-transform: capitalize; }
 .color-chip i { width: .7rem; height: .7rem; border: 1px solid rgba(255,255,255,.22); border-radius: 50%; }
-.style-callout { border-top: 1px solid var(--border-subtle); padding-top: 1rem; }
+.style-callout { display: none; }
 .style-callout p { color: var(--text-secondary); font-size: .82rem; line-height: 1.55; margin-top: .45rem; white-space: pre-line; }
 .result-disclaimer { color: var(--text-disabled); font-size: .62rem; line-height: 1.5; }
+.wardrobe-section { margin-top: -1.5rem; border: 1px solid var(--border-default); background: var(--surface-raised); padding-top: 1.5rem; }
+.wardrobe-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding-top: 2rem; }
+.guide-summary { color: var(--text-secondary); font-size: .78rem; line-height: 1.5; margin-top: .6rem; max-width: 42rem; }
+.guide-dot { width: .55rem; height: .55rem; background: var(--accent); border-radius: 50%; margin-top: .35rem; box-shadow: 0 0 0 .3rem var(--accent-soft); }
+.wardrobe-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+.wardrobe-grid > div { border-left: 1px solid var(--border-default); padding-left: .8rem; }
+.wardrobe-grid span { color: var(--text-muted); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
+.wardrobe-grid p { color: var(--text-secondary); font-size: .74rem; line-height: 1.55; margin-top: .4rem; }
+.guide-avoid { color: var(--text-disabled); font-size: .68rem; line-height: 1.5; margin-top: 1.25rem; }
+@media (max-width: 760px) { .wardrobe-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .wardrobe-grid { grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .result-heading { flex-direction: column; } .confidence-mark { align-self: flex-start; } .insight-grid { grid-template-columns: 1fr; } }
 .action-button { min-height: 2.5rem; padding: .65rem 1rem; border: 1px solid var(--border-default); color: var(--text-secondary); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; transition: border-color .2s, color .2s, background-color .2s; }
 .action-button:hover { border-color: var(--accent); color: var(--accent); }
