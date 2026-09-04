@@ -198,7 +198,7 @@ function shapeFrom(landmarks) {
   // está girado el rostro; la clasificación geométrica pierde precisión de perfil.
   const eyeMidpoint = (point(33).x + point(263).x) / 2
   const yaw = Math.abs(point(1).x - eyeMidpoint) / eyeDistance
-  if (yaw > 0.3) return { name: 'indeterminada', confidence: 0, advice: SHAPE_STYLE_GUIDE.indeterminada.pieces, guide: SHAPE_STYLE_GUIDE.indeterminada }
+  if (yaw > 0.4) return { name: 'indeterminada', confidence: 0, advice: SHAPE_STYLE_GUIDE.indeterminada.pieces, guide: SHAPE_STYLE_GUIDE.indeterminada }
 
   const features = {
     length: faceHeight / cheekbones,
@@ -222,8 +222,9 @@ function shapeFrom(landmarks) {
   })).sort((first, second) => first.score - second.score)
   const best = ranked[0]
   const second = ranked[1]
-  const confidence = Math.max(0, Math.min(0.98, 1 - best.score / 0.16))
-  if (confidence < 0.35 || second.score - best.score < 0.012) {
+  const confidence = Math.max(0, Math.min(0.98, 1 - best.score / 0.22))
+  const separation = second.score - best.score
+  if (confidence < 0.2 && separation < 0.006) {
     return { name: 'indeterminada', confidence, advice: SHAPE_STYLE_GUIDE.indeterminada.pieces, guide: SHAPE_STYLE_GUIDE.indeterminada }
   }
   return { name: best.name, confidence, advice: SHAPE_STYLE_GUIDE[best.name].pieces, guide: SHAPE_STYLE_GUIDE[best.name] }
