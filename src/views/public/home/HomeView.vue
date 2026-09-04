@@ -530,7 +530,7 @@ onBeforeUnmount(() => {
               <p ref="productsRef" class="font-display text-accent text-2xl sm:text-3xl font-light tabular-nums">
                 {{ productsValue }}
               </p>
-              <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mt-1">Productos curados</p>
+              <p class="text-[9px] tracking-[0.28em] uppercase text-text-disabled mt-1">Productos confiables</p>
             </div>
           </div>
         </div>
