@@ -229,6 +229,7 @@ onBeforeUnmount(() => {
 										<RouterLink to="/bid-orders" class="dropdown-link" @click="showMenu = false">Subastas ganadas</RouterLink>
 										<RouterLink to="/wishlist"   class="dropdown-link" @click="showMenu = false">Wishlist</RouterLink>
 										<RouterLink to="/giftcards"  class="dropdown-link" @click="showMenu = false">Giftcards</RouterLink>
+										<RouterLink to="/style-advisor" class="dropdown-link" @click="showMenu = false">Asesor de estilo</RouterLink>
 									</div>
 								</div>
 
@@ -354,6 +355,7 @@ onBeforeUnmount(() => {
 							<RouterLink to="/bid-orders" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Subastas ganadas</RouterLink>
 							<RouterLink to="/wishlist"   class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Wishlist</RouterLink>
 							<RouterLink to="/giftcards"  class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Giftcards</RouterLink>
+							<RouterLink to="/style-advisor" class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Asesor de estilo</RouterLink>
 							<RouterLink to="/account"    class="mobile-link" active-class="mobile-link-active" @click="showMobileMenu = false">Perfil</RouterLink>
 						</div>
 

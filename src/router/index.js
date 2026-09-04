@@ -100,6 +100,12 @@ const routes = [
     component: () => import('@/views/user/GiftcardsView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/style-advisor',
+    name: 'style-advisor',
+    component: () => import('@/views/user/StyleAdvisorView.vue'),
+    meta: { requiresAuth: true },
+  },
 
   // ── Vendor ───────────────────────────────────────────────────
   {
